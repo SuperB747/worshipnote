@@ -159,7 +159,10 @@ export const generateWorshipListPDF = async (songs, date) => {
 
     // PDF 저장
     const pdfPath = await getPdfSavePath(date);
-    const pdfBlob = pdf.output('blob');
+    const pdfArrayBuffer = pdf.output('arraybuffer');
+    
+    // ArrayBuffer를 Blob으로 변환
+    const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
     
     // Electron을 통해 파일 저장
     if (!window.electronAPI || !window.electronAPI.savePdf) {
