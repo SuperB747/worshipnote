@@ -488,10 +488,13 @@ export const createDatabaseBackup = async (currentSongs = null, currentWorshipLi
     console.log('통합 데이터베이스 백업 생성 완료 (OneDrive):', backupFilePath);
     console.log('백업 파일 크기:', (fileSize / 1024 / 1024).toFixed(2), 'MB');
     
+    // 악보가 없는 찬양 개수 계산
+    const songsWithoutMusicSheet = songs.filter(song => !song.fileName || song.fileName.trim() === '').length;
+    
     return { 
       success: true, 
       filePath: backupFilePath,
-      message: `통합 데이터베이스 백업이 생성되었습니다!\n\n📊 데이터 현황:\n• 악보: ${songs.length}개\n• 찬양 리스트: ${Object.keys(worshipLists).length}개 날짜\n• 총 찬양 리스트 곡: ${databaseData.stats.totalWorshipListSongs}개\n• 파일 크기: ${(fileSize / 1024 / 1024).toFixed(2)}MB`,
+      message: `통합 데이터베이스 백업이 생성되었습니다!\n\n📊 데이터 현황:\n• 찬양 갯수: ${songs.length}개\n• 악보 없는 찬양: ${songsWithoutMusicSheet}개\n• 찬양 리스트: ${Object.keys(worshipLists).length}개\n• 파일 크기: ${(fileSize / 1024 / 1024).toFixed(2)}MB`,
       stats: databaseData.stats,
       fileName: backupFileName
     };
