@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Upload, Music, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { processFileUpload } from '../utils/fileConverter';
 import './AddSong.css';
@@ -31,13 +31,25 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     }
   }, []);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-  };
+  }, []);
+
+  // 입력 필드 클릭 핸들러 추가
+  const handleInputClick = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.target.focus();
+  }, []);
+
+  // 입력 필드 포커스 핸들러 추가
+  const handleInputFocus = useCallback((e) => {
+    e.target.select();
+  }, []);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -152,9 +164,14 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
+                onClick={handleInputClick}
+                onFocus={handleInputFocus}
+                onMouseDown={handleInputClick}
                 className="form-input compact-input floating-input"
                 placeholder=" "
                 required
+                autoComplete="off"
+                tabIndex={1}
               />
               <label className="floating-label">찬양 이름 *</label>
             </div>
@@ -165,7 +182,10 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                   name="key"
                   value={formData.key}
                   onChange={handleInputChange}
+                  onClick={handleInputClick}
+                  onMouseDown={handleInputClick}
                   className="form-select compact-select floating-select"
+                  tabIndex={3}
                 >
                   <option value=""> </option>
                   {keys.map(key => (
@@ -180,7 +200,10 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                   name="tempo"
                   value={formData.tempo}
                   onChange={handleInputChange}
+                  onClick={handleInputClick}
+                  onMouseDown={handleInputClick}
                   className="form-select compact-select floating-select"
+                  tabIndex={4}
                 >
                   <option value=""> </option>
                   {tempos.map(tempo => (
@@ -199,8 +222,13 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                 name="firstLyrics"
                 value={formData.firstLyrics}
                 onChange={handleInputChange}
+                onClick={handleInputClick}
+                onFocus={handleInputFocus}
+                onMouseDown={handleInputClick}
                 className="form-input compact-input floating-input"
                 placeholder=" "
+                autoComplete="off"
+                tabIndex={2}
               />
               <label className="floating-label">첫 가사</label>
             </div>

@@ -154,6 +154,16 @@
 /* Floating Label Effect */
 .floating-label-group {
   position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.floating-label-group:hover .floating-input {
+  border-color: var(--primary-green);
+}
+
+.floating-label-group:hover .floating-select {
+  border-color: var(--primary-green);
 }
 
 .floating-input {
@@ -164,12 +174,20 @@
   background: white;
   transition: all 0.3s ease;
   width: 100%;
+  cursor: text;
+  position: relative;
+  z-index: 1;
 }
 
 .floating-input:focus {
   outline: none;
   border-color: var(--primary-green);
   box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
+  z-index: 2;
+}
+
+.floating-input:hover {
+  border-color: var(--primary-green);
 }
 
 .floating-label {
@@ -183,7 +201,7 @@
   color: var(--primary-green);
   transition: all 0.3s ease;
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
 }
 
 .floating-input:focus + .floating-label {
@@ -209,12 +227,20 @@
   background-position: right 12px center;
   background-size: 16px;
   padding-right: 40px;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
 .floating-select:focus {
   outline: none;
   border-color: var(--primary-green);
   box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
+  z-index: 2;
+}
+
+.floating-select:hover {
+  border-color: var(--primary-green);
 }
 
 .floating-select:focus + .floating-label {
