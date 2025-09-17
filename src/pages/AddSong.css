@@ -205,13 +205,13 @@
 }
 
 .floating-input:focus + .floating-label,
-.floating-input:not(:placeholder-shown) + .floating-label {
+.floating-input.has-value + .floating-label {
   top: -8px;
   font-size: 12px;
   color: var(--primary-green);
 }
 
-.floating-input:not(:placeholder-shown) + .floating-label {
+.floating-input.has-value + .floating-label {
   color: var(--text-dark);
 }
 
@@ -247,13 +247,13 @@
 }
 
 .floating-select:focus + .floating-label,
-.floating-select:not([value=""]) + .floating-label {
+.floating-select.has-value + .floating-label {
   top: -8px;
   font-size: 12px;
   color: var(--primary-green);
 }
 
-.floating-select:not([value=""]) + .floating-label {
+.floating-select.has-value + .floating-label {
   color: var(--text-dark);
 }
 

@@ -48,14 +48,6 @@ function createWindow() {
   });
 }
 
-// 안전한 로깅 함수 (영어로 통일하여 인코딩 문제 방지)
-const safeLog = (message, data) => {
-  try {
-    console.log(message, data);
-  } catch (error) {
-    console.log(message, '[Log output failed due to encoding issue]');
-  }
-};
 
 // OneDrive 경로 찾기 함수
 const findOneDrivePath = () => {
@@ -91,7 +83,6 @@ const findOneDrivePath = () => {
   for (const oneDrivePath of possiblePaths) {
     try {
       if (require('fs').existsSync(oneDrivePath)) {
-        safeLog('OneDrive path found:', oneDrivePath);
         return oneDrivePath;
       }
     } catch (error) {
@@ -103,15 +94,12 @@ const findOneDrivePath = () => {
   const firstOneDrivePath = possiblePaths[0];
   try {
     require('fs').mkdirSync(firstOneDrivePath, { recursive: true });
-    safeLog('OneDrive folder created:', firstOneDrivePath);
     return firstOneDrivePath;
   } catch (error) {
-    safeLog('OneDrive folder creation failed, using fallback path:', error.message);
   }
   
   // 폴백 경로 사용
   const fallbackPath = path.join(homeDir, 'Documents', 'WorshipNote_Data');
-  safeLog('Using fallback path:', fallbackPath);
   return fallbackPath;
 };
 
@@ -149,7 +137,6 @@ const findMusicSheetsPath = () => {
   for (const musicSheetsPath of possiblePaths) {
     try {
       if (require('fs').existsSync(musicSheetsPath)) {
-        safeLog('Music_Sheets path found:', musicSheetsPath);
         return musicSheetsPath;
       }
     } catch (error) {
@@ -161,15 +148,12 @@ const findMusicSheetsPath = () => {
   const firstMusicSheetsPath = possiblePaths[0];
   try {
     require('fs').mkdirSync(firstMusicSheetsPath, { recursive: true });
-    safeLog('Music_Sheets folder created:', firstMusicSheetsPath);
     return firstMusicSheetsPath;
   } catch (error) {
-    safeLog('Music_Sheets folder creation failed, using fallback path:', error.message);
   }
   
   // 폴백 경로 사용
   const fallbackPath = path.join(homeDir, 'Documents', 'WorshipNote_Data', 'Music_Sheets');
-  safeLog('Using fallback path:', fallbackPath);
   return fallbackPath;
 };
 
@@ -251,7 +235,6 @@ ipcMain.handle('read-file', async (event, filePath) => {
       await fs.access(normalizedPath);
     } catch (accessError) {
       // 파일이 존재하지 않으면 null 반환 (에러를 던지지 않음)
-      safeLog('File not found:', normalizedPath);
       return null;
     }
     
@@ -265,10 +248,8 @@ ipcMain.handle('read-file', async (event, filePath) => {
     // 이미지 파일인 경우 Buffer 그대로 반환
     return buffer;
   } catch (error) {
-    safeLog('File read failed:', error.message);
     // ENOENT 오류(파일 없음)는 null 반환, 다른 오류는 에러 던지기
     if (error.code === 'ENOENT') {
-      safeLog('File not found:', filePath);
       return null;
     }
     throw new Error(`Cannot read file: ${error.message}`);

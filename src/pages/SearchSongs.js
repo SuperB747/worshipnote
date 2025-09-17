@@ -153,6 +153,18 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     }));
   };
 
+  // 수정 모달 입력 필드 클릭 핸들러
+  const handleEditInputClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.target.focus();
+  };
+
+  // 수정 모달 입력 필드 포커스 핸들러
+  const handleEditInputFocus = (e) => {
+    e.target.select();
+  };
+
   const handleEditFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -499,9 +511,14 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     name="title"
                     value={editFormData.title}
                     onChange={handleEditInputChange}
+                    onClick={handleEditInputClick}
+                    onFocus={handleEditInputFocus}
+                    onMouseDown={handleEditInputClick}
                     className="form-input compact-input"
                     placeholder="찬양 이름을 입력하세요"
                     required
+                    autoComplete="off"
+                    tabIndex={1}
                   />
                 </div>
 
@@ -511,7 +528,10 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     name="key"
                     value={editFormData.key}
                     onChange={handleEditInputChange}
+                    onClick={handleEditInputClick}
+                    onMouseDown={handleEditInputClick}
                     className="form-select compact-select"
+                    tabIndex={2}
                   >
                     {keys.map(key => (
                       <option key={key} value={key}>{key}</option>
@@ -525,7 +545,10 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     name="tempo"
                     value={editFormData.tempo}
                     onChange={handleEditInputChange}
+                    onClick={handleEditInputClick}
+                    onMouseDown={handleEditInputClick}
                     className="form-select compact-select"
+                    tabIndex={3}
                   >
                     {tempos.map(tempo => (
                       <option key={tempo} value={tempo}>{tempo}</option>
@@ -542,8 +565,13 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     name="firstLyrics"
                     value={editFormData.firstLyrics}
                     onChange={handleEditInputChange}
+                    onClick={handleEditInputClick}
+                    onFocus={handleEditInputFocus}
+                    onMouseDown={handleEditInputClick}
                     className="form-input compact-input"
                     placeholder="첫 번째 가사를 입력하세요"
+                    autoComplete="off"
+                    tabIndex={4}
                   />
                 </div>
               </div>

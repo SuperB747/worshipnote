@@ -311,6 +311,18 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     setEditForm({ title: '', key: '', tempo: '', firstLyrics: '' });
   };
 
+  // 수정 모달 입력 필드 클릭 핸들러
+  const handleEditInputClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.target.focus();
+  };
+
+  // 수정 모달 입력 필드 포커스 핸들러
+  const handleEditInputFocus = (e) => {
+    e.target.select();
+  };
+
 
   const getDateClass = (date) => {
     const dateKey = format(date, 'yyyy-MM-dd');
@@ -539,8 +551,13 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                   type="text"
                   value={editForm.title}
                   onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                  onClick={handleEditInputClick}
+                  onFocus={handleEditInputFocus}
+                  onMouseDown={handleEditInputClick}
                   placeholder="찬양 제목을 입력하세요"
                   className="form-input"
+                  autoComplete="off"
+                  tabIndex={1}
                 />
               </div>
               
@@ -550,8 +567,13 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                   type="text"
                   value={editForm.key}
                   onChange={(e) => setEditForm(prev => ({ ...prev, key: e.target.value }))}
+                  onClick={handleEditInputClick}
+                  onFocus={handleEditInputFocus}
+                  onMouseDown={handleEditInputClick}
                   placeholder="예: C, D, E..."
                   className="form-input"
+                  autoComplete="off"
+                  tabIndex={2}
                 />
               </div>
               
@@ -561,8 +583,13 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                   type="text"
                   value={editForm.tempo}
                   onChange={(e) => setEditForm(prev => ({ ...prev, tempo: e.target.value }))}
+                  onClick={handleEditInputClick}
+                  onFocus={handleEditInputFocus}
+                  onMouseDown={handleEditInputClick}
                   placeholder="예: 120, 140..."
                   className="form-input"
+                  autoComplete="off"
+                  tabIndex={3}
                 />
               </div>
               
@@ -571,9 +598,14 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                 <textarea
                   value={editForm.firstLyrics}
                   onChange={(e) => setEditForm(prev => ({ ...prev, firstLyrics: e.target.value }))}
+                  onClick={handleEditInputClick}
+                  onFocus={handleEditInputFocus}
+                  onMouseDown={handleEditInputClick}
                   placeholder="찬양의 첫 가사를 입력하세요"
                   className="form-textarea"
                   rows="3"
+                  autoComplete="off"
+                  tabIndex={4}
                 />
               </div>
             </div>

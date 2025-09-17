@@ -43,12 +43,18 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
   const handleInputClick = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    e.target.focus();
+    // 즉시 포커스 적용
+    setTimeout(() => {
+      e.target.focus();
+    }, 0);
   }, []);
 
   // 입력 필드 포커스 핸들러 추가
   const handleInputFocus = useCallback((e) => {
-    e.target.select();
+    // 포커스 후 약간의 지연을 두고 텍스트 선택
+    setTimeout(() => {
+      e.target.select();
+    }, 10);
   }, []);
 
   const handleFileUpload = async (e) => {
@@ -167,7 +173,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                 onClick={handleInputClick}
                 onFocus={handleInputFocus}
                 onMouseDown={handleInputClick}
-                className="form-input compact-input floating-input"
+                className={`form-input compact-input floating-input ${formData.title ? 'has-value' : ''}`}
                 placeholder=" "
                 required
                 autoComplete="off"
@@ -184,7 +190,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                   onChange={handleInputChange}
                   onClick={handleInputClick}
                   onMouseDown={handleInputClick}
-                  className="form-select compact-select floating-select"
+                  className={`form-select compact-select floating-select ${formData.key ? 'has-value' : ''}`}
                   tabIndex={3}
                 >
                   <option value=""> </option>
@@ -202,7 +208,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                   onChange={handleInputChange}
                   onClick={handleInputClick}
                   onMouseDown={handleInputClick}
-                  className="form-select compact-select floating-select"
+                  className={`form-select compact-select floating-select ${formData.tempo ? 'has-value' : ''}`}
                   tabIndex={4}
                 >
                   <option value=""> </option>
@@ -225,7 +231,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                 onClick={handleInputClick}
                 onFocus={handleInputFocus}
                 onMouseDown={handleInputClick}
-                className="form-input compact-input floating-input"
+                className={`form-input compact-input floating-input ${formData.firstLyrics ? 'has-value' : ''}`}
                 placeholder=" "
                 autoComplete="off"
                 tabIndex={2}
