@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Music, Search, Calendar, Plus, Download, RotateCcw } from 'lucide-react';
 import { createDatabaseBackup, restoreDatabaseFromBackup } from '../utils/storage';
+import GhibliDialog from './GhibliDialog';
 import './Sidebar.css';
 
 const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistenceMap }) => {
   const location = useLocation();
+  const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
 
   const menuItems = [
     { path: '/', icon: Search, label: '악보 검색', color: '#6b8e6b' },
@@ -18,13 +20,25 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
       const result = await createDatabaseBackup(songs, worshipLists, fileExistenceMap);
       
       if (result.success) {
-        alert(`데이터베이스 백업이 생성되었습니다!\n${result.message}`);
+        setDialog({
+          isVisible: true,
+          type: 'success',
+          message: `데이터베이스 백업이 생성되었습니다!\n\n${result.message}`
+        });
       } else {
-        alert('데이터베이스 백업 생성에 실패했습니다:\n' + result.error);
+        setDialog({
+          isVisible: true,
+          type: 'error',
+          message: `데이터베이스 백업 생성에 실패했습니다:\n\n${result.error}`
+        });
       }
     } catch (error) {
       console.error('데이터베이스 백업 생성 오류:', error);
-      alert('데이터베이스 백업 생성 중 오류가 발생했습니다:\n' + error.message);
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: `데이터베이스 백업 생성 중 오류가 발생했습니다:\n\n${error.message}`
+      });
     }
   };
 
@@ -106,10 +120,18 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
           }
         }
 
-        alert(`데이터베이스가 복원되었습니다!\n찬양: ${songs.length}개\n찬양 리스트: ${Object.keys(worshipLists).length}개`);
+        setDialog({
+          isVisible: true,
+          type: 'success',
+          message: `데이터베이스가 복원되었습니다!\n\n찬양: ${songs.length}개\n찬양 리스트: ${Object.keys(worshipLists).length}개`
+        });
       } catch (error) {
         console.error('데이터베이스 복원 오류:', error);
-        alert('데이터베이스 복원에 실패했습니다:\n' + error.message);
+        setDialog({
+          isVisible: true,
+          type: 'error',
+          message: `데이터베이스 복원에 실패했습니다:\n\n${error.message}`
+        });
       }
     };
 
@@ -171,6 +193,13 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
       <div className="sidebar-footer">
         <div className="app-version">v1.0.0</div>
       </div>
+      
+      <GhibliDialog
+        isVisible={dialog.isVisible}
+        type={dialog.type}
+        message={dialog.message}
+        onClose={() => setDialog({ isVisible: false, type: 'success', message: '' })}
+      />
     </div>
   );
 };

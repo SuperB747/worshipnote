@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import './Snackbar.css';
 
 const Snackbar = ({ isVisible, type, message, onClose }) => {
@@ -12,14 +12,14 @@ const Snackbar = ({ isVisible, type, message, onClose }) => {
       case 'error':
         return <AlertCircle className="snackbar-icon error" />;
       case 'loading':
-        return <Loader2 className="snackbar-icon loading" />;
+        return <Sparkles className="snackbar-icon loading" />;
       default:
         return null;
     }
   };
 
   return (
-    <div className={`snackbar ${type}`}>
+    <div className={`snackbar ghibli-snackbar ${type}`}>
       <div className="snackbar-content">
         {getIcon()}
         <span className="snackbar-message">{message}</span>

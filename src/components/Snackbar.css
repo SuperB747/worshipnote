@@ -5,18 +5,40 @@
   z-index: 10000;
   max-width: 400px;
   min-width: 300px;
-  animation: slideInUp 0.3s ease-out;
+  animation: ghibli-slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.snackbar-content {
+.ghibli-snackbar .snackbar-content {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 16px 20px;
+  border-radius: 16px;
+  box-shadow: 
+    0 8px 24px rgba(139, 115, 85, 0.25),
+    0 4px 12px rgba(139, 115, 85, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border: 2px solid rgba(212, 196, 168, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+.ghibli-snackbar .snackbar-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, 
+    #ff9a9e 0%, 
+    #fecfef 25%, 
+    #fecfef 50%, 
+    #a8edea 75%, 
+    #fed6e3 100%
+  );
+  border-radius: 16px 16px 0 0;
 }
 
 .snackbar.success {
@@ -24,9 +46,21 @@
   color: white;
 }
 
+.ghibli-snackbar.success .snackbar-content {
+  background: linear-gradient(135deg, #f0f8f0 0%, #e8f5e8 100%);
+  color: #2d5016;
+  border-color: rgba(74, 124, 89, 0.3);
+}
+
 .snackbar.error {
   background: linear-gradient(135deg, #e74c3c, #c0392b);
   color: white;
+}
+
+.ghibli-snackbar.error .snackbar-content {
+  background: linear-gradient(135deg, #fdf2f2 0%, #fce8e8 100%);
+  color: #991b1b;
+  border-color: rgba(212, 165, 116, 0.4);
 }
 
 .snackbar.loading {
@@ -34,66 +68,92 @@
   color: white;
 }
 
+.ghibli-snackbar.loading .snackbar-content {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  color: #0c4a6e;
+  border-color: rgba(107, 142, 107, 0.3);
+}
+
 .snackbar-icon {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
+  animation: ghibli-bounce 0.6s ease-out;
 }
 
-.snackbar-icon.success {
-  color: #2ecc71;
+.ghibli-snackbar .snackbar-icon.success {
+  color: #4a7c59;
+  filter: drop-shadow(0 2px 4px rgba(74, 124, 89, 0.3));
 }
 
-.snackbar-icon.error {
-  color: #e74c3c;
+.ghibli-snackbar .snackbar-icon.error {
+  color: #d4a574;
+  filter: drop-shadow(0 2px 4px rgba(212, 165, 116, 0.3));
 }
 
-.snackbar-icon.loading {
-  animation: spin 1s linear infinite;
-  color: #3498db;
+.ghibli-snackbar .snackbar-icon.loading {
+  animation: ghibli-spin 2s linear infinite;
+  color: #6b8e6b;
+  filter: drop-shadow(0 2px 4px rgba(107, 142, 107, 0.3));
 }
 
-.snackbar-message {
+.ghibli-snackbar .snackbar-message {
   flex: 1;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.4;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
-.snackbar-close {
+.ghibli-snackbar .snackbar-close {
   background: none;
   border: none;
   color: inherit;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
   cursor: pointer;
-  padding: 0;
-  width: 24px;
-  height: 24px;
+  padding: 6px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
   flex-shrink: 0;
+  opacity: 0.7;
 }
 
-.snackbar-close:hover {
-  background: rgba(255, 255, 255, 0.2);
+.ghibli-snackbar .snackbar-close:hover {
+  background: rgba(139, 115, 85, 0.1);
+  opacity: 1;
+  transform: scale(1.1);
 }
 
-@keyframes slideInUp {
+@keyframes ghibli-slide-in {
   from {
-    transform: translateY(100%);
+    transform: translateY(30px) scale(0.9);
     opacity: 0;
   }
   to {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
 }
 
-@keyframes spin {
+@keyframes ghibli-bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-6px);
+  }
+  60% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes ghibli-spin {
   from {
     transform: rotate(0deg);
   }
