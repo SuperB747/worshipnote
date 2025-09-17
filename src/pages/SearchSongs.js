@@ -4,7 +4,7 @@ import { processFileUpload } from '../utils/fileConverter';
 import { saveSongs } from '../utils/storage';
 import './SearchSongs.css';
 
-const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
+const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExistenceMap }) => {
   const searchInputRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
@@ -32,11 +32,15 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
   const keys = ['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Eb', 'F', 'G'];
   const tempos = ['Fast', 'Medium', 'Slow'];
 
-  // 악보 파일이 있는지 확인하는 함수
+  // 악보 파일이 있는지 확인하는 함수 (실제 파일 존재 여부 포함)
   const hasMusicSheet = (song) => {
-    // fileName이 있으면 악보가 있다고 판단 (filePath는 OneDrive 동기화로 인해 비어있을 수 있음)
-    const hasFile = song.fileName && song.fileName.trim() !== '';
-    return hasFile;
+    // fileName이 없으면 악보 없음
+    if (!song.fileName || song.fileName.trim() === '') {
+      return false;
+    }
+    
+    // 파일 존재 여부 상태에서 확인
+    return fileExistenceMap[song.id] === true;
   };
 
   // 컴포넌트 마운트 시 검색 입력 필드 포커스
@@ -45,6 +49,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
       searchInputRef.current.focus();
     }
   }, []);
+
 
   const filteredSongs = useMemo(() => {
     const filtered = songs.filter(song => {
@@ -418,21 +423,20 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
                 >
                   <div className="song-info">
                     <h4>{song.title}</h4>
-                    <div className="song-status">
+                  </div>
+                  <div className="song-meta">
+                    {/* 악보 상태 아이콘 */}
+                    <div className="music-sheet-status">
                       {hasMusicSheet(song) ? (
                         <div className="status-with-file" title="악보 파일 있음">
                           <FileText className="status-icon file-icon" />
-                          <span className="status-text">악보 있음</span>
                         </div>
                       ) : (
                         <div className="status-no-file" title="악보 파일 없음">
                           <FileX className="status-icon no-file-icon" />
-                          <span className="status-text">악보 없음</span>
                         </div>
                       )}
                     </div>
-                  </div>
-                  <div className="song-meta">
                     <span className="song-key">{song.key}</span>
                     <span className="song-tempo">{song.tempo}</span>
                   </div>

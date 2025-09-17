@@ -19,6 +19,27 @@ function App() {
   const [saveTimeout, setSaveTimeout] = useState(null);
   const [lastSavedSongs, setLastSavedSongs] = useState(null);
   const [lastSavedWorshipLists, setLastSavedWorshipLists] = useState(null);
+  const [fileExistenceMap, setFileExistenceMap] = useState({});
+
+  // 실제 파일 존재 여부를 확인하는 함수
+  const checkFileExists = async (fileName) => {
+    if (!fileName || !window.electronAPI || !window.electronAPI.readFile) {
+      return false;
+    }
+    
+    try {
+      // Music_Sheets 경로를 가져와서 파일 경로 구성
+      const musicSheetsPath = await window.electronAPI.getMusicSheetsPath();
+      const fullPath = `${musicSheetsPath}/${fileName}`;
+      
+      // 파일 읽기 시도 (파일이 없으면 null 반환)
+      const fileData = await window.electronAPI.readFile(fullPath);
+      return fileData !== null;
+    } catch (error) {
+      console.error('File existence check failed:', error);
+      return false;
+    }
+  };
 
   // 앱 초기화 시 데이터 로드
   useEffect(() => {
@@ -135,6 +156,28 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  // songs가 로드된 후 파일 존재 여부 확인
+  useEffect(() => {
+    const checkAllFiles = async () => {
+      if (songs.length === 0 || !window.electronAPI) return;
+      
+      const existenceMap = {};
+      
+      for (const song of songs) {
+        if (song.fileName && song.fileName.trim() !== '') {
+          const exists = await checkFileExists(song.fileName);
+          existenceMap[song.id] = exists;
+        } else {
+          existenceMap[song.id] = false;
+        }
+      }
+      
+      setFileExistenceMap(existenceMap);
+    };
+
+    checkAllFiles();
+  }, [songs]);
+
   // songs 변경 시 저장 및 선택된 곡 확인 (실제 변경 시에만 저장)
   useEffect(() => {
     if (isLoaded && lastSavedSongs !== null) {
@@ -242,7 +285,7 @@ function App() {
               />
               <Route 
                 path="/search" 
-                element={<SearchSongs songs={songs} setSongs={setSongs} selectedSong={selectedSong} setSelectedSong={setSelectedSong} />} 
+                element={<SearchSongs songs={songs} setSongs={setSongs} selectedSong={selectedSong} setSelectedSong={setSelectedSong} fileExistenceMap={fileExistenceMap} />} 
               />
               <Route 
                 path="/worship-list" 
