@@ -50,19 +50,29 @@ const imageFileToBlob = async (filePath) => {
 
     console.log('이미지 파일 읽기 시도:', filePath);
 
-    // Electron의 readFile API를 사용하여 파일 읽기
-    const fileData = await window.electronAPI.readFile(filePath);
-    if (!fileData) {
-      console.error('파일 데이터가 null입니다:', filePath);
-      throw new Error('파일을 읽을 수 없습니다.');
+    // 파일 존재 여부 확인을 위해 먼저 읽기 시도
+    try {
+      const fileData = await window.electronAPI.readFile(filePath);
+      if (!fileData) {
+        console.error('파일 데이터가 null입니다:', filePath);
+        throw new Error('파일을 읽을 수 없습니다.');
+      }
+
+      console.log('파일 데이터 타입:', typeof fileData, '크기:', fileData.length);
+
+      // Buffer를 Blob으로 변환
+      const blob = new Blob([fileData], { type: 'image/jpeg' });
+      console.log('Blob 생성 성공, 크기:', blob.size);
+      return blob;
+    } catch (readError) {
+      console.error('파일 읽기 오류:', readError);
+      // 파일이 존재하지 않거나 접근할 수 없는 경우
+      if (readError.message.includes('ENOENT') || readError.message.includes('파일을 읽을 수 없습니다')) {
+        console.warn('파일이 존재하지 않거나 접근할 수 없습니다:', filePath);
+        return null;
+      }
+      throw readError;
     }
-
-    console.log('파일 데이터 타입:', typeof fileData, '크기:', fileData.length);
-
-    // Buffer를 Blob으로 변환
-    const blob = new Blob([fileData], { type: 'image/jpeg' });
-    console.log('Blob 생성 성공, 크기:', blob.size);
-    return blob;
   } catch (error) {
     console.error('이미지 로드 실패:', error);
     return null;
@@ -116,7 +126,7 @@ export const generateWorshipListPDF = async (songs, date) => {
           // Electron을 통해 이미지 파일을 Blob으로 로드
           const blob = await imageFileToBlob(song.filePath);
           if (!blob) {
-            console.warn(`이미지 로드 실패: ${song.fileName}`);
+            console.warn(`이미지 로드 실패, 건너뛰기: ${song.fileName}`);
             continue;
           }
 
@@ -161,6 +171,12 @@ export const generateWorshipListPDF = async (songs, date) => {
           continue;
         }
       }
+    }
+
+    // PDF에 이미지가 있는지 확인
+    if (pdf.internal.getNumberOfPages() === 1 && pdf.internal.getCurrentPageInfo().pageNumber === 1) {
+      // 빈 페이지만 있는 경우 (이미지가 없음)
+      console.warn('PDF에 이미지가 없습니다. 악보 파일을 확인해주세요.');
     }
 
     // PDF 저장
