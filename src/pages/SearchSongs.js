@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Filter, Music, Hash, Clock, FileText, Edit, Trash2, Plus } from 'lucide-react';
+import { Search, Filter, Music, Hash, Clock, FileText, Edit, Trash2, Plus, FileX } from 'lucide-react';
 import { processFileUpload } from '../utils/fileConverter';
 import { saveSongs } from '../utils/storage';
 import './SearchSongs.css';
@@ -31,6 +31,11 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
 
   const keys = ['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Eb', 'F', 'G'];
   const tempos = ['Fast', 'Medium', 'Slow'];
+
+  // 악보 파일이 있는지 확인하는 함수
+  const hasMusicSheet = (song) => {
+    return song.fileName && song.filePath && song.fileName.trim() !== '' && song.filePath.trim() !== '';
+  };
 
   // 컴포넌트 마운트 시 검색 입력 필드 포커스
   useEffect(() => {
@@ -411,6 +416,19 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
                 >
                   <div className="song-info">
                     <h4>{song.title}</h4>
+                    <div className="song-status">
+                      {hasMusicSheet(song) ? (
+                        <div className="status-with-file" title="악보 파일 있음">
+                          <FileText className="status-icon file-icon" />
+                          <span className="status-text">악보 있음</span>
+                        </div>
+                      ) : (
+                        <div className="status-no-file" title="악보 파일 없음">
+                          <FileX className="status-icon no-file-icon" />
+                          <span className="status-text">악보 없음</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="song-meta">
                     <span className="song-key">{song.key}</span>
