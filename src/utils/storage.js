@@ -149,6 +149,65 @@ export const loadSongs = async () => {
     // OneDrive에서 로드 실패하면 localStorage에서 로드
     const localSongs = loadFromStorage('songs', []);
     console.log('localStorage에서 악보 데이터 로드됨:', localSongs.length, '개');
+    
+    // 데이터가 없으면 샘플 데이터 생성
+    if (localSongs.length === 0) {
+      console.log('샘플 데이터 생성');
+      const sampleSongs = [
+        {
+          id: 1,
+          title: '주님의 마음',
+          firstLyrics: '주님의 마음은 평화의 마음',
+          key: 'C',
+          tempo: 'Medium',
+          fileName: 'sample1.pdf',
+          filePath: '/sample/path1.pdf'
+        },
+        {
+          id: 2,
+          title: '예수님은 우리의 친구',
+          firstLyrics: '예수님은 우리의 친구',
+          key: 'D',
+          tempo: 'Fast',
+          fileName: 'sample2.pdf',
+          filePath: '/sample/path2.pdf'
+        },
+        {
+          id: 3,
+          title: '주님을 사랑하는 이들아',
+          firstLyrics: '주님을 사랑하는 이들아',
+          key: 'E',
+          tempo: 'Slow',
+          fileName: 'sample3.pdf',
+          filePath: '/sample/path3.pdf'
+        },
+        {
+          id: 4,
+          title: '하나님의 사랑',
+          firstLyrics: '하나님의 사랑은 넓고 깊어',
+          key: 'F',
+          tempo: 'Medium',
+          fileName: 'sample4.pdf',
+          filePath: '/sample/path4.pdf'
+        },
+        {
+          id: 5,
+          title: '예수님을 믿으니',
+          firstLyrics: '예수님을 믿으니 평안해져',
+          key: 'G',
+          tempo: 'Fast',
+          fileName: 'sample5.pdf',
+          filePath: '/sample/path5.pdf'
+        }
+      ];
+      
+      // 샘플 데이터를 localStorage에 저장
+      saveToStorage('songs', sampleSongs);
+      console.log('샘플 데이터 저장 완료:', sampleSongs.length, '개');
+      
+      return sampleSongs;
+    }
+    
     return localSongs;
   } catch (error) {
     console.error('악보 데이터 로드 실패:', error);
@@ -573,134 +632,3 @@ export const restoreWorshipListsFromBackup = async (backupFilePath) => {
   }
 };
 
-// 엑셀 파일에서 찬양 리스트 마이그레이션
-export const migrateFromExcel = async (songs) => {
-  try {
-    if (!window.electronAPI || !window.electronAPI.readFile) {
-      return { success: false, error: 'Electron API가 사용할 수 없습니다.' };
-    }
-
-    // 엑셀 파일 경로
-    const excelFilePath = './src/set.xlsx';
-    
-    // 엑셀 파일 읽기
-    const fileData = await window.electronAPI.readFile(excelFilePath);
-    if (!fileData) {
-      return { success: false, error: '엑셀 파일을 읽을 수 없습니다.' };
-    }
-
-    // xlsx 라이브러리 사용 (브라우저 환경에서)
-    const XLSX = window.XLSX || require('xlsx');
-    if (!XLSX) {
-      return { success: false, error: 'xlsx 라이브러리를 사용할 수 없습니다.' };
-    }
-
-    // 엑셀 파일 파싱
-    const workbook = XLSX.read(fileData, { type: 'array' });
-    const sheetNames = workbook.SheetNames;
-    
-    console.log('엑셀 시트 목록:', sheetNames);
-    
-    const migratedWorshipLists = {};
-    let totalSongs = 0;
-    let matchedSongs = 0;
-    let unmatchedSongs = 0;
-    const unmatchedList = [];
-
-    // 각 시트(날짜) 처리
-    for (const sheetName of sheetNames) {
-      // 날짜 형식 확인 (YYYY-MM-DD)
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      if (!dateRegex.test(sheetName)) {
-        console.log(`날짜 형식이 아닌 시트 건너뛰기: ${sheetName}`);
-        continue;
-      }
-
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-      
-      // 헤더 제거 (첫 번째 행)
-      const dataRows = jsonData.slice(1);
-      
-      const worshipListSongs = [];
-      
-      // 각 행 처리
-      for (const row of dataRows) {
-        if (!row || row.length < 3) continue; // 최소 3개 컬럼 필요
-        
-        const songTitle = row[0]?.toString().trim(); // 악보이름
-        const songCode = row[1]?.toString().trim(); // 코드
-        const songTempo = row[2]?.toString().trim(); // 빠르기
-        
-        if (!songTitle) continue; // 제목이 없으면 건너뛰기
-        
-        totalSongs++;
-        
-        // 기존 songs 데이터에서 매칭되는 곡 찾기
-        const matchedSong = songs.find(song => 
-          song.title === songTitle || 
-          song.title.includes(songTitle) || 
-          songTitle.includes(song.title)
-        );
-        
-        if (matchedSong) {
-          // 매칭된 곡 정보로 찬양 리스트에 추가
-          const worshipSong = {
-            id: matchedSong.id,
-            title: matchedSong.title,
-            code: songCode || matchedSong.code || '',
-            tempo: songTempo || matchedSong.tempo || '',
-            fileName: matchedSong.fileName || '',
-            filePath: matchedSong.filePath || '',
-            firstLyrics: matchedSong.firstLyrics || '',
-            createdAt: matchedSong.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-          
-          worshipListSongs.push(worshipSong);
-          matchedSongs++;
-        } else {
-          // 매칭되지 않은 곡 기록
-          unmatchedSongs++;
-          unmatchedList.push({
-            date: sheetName,
-            title: songTitle,
-            code: songCode,
-            tempo: songTempo
-          });
-        }
-      }
-      
-      if (worshipListSongs.length > 0) {
-        migratedWorshipLists[sheetName] = worshipListSongs;
-        console.log(`${sheetName}: ${worshipListSongs.length}개 곡 마이그레이션`);
-      }
-    }
-
-    console.log('마이그레이션 완료:');
-    console.log(`- 총 처리된 곡: ${totalSongs}개`);
-    console.log(`- 매칭된 곡: ${matchedSongs}개`);
-    console.log(`- 매칭되지 않은 곡: ${unmatchedSongs}개`);
-    console.log(`- 마이그레이션된 날짜: ${Object.keys(migratedWorshipLists).length}개`);
-
-    return {
-      success: true,
-      worshipLists: migratedWorshipLists,
-      stats: {
-        totalSongs,
-        matchedSongs,
-        unmatchedSongs,
-        migratedDates: Object.keys(migratedWorshipLists).length,
-        unmatchedList
-      },
-      message: `엑셀 마이그레이션 완료!\n\n📊 결과:\n• 총 처리된 곡: ${totalSongs}개\n• 매칭된 곡: ${matchedSongs}개\n• 매칭되지 않은 곡: ${unmatchedSongs}개\n• 마이그레이션된 날짜: ${Object.keys(migratedWorshipLists).length}개`
-    };
-
-  } catch (error) {
-    console.error('엑셀 마이그레이션 실패:', error);
-    return { 
-      success: false, 
-      error: `엑셀 마이그레이션 중 오류가 발생했습니다: ${error.message}` 
-    };
-  }
-};

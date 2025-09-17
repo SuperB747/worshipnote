@@ -1,0 +1,122 @@
+.snackbar {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 10000;
+  max-width: 400px;
+  min-width: 300px;
+  animation: slideInUp 0.3s ease-out;
+}
+
+.snackbar-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.snackbar.success {
+  background: linear-gradient(135deg, #4a7c59, #5a8c69);
+  color: white;
+}
+
+.snackbar.error {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+}
+
+.snackbar.loading {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+}
+
+.snackbar-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.snackbar-icon.success {
+  color: #2ecc71;
+}
+
+.snackbar-icon.error {
+  color: #e74c3c;
+}
+
+.snackbar-icon.loading {
+  animation: spin 1s linear infinite;
+  color: #3498db;
+}
+
+.snackbar-message {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.snackbar-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.snackbar-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .snackbar {
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+    min-width: auto;
+  }
+  
+  .snackbar-content {
+    padding: 10px 14px;
+  }
+  
+  .snackbar-message {
+    font-size: 13px;
+  }
+}

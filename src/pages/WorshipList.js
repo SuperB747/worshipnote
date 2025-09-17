@@ -17,14 +17,14 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, Plus, Music, Search, X, GripVertical, Download, RotateCcw, FileSpreadsheet, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3 } from 'lucide-react';
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { createDatabaseBackup, restoreDatabaseFromBackup, migrateFromExcel, saveWorshipLists } from '../utils/storage';
+import { saveWorshipLists } from '../utils/storage';
 import './WorshipList.css';
 
 // SortableItem 컴포넌트
-const SortableItem = ({ song, index, onRemove, onSelect }) => {
+const SortableItem = ({ song, index, onRemove, onSelect, onEdit }) => {
   const {
     attributes,
     listeners,
@@ -53,15 +53,23 @@ const SortableItem = ({ song, index, onRemove, onSelect }) => {
         className="song-content"
         onClick={(e) => {
           e.stopPropagation();
-          onSelect(song);
+          onSelect && onSelect(song);
         }}
       >
         <div className="song-number">{index + 1}</div>
         <div className="song-details">
-          <h5>{song.title}</h5>
-          <p>{song.key} • {song.tempo}</p>
+          <h5 className="song-title">{song.title}</h5>
         </div>
-        <Music className="song-icon" />
+        <button 
+          className="edit-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit && onEdit(song);
+          }}
+          title="찬양 정보 수정"
+        >
+          <Edit3 className="edit-icon" />
+        </button>
       </div>
       
       <button 
@@ -79,6 +87,9 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const [searchTerm, setSearchTerm] = useState('');
   const [showSongSearch, setShowSongSearch] = useState(false);
   const [previewSong, setPreviewSong] = useState(null);
+  const [selectedSongs, setSelectedSongs] = useState([]);
+  const [editingSong, setEditingSong] = useState(null);
+  const [editForm, setEditForm] = useState({ title: '', key: '', tempo: '', firstLyrics: '' });
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -127,6 +138,57 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     setSelectedSong(song);
   };
 
+  // 다중 선택 핸들러
+  const handleSongSelect = (song, event) => {
+    event.stopPropagation();
+    
+    if (event.ctrlKey || event.metaKey) {
+      // Ctrl/Cmd 키가 눌린 상태에서 클릭
+      setSelectedSongs(prev => {
+        const isSelected = prev.some(s => s.id === song.id);
+        if (isSelected) {
+          // 이미 선택된 곡이면 선택 해제
+          return prev.filter(s => s.id !== song.id);
+        } else {
+          // 선택되지 않은 곡이면 선택에 추가
+          return [...prev, song];
+        }
+      });
+    } else {
+      // Ctrl/Cmd 키가 안 눌린 상태에서 클릭
+      setSelectedSongs([song]);
+    }
+  };
+
+  // 선택된 곡들을 리스트에 추가
+  const handleAddSelectedSongs = () => {
+    if (selectedSongs.length === 0) return;
+
+    const newSongs = selectedSongs.filter(song => 
+      !currentWorshipList.some(existingSong => existingSong.id === song.id)
+    );
+
+    if (newSongs.length > 0) {
+      const newList = [...currentWorshipList, ...newSongs];
+      setWorshipLists(prev => ({
+        ...prev,
+        [currentDateKey]: newList
+      }));
+      
+      // 선택 초기화
+      setSelectedSongs([]);
+      setShowSongSearch(false);
+      setPreviewSong(null);
+    }
+  };
+
+  // 검색 모달 닫을 때 선택 초기화
+  const handleCloseSearchModal = () => {
+    setShowSongSearch(false);
+    setPreviewSong(null);
+    setSelectedSongs([]);
+  };
+
   const handleAddSong = () => {
     if (previewSong) {
       const newList = [...currentWorshipList, { ...previewSong, id: Date.now() }];
@@ -164,120 +226,52 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     }
   };
 
-  const handleDatabaseBackup = async () => {
-    try {
-      console.log('통합 데이터베이스 백업 시작...');
-      console.log('현재 songs 개수:', songs.length);
-      console.log('현재 worshipLists 개수:', Object.keys(worshipLists).length);
-      const result = await createDatabaseBackup(songs, worshipLists);
-      console.log('통합 데이터베이스 백업 결과:', result);
-      
-      if (result.success) {
-        alert(`데이터베이스 백업이 생성되었습니다!\n${result.message}`);
-      } else {
-        alert('데이터베이스 백업 생성에 실패했습니다:\n' + result.error);
-      }
-    } catch (error) {
-      console.error('데이터베이스 백업 생성 오류:', error);
-      alert('데이터베이스 백업 생성 중 오류가 발생했습니다:\n' + error.message);
-    }
+  const handleEditSong = (song) => {
+    setEditingSong(song);
+    setEditForm({
+      title: song.title,
+      key: song.key || '',
+      tempo: song.tempo || '',
+      firstLyrics: song.firstLyrics || ''
+    });
   };
 
-  const handleDatabaseRestore = () => {
-    // 파일 선택을 위한 input 요소 생성
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.style.display = 'none';
+  const handleSaveEdit = () => {
+    if (!editingSong || !editForm.title.trim()) return;
 
-    input.onchange = async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      try {
-        console.log('데이터베이스 복원 시작...');
-        const filePath = file.path || file.name; // Electron에서는 file.path 사용
-
-        const result = await restoreDatabaseFromBackup(filePath, setSongs, setWorshipLists);
-        console.log('데이터베이스 복원 결과:', result);
-
-        if (result.success) {
-          alert(`데이터베이스가 복원되었습니다!\n${result.message}`);
-        } else {
-          alert('데이터베이스 복원에 실패했습니다:\n' + result.error);
-        }
-      } catch (error) {
-        console.error('데이터베이스 복원 오류:', error);
-        alert('데이터베이스 복원 중 오류가 발생했습니다:\n' + error.message);
-      }
+    const updatedSong = {
+      ...editingSong,
+      title: editForm.title.trim(),
+      key: editForm.key.trim(),
+      tempo: editForm.tempo.trim(),
+      firstLyrics: editForm.firstLyrics.trim(),
+      updatedAt: new Date().toISOString()
     };
 
-    document.body.appendChild(input);
-    input.click();
-    document.body.removeChild(input);
-  };
+    // 찬양 리스트에서 해당 곡 업데이트
+    const newList = currentWorshipList.map(song => 
+      song.id === editingSong.id ? updatedSong : song
+    );
 
-  const handleExcelMigration = async () => {
-    if (!window.confirm('엑셀 파일에서 찬양 리스트를 마이그레이션하시겠습니까?\n\n이 작업은 기존 찬양 리스트를 덮어쓸 수 있습니다.')) {
-      return;
+    setWorshipLists(prev => ({
+      ...prev,
+      [currentDateKey]: newList
+    }));
+
+    // 전체 songs 배열에서도 업데이트 (선택된 곡이 현재 곡인 경우)
+    if (selectedSong && selectedSong.id === editingSong.id) {
+      setSelectedSong(updatedSong);
     }
 
-    try {
-      console.log('엑셀 마이그레이션 시작...');
-      const result = await migrateFromExcel(songs);
-      console.log('엑셀 마이그레이션 결과:', result);
-
-      if (result.success) {
-        // 마이그레이션된 찬양 리스트를 현재 상태에 병합
-        const mergedWorshipLists = { ...worshipLists, ...result.worshipLists };
-        console.log('병합된 찬양 리스트:', Object.keys(mergedWorshipLists).length, '개 날짜');
-        
-        // 먼저 React 상태 업데이트
-        setWorshipLists(mergedWorshipLists);
-        
-        // OneDrive에 저장 (약간의 지연 후)
-        setTimeout(async () => {
-          try {
-            console.log('OneDrive에 저장 시작...');
-            await saveWorshipLists(mergedWorshipLists);
-            console.log('마이그레이션된 찬양 리스트가 OneDrive에 저장되었습니다.');
-            
-            // 저장 확인을 위해 파일 내용 로그
-            const oneDrivePath = await window.electronAPI.getOneDrivePath();
-            const filePath = `${oneDrivePath}/worship_lists.json`;
-            const fileData = await window.electronAPI.readFile(filePath);
-            if (fileData) {
-              const savedData = JSON.parse(fileData);
-              console.log('저장된 찬양 리스트 개수:', Object.keys(savedData.worshipLists).length);
-            }
-          } catch (saveError) {
-            console.error('OneDrive 저장 실패:', saveError);
-            alert('마이그레이션은 완료되었지만 저장에 실패했습니다. 다시 시도해주세요.');
-          }
-        }, 1000);
-        
-        alert(result.message);
-        
-        // 매칭되지 않은 곡이 있으면 상세 정보 표시
-        if (result.stats.unmatchedSongs > 0) {
-          const unmatchedDetails = result.stats.unmatchedList
-            .slice(0, 10) // 처음 10개만 표시
-            .map(item => `• ${item.date}: ${item.title}`)
-            .join('\n');
-          
-          const moreCount = result.stats.unmatchedSongs - 10;
-          const moreText = moreCount > 0 ? `\n... 및 ${moreCount}개 더` : '';
-          
-          alert(`매칭되지 않은 곡이 있습니다:\n\n${unmatchedDetails}${moreText}\n\n이 곡들은 악보 데이터베이스에 추가한 후 다시 마이그레이션해주세요.`);
-        }
-      } else {
-        alert('엑셀 마이그레이션에 실패했습니다:\n' + result.error);
-      }
-    } catch (error) {
-      console.error('엑셀 마이그레이션 오류:', error);
-      alert('엑셀 마이그레이션 중 오류가 발생했습니다:\n' + error.message);
-    }
+    setEditingSong(null);
+    setEditForm({ title: '', key: '', tempo: '' });
   };
+
+  const handleCancelEdit = () => {
+    setEditingSong(null);
+    setEditForm({ title: '', key: '', tempo: '', firstLyrics: '' });
+  };
+
 
   const getDateClass = (date) => {
     const dateKey = format(date, 'yyyy-MM-dd');
@@ -338,36 +332,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
             </div>
           </div>
           
-          {/* 백업/복원 버튼 섹션 */}
-          <div className="backup-section">
-            <h4>데이터 관리</h4>
-            <div className="backup-actions">
-              <button 
-                className="backup-btn database-backup"
-                onClick={handleDatabaseBackup}
-                title="통합 데이터베이스 백업 (찬양 리스트 + 악보 정보)"
-              >
-                <Download className="btn-icon" />
-                통합 백업
-              </button>
-              <button 
-                className="restore-btn database-restore"
-                onClick={handleDatabaseRestore}
-                title="통합 데이터베이스 복원 (찬양 리스트 + 악보 정보)"
-              >
-                <RotateCcw className="btn-icon" />
-                통합 복원
-              </button>
-              <button 
-                className="migration-btn excel-migration"
-                onClick={handleExcelMigration}
-                title="엑셀 파일에서 찬양 리스트 마이그레이션"
-              >
-                <FileSpreadsheet className="btn-icon" />
-                엑셀 마이그레이션
-              </button>
-            </div>
-          </div>
         </div>
 
         <div className="list-section">
@@ -388,15 +352,19 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
             <div className="song-search-modal">
               <div className="modal-header">
                 <h4>곡 검색</h4>
-                <button 
-                  className="close-btn"
-                  onClick={() => {
-                    setShowSongSearch(false);
-                    setPreviewSong(null);
-                  }}
-                >
-                  <X />
-                </button>
+                <div className="modal-actions">
+                  {selectedSongs.length > 0 && (
+                    <span className="selected-count">
+                      {selectedSongs.length}개 선택됨
+                    </span>
+                  )}
+                  <button 
+                    className="close-btn"
+                    onClick={handleCloseSearchModal}
+                  >
+                    <X />
+                  </button>
+                </div>
               </div>
               
               <div className="search-input-group">
@@ -411,23 +379,41 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
               </div>
               
               <div className="search-results">
-                {filteredSongs.map(song => (
-                  <div 
-                    key={song.id}
-                    className={`search-result-item ${previewSong && previewSong.id === song.id ? 'selected' : ''}`}
-                    onClick={() => handleSongClick(song)}
-                  >
-                    <Music className="song-icon" />
-                    <div className="song-info">
-                      <h5>{song.title}</h5>
-                      <p>{song.key} • {song.tempo}</p>
+                {filteredSongs.map(song => {
+                  const isSelected = selectedSongs.some(s => s.id === song.id);
+                  const isPreview = previewSong && previewSong.id === song.id;
+                  
+                  return (
+                    <div 
+                      key={song.id}
+                      className={`search-result-item ${isPreview ? 'preview' : ''} ${isSelected ? 'multi-selected' : ''}`}
+                      onClick={() => handleSongClick(song)}
+                    >
+                      <div 
+                        className="song-checkbox"
+                        onClick={(e) => handleSongSelect(song, e)}
+                      >
+                        {isSelected && <div className="checkmark">✓</div>}
+                      </div>
+                      <Music className="song-icon" />
+                      <div className="song-info">
+                        <h5 className="song-title">{song.title}</h5>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
-              {previewSong && (
-                <div className="preview-actions">
+              <div className="preview-actions">
+                {selectedSongs.length > 0 ? (
+                  <button 
+                    className="add-selected-btn"
+                    onClick={handleAddSelectedSongs}
+                  >
+                    <Plus className="btn-icon" />
+                    선택한 {selectedSongs.length}개 곡 추가
+                  </button>
+                ) : previewSong ? (
                   <button 
                     className="add-to-list-btn"
                     onClick={handleAddSong}
@@ -435,8 +421,12 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                     <Plus className="btn-icon" />
                     리스트에 추가
                   </button>
-                </div>
-              )}
+                ) : (
+                  <div className="selection-hint">
+                    Ctrl/Cmd + 클릭으로 여러 곡을 선택하세요
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -470,6 +460,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                         index={index}
                         onRemove={handleRemoveSong}
                         onSelect={setSelectedSong}
+                        onEdit={handleEditSong}
                       />
                     ))}
                   </div>
@@ -479,6 +470,91 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
           </div>
         </div>
       </div>
+
+      {/* 수정 모달 */}
+      {editingSong && (
+        <div 
+          className="edit-modal-overlay"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div 
+            className="edit-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="edit-modal-header">
+              <h3>찬양 정보 수정</h3>
+              <button 
+                className="close-btn"
+                onClick={handleCancelEdit}
+              >
+                <X />
+              </button>
+            </div>
+            
+            <div className="edit-form">
+              <div className="form-group">
+                <label>제목</label>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="찬양 제목을 입력하세요"
+                  className="form-input"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>키</label>
+                <input
+                  type="text"
+                  value={editForm.key}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, key: e.target.value }))}
+                  placeholder="예: C, D, E..."
+                  className="form-input"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>빠르기</label>
+                <input
+                  type="text"
+                  value={editForm.tempo}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, tempo: e.target.value }))}
+                  placeholder="예: 120, 140..."
+                  className="form-input"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>첫 가사</label>
+                <textarea
+                  value={editForm.firstLyrics}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, firstLyrics: e.target.value }))}
+                  placeholder="찬양의 첫 가사를 입력하세요"
+                  className="form-textarea"
+                  rows="3"
+                />
+              </div>
+            </div>
+            
+            <div className="edit-modal-actions">
+              <button 
+                className="btn-cancel"
+                onClick={handleCancelEdit}
+              >
+                취소
+              </button>
+              <button 
+                className="btn-save"
+                onClick={handleSaveEdit}
+                disabled={!editForm.title.trim()}
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

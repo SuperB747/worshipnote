@@ -26,6 +26,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
     message: ''
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [originalSelectedSong, setOriginalSelectedSong] = useState(null);
 
   const keys = ['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Eb', 'F', 'G'];
   const tempos = ['Fast', 'Medium', 'Slow'];
@@ -38,8 +39,9 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
   }, []);
 
   const filteredSongs = useMemo(() => {
-    return songs.filter(song => {
+    const filtered = songs.filter(song => {
       const matchesSearch = 
+        !searchTerm.trim() || // 검색어가 비어있으면 모든 곡 표시
         song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         song.firstLyrics.toLowerCase().includes(searchTerm.toLowerCase());
       
@@ -48,6 +50,8 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
       
       return matchesSearch && matchesKey && matchesTempo;
     });
+    
+    return filtered;
   }, [songs, searchTerm, filters]);
 
   const handleFilterChange = (filterType, value) => {
@@ -63,6 +67,8 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
   };
 
   const handleEdit = (song) => {
+    // 수정 모달을 열 때 현재 선택된 곡을 저장
+    setOriginalSelectedSong(selectedSong);
     setEditingSong(song);
     setEditFormData({
       title: song.title,
@@ -188,13 +194,21 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
       song.id === editingSong.id ? updatedSong : song
     ));
     
-    setSelectedSong(updatedSong);
+    // 수정된 곡이 현재 선택된 곡이면 업데이트, 아니면 원래 선택된 곡 유지
+    if (selectedSong && selectedSong.id === editingSong.id) {
+      setSelectedSong(updatedSong);
+    } else if (originalSelectedSong) {
+      setSelectedSong(originalSelectedSong);
+    }
+    
     setEditingSong(null);
+    setOriginalSelectedSong(null);
     alert('찬양이 성공적으로 수정되었습니다!');
   };
 
   const handleEditCancel = () => {
     setEditingSong(null);
+    setOriginalSelectedSong(null);
     setEditFormData({
       title: '',
       firstLyrics: '',
@@ -258,8 +272,8 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
     <div 
       className="search-songs-page"
       onClick={(e) => {
-        // 리스트 아이템이나 버튼이 아닌 곳을 클릭하면 선택 해제
-        if (!e.target.closest('.song-list-item') && !e.target.closest('button')) {
+        // 수정 모달이 열려있지 않고, 리스트 아이템이나 버튼이 아닌 곳을 클릭하면 선택 해제
+        if (!editingSong && !e.target.closest('.song-list-item') && !e.target.closest('button')) {
           setSelectedSong(null);
         }
       }}
@@ -397,8 +411,14 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
 
       {/* 수정 모달 */}
       {editingSong && (
-        <div className="edit-modal-overlay">
-          <div className="edit-modal">
+        <div 
+          className="edit-modal-overlay"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div 
+            className="edit-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="edit-modal-header">
               <h3>찬양 수정</h3>
               <button className="close-btn" onClick={handleEditCancel}>
