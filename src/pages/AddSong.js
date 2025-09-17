@@ -94,7 +94,9 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
           isUploading: false,
           success: true,
           error: null,
-          message: result.message
+          message: result.skipped ? 
+            `기존 파일과 연동되었습니다: ${result.fileName}` : 
+            result.message
         });
       } else {
         setUploadStatus({

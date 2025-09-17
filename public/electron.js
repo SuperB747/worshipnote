@@ -207,15 +207,28 @@ ipcMain.handle('save-file', async (event, fileData) => {
     // 폴더가 없으면 생성
     await ensureDirectoryExists(musicSheetsPath);
     
-    // 파일 저장
-    const buffer = Buffer.from(arrayBuffer);
-    await fs.writeFile(fullPath, buffer);
-    
-    return {
-      success: true,
-      filePath: fullPath,
-      message: `파일이 저장되었습니다: ${fullPath}`
-    };
+    // 파일이 이미 존재하는지 확인
+    try {
+      await fs.access(fullPath);
+      // 파일이 이미 존재하면 건너뛰고 기존 파일과 연동
+      return {
+        success: true,
+        filePath: fullPath,
+        message: `기존 파일과 연동되었습니다: ${fileName}`,
+        skipped: true
+      };
+    } catch (accessError) {
+      // 파일이 존재하지 않으면 새로 저장
+      const buffer = Buffer.from(arrayBuffer);
+      await fs.writeFile(fullPath, buffer);
+      
+      return {
+        success: true,
+        filePath: fullPath,
+        message: `파일이 저장되었습니다: ${fileName}`,
+        skipped: false
+      };
+    }
   } catch (error) {
     console.error('파일 저장 실패:', error);
     return {

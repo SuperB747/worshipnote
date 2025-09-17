@@ -240,7 +240,8 @@ export const processFileUpload = async (file) => {
       success: true,
       fileName: conversionResult.fileName,
       filePath: saveResult.filePath,
-      message: saveResult.message
+      message: saveResult.message,
+      skipped: saveResult.skipped || false
     };
   } catch (error) {
     console.error('파일 처리 중 오류:', error);
