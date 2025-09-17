@@ -63,7 +63,7 @@
 }
 
 .calendar-header h3 {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-dark);
   margin: 0;
@@ -170,7 +170,7 @@
 }
 
 .day-number {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -225,7 +225,7 @@
 }
 
 .list-header h3 {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-dark);
 }
