@@ -301,14 +301,14 @@ ipcMain.handle('delete-file', async (event, filePath) => {
 // PDF 저장 핸들러
 ipcMain.handle('save-pdf', async (event, pdfData) => {
   try {
-    const { pdfBlob, filePath } = pdfData;
+    const { pdfData: pdfUint8Array, filePath } = pdfData;
     
     // 디렉토리 생성
     const dirPath = path.dirname(filePath);
     await ensureDirectoryExists(dirPath);
     
     // PDF 파일 저장
-    const buffer = Buffer.from(await pdfBlob.arrayBuffer());
+    const buffer = Buffer.from(pdfUint8Array);
     await fs.writeFile(filePath, buffer);
     
     return {

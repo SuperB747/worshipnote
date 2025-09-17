@@ -48,14 +48,20 @@ const imageFileToBlob = async (filePath) => {
       throw new Error('Electron API를 사용할 수 없습니다.');
     }
 
+    console.log('이미지 파일 읽기 시도:', filePath);
+
     // Electron의 readFile API를 사용하여 파일 읽기
     const fileData = await window.electronAPI.readFile(filePath);
     if (!fileData) {
+      console.error('파일 데이터가 null입니다:', filePath);
       throw new Error('파일을 읽을 수 없습니다.');
     }
 
+    console.log('파일 데이터 타입:', typeof fileData, '크기:', fileData.length);
+
     // Buffer를 Blob으로 변환
     const blob = new Blob([fileData], { type: 'image/jpeg' });
+    console.log('Blob 생성 성공, 크기:', blob.size);
     return blob;
   } catch (error) {
     console.error('이미지 로드 실패:', error);
@@ -161,8 +167,8 @@ export const generateWorshipListPDF = async (songs, date) => {
     const pdfPath = await getPdfSavePath(date);
     const pdfArrayBuffer = pdf.output('arraybuffer');
     
-    // ArrayBuffer를 Blob으로 변환
-    const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
+    // ArrayBuffer를 Uint8Array로 변환
+    const pdfUint8Array = new Uint8Array(pdfArrayBuffer);
     
     // Electron을 통해 파일 저장
     if (!window.electronAPI || !window.electronAPI.savePdf) {
@@ -170,7 +176,7 @@ export const generateWorshipListPDF = async (songs, date) => {
     }
 
     const result = await window.electronAPI.savePdf({
-      pdfBlob: pdfBlob,
+      pdfData: pdfUint8Array,
       filePath: pdfPath
     });
     
