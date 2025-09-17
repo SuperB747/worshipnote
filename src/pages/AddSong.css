@@ -192,21 +192,17 @@
   user-select: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-}
-
-.form-select:focus {
   outline: none;
-  border-color: var(--primary-green);
-  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
-  z-index: 20;
 }
 
 .form-select:hover {
   border-color: var(--primary-green);
+  background-color: #f9f9f9;
 }
 
 .form-select:active {
-  cursor: pointer;
+  border-color: var(--primary-green);
+  background-color: #f0f0f0;
 }
 
 .form-select:focus {
@@ -214,6 +210,21 @@
   border-color: var(--primary-green);
   box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
   z-index: 20;
+}
+
+.form-select option {
+  padding: 8px 12px;
+  color: var(--text-dark);
+  background: white;
+}
+
+.form-select option:hover {
+  background: #f0f8f0;
+}
+
+.form-select option:checked {
+  background: var(--primary-green);
+  color: white;
 }
 
 .form-select:hover {

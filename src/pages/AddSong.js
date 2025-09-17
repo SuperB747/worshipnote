@@ -101,15 +101,17 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
 
   // 드롭다운 클릭 핸들러 - 드롭다운 전용
   const handleSelectClick = useCallback((e) => {
-    e.preventDefault();
     e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
     
     const target = e.target;
     if (target) {
       // 드롭다운 열기
       target.focus();
-      target.click();
+      
+      // 드롭다운을 강제로 열기
+      setTimeout(() => {
+        target.click();
+      }, 0);
     }
   }, []);
 
@@ -258,8 +260,6 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                   name="key"
                   value={formData.key}
                   onChange={handleInputChange}
-                  onClick={handleSelectClick}
-                  onMouseDown={handleInputMouseDown}
                   className="form-select compact-select"
                   tabIndex={3}
                 >
@@ -276,8 +276,6 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                   name="tempo"
                   value={formData.tempo}
                   onChange={handleInputChange}
-                  onClick={handleSelectClick}
-                  onMouseDown={handleInputMouseDown}
                   className="form-select compact-select"
                   tabIndex={4}
                 >
