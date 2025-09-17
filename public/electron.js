@@ -3,6 +3,11 @@ const path = require('path');
 const fs = require('fs').promises;
 const os = require('os');
 
+// 한글 파일명 처리를 위한 인코딩 설정
+process.env.NODE_OPTIONS = '--max-old-space-size=4096';
+process.env.LANG = 'ko_KR.UTF-8';
+process.env.LC_ALL = 'ko_KR.UTF-8';
+
 // 개발 모드 감지 (electron-is-dev 대신 직접 구현)
 const isDev = process.env.NODE_ENV === 'development' || 
               process.env.ELECTRON_IS_DEV === '1' || 
@@ -43,6 +48,15 @@ function createWindow() {
   });
 }
 
+// 한글 파일명을 안전하게 처리하는 함수
+const safeLog = (message, data) => {
+  try {
+    console.log(message, data);
+  } catch (error) {
+    console.log(message, '[한글 파일명으로 인한 로그 출력 실패]');
+  }
+};
+
 // OneDrive 경로 찾기 함수
 const findOneDrivePath = () => {
   const homeDir = os.homedir();
@@ -77,7 +91,7 @@ const findOneDrivePath = () => {
   for (const oneDrivePath of possiblePaths) {
     try {
       if (require('fs').existsSync(oneDrivePath)) {
-        console.log('OneDrive 경로 발견:', oneDrivePath);
+        safeLog('OneDrive 경로 발견:', oneDrivePath);
         return oneDrivePath;
       }
     } catch (error) {
@@ -89,15 +103,15 @@ const findOneDrivePath = () => {
   const firstOneDrivePath = possiblePaths[0];
   try {
     require('fs').mkdirSync(firstOneDrivePath, { recursive: true });
-    console.log('OneDrive 폴더 생성됨:', firstOneDrivePath);
+    safeLog('OneDrive 폴더 생성됨:', firstOneDrivePath);
     return firstOneDrivePath;
   } catch (error) {
-    console.log('OneDrive 폴더 생성 실패, 폴백 경로 사용:', error.message);
+    safeLog('OneDrive 폴더 생성 실패, 폴백 경로 사용:', error.message);
   }
   
   // 폴백 경로 사용
   const fallbackPath = path.join(homeDir, 'Documents', 'WorshipNote_Data');
-  console.log('폴백 경로 사용:', fallbackPath);
+  safeLog('폴백 경로 사용:', fallbackPath);
   return fallbackPath;
 };
 
@@ -135,7 +149,7 @@ const findMusicSheetsPath = () => {
   for (const musicSheetsPath of possiblePaths) {
     try {
       if (require('fs').existsSync(musicSheetsPath)) {
-        console.log('Music_Sheets 경로 발견:', musicSheetsPath);
+        safeLog('Music_Sheets 경로 발견:', musicSheetsPath);
         return musicSheetsPath;
       }
     } catch (error) {
@@ -147,15 +161,15 @@ const findMusicSheetsPath = () => {
   const firstMusicSheetsPath = possiblePaths[0];
   try {
     require('fs').mkdirSync(firstMusicSheetsPath, { recursive: true });
-    console.log('Music_Sheets 폴더 생성됨:', firstMusicSheetsPath);
+    safeLog('Music_Sheets 폴더 생성됨:', firstMusicSheetsPath);
     return firstMusicSheetsPath;
   } catch (error) {
-    console.log('Music_Sheets 폴더 생성 실패, 폴백 경로 사용:', error.message);
+    safeLog('Music_Sheets 폴더 생성 실패, 폴백 경로 사용:', error.message);
   }
   
   // 폴백 경로 사용
   const fallbackPath = path.join(homeDir, 'Documents', 'WorshipNote_Data', 'Music_Sheets');
-  console.log('폴백 경로 사용:', fallbackPath);
+  safeLog('폴백 경로 사용:', fallbackPath);
   return fallbackPath;
 };
 
@@ -229,29 +243,32 @@ ipcMain.handle('save-file', async (event, fileData) => {
 
 ipcMain.handle('read-file', async (event, filePath) => {
   try {
+    // 한글 파일명 처리를 위한 인코딩 정규화
+    const normalizedPath = path.normalize(filePath);
+    
     // 파일 존재 여부 확인
     try {
-      await fs.access(filePath);
+      await fs.access(normalizedPath);
     } catch (accessError) {
       // 파일이 존재하지 않으면 null 반환 (에러를 던지지 않음)
-      console.log('파일이 존재하지 않음:', filePath);
+      safeLog('파일이 존재하지 않음:', normalizedPath);
       return null;
     }
     
-    const buffer = await fs.readFile(filePath);
+    const buffer = await fs.readFile(normalizedPath);
     
     // JSON 파일인 경우 문자열로 변환
-    if (filePath.endsWith('.json')) {
+    if (normalizedPath.endsWith('.json')) {
       return buffer.toString('utf8');
     }
     
     // 이미지 파일인 경우 Buffer 그대로 반환
     return buffer;
   } catch (error) {
-    console.error('파일 읽기 실패:', error);
+    safeLog('파일 읽기 실패:', error.message);
     // ENOENT 오류(파일 없음)는 null 반환, 다른 오류는 에러 던지기
     if (error.code === 'ENOENT') {
-      console.log('파일이 존재하지 않음:', filePath);
+      safeLog('파일이 존재하지 않음:', filePath);
       return null;
     }
     throw new Error(`파일을 읽을 수 없습니다: ${error.message}`);
