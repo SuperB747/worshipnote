@@ -828,38 +828,6 @@
   color: var(--text-dark);
 }
 
-.form-input {
-  padding: 12px 15px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: border-color 0.2s ease;
-  background: white;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--primary-green);
-  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
-}
-
-.form-textarea {
-  padding: 12px 15px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: border-color 0.2s ease;
-  background: white;
-  resize: vertical;
-  min-height: 80px;
-  font-family: inherit;
-}
-
-.form-textarea:focus {
-  outline: none;
-  border-color: var(--primary-green);
-  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
-}
 
 .edit-modal-actions {
   display: flex;
