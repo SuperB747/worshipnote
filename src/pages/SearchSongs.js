@@ -34,7 +34,9 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
 
   // 악보 파일이 있는지 확인하는 함수
   const hasMusicSheet = (song) => {
-    return song.fileName && song.filePath && song.fileName.trim() !== '' && song.filePath.trim() !== '';
+    // fileName이 있으면 악보가 있다고 판단 (filePath는 OneDrive 동기화로 인해 비어있을 수 있음)
+    const hasFile = song.fileName && song.fileName.trim() !== '';
+    return hasFile;
   };
 
   // 컴포넌트 마운트 시 검색 입력 필드 포커스
