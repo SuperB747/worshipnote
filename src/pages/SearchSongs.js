@@ -221,18 +221,6 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     }
   };
 
-  // 드롭다운 클릭 핸들러 - 드롭다운 전용
-  const handleEditSelectClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
-    
-    const target = e.target;
-    if (target) {
-      target.focus();
-      target.click();
-    }
-  };
 
   const handleEditFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -622,8 +610,6 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                       name="key"
                       value={editFormData.key}
                       onChange={handleEditInputChange}
-                      onClick={handleEditSelectClick}
-                      onMouseDown={handleEditInputMouseDown}
                       className="form-select compact-select"
                       tabIndex={2}
                     >
@@ -639,8 +625,6 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                       name="tempo"
                       value={editFormData.tempo}
                       onChange={handleEditInputChange}
-                      onClick={handleEditSelectClick}
-                      onMouseDown={handleEditInputMouseDown}
                       className="form-select compact-select"
                       tabIndex={3}
                     >
