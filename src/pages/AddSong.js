@@ -44,12 +44,12 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     if (!file) return;
 
     // 파일 형식 검증
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
     if (!allowedTypes.includes(file.type)) {
       setUploadStatus({
         isUploading: false,
         success: false,
-        error: 'JPG, PNG 파일만 업로드할 수 있습니다.',
+        error: 'JPG, PNG, PDF 파일만 업로드할 수 있습니다.',
         message: ''
       });
       return;
@@ -145,113 +145,114 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
       <div className="form-container">
         <form onSubmit={handleSubmit} className="song-form">
           <div className="form-row compact-row">
-            <div className="form-group compact-group">
-              <label className="form-label compact-label">
-                <Music className="label-icon" />
-                찬양 이름 *
-              </label>
+            <div className="form-group compact-group full-width floating-label-group">
               <input
                 ref={titleInputRef}
                 type="text"
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
-                className="form-input compact-input"
-                placeholder="찬양 이름을 입력하세요"
+                className="form-input compact-input floating-input"
+                placeholder=" "
                 required
               />
+              <label className="floating-label">찬양 이름 *</label>
             </div>
 
-            <div className="form-group compact-group">
-              <label className="form-label compact-label">코드</label>
-              <select
-                name="key"
-                value={formData.key}
-                onChange={handleInputChange}
-                className="form-select compact-select"
-              >
-                {keys.map(key => (
-                  <option key={key} value={key}>{key}</option>
-                ))}
-              </select>
-            </div>
+            <div className="form-row">
+              <div className="form-group compact-group floating-label-group">
+                <select
+                  name="key"
+                  value={formData.key}
+                  onChange={handleInputChange}
+                  className="form-select compact-select floating-select"
+                >
+                  <option value=""> </option>
+                  {keys.map(key => (
+                    <option key={key} value={key}>{key}</option>
+                  ))}
+                </select>
+                <label className="floating-label">코드</label>
+              </div>
 
-            <div className="form-group compact-group">
-              <label className="form-label compact-label">빠르기</label>
-              <select
-                name="tempo"
-                value={formData.tempo}
-                onChange={handleInputChange}
-                className="form-select compact-select"
-              >
-                {tempos.map(tempo => (
-                  <option key={tempo} value={tempo}>{tempo}</option>
-                ))}
-              </select>
+              <div className="form-group compact-group floating-label-group">
+                <select
+                  name="tempo"
+                  value={formData.tempo}
+                  onChange={handleInputChange}
+                  className="form-select compact-select floating-select"
+                >
+                  <option value=""> </option>
+                  {tempos.map(tempo => (
+                    <option key={tempo} value={tempo}>{tempo}</option>
+                  ))}
+                </select>
+                <label className="floating-label">빠르기</label>
+              </div>
             </div>
           </div>
 
           <div className="form-row compact-row">
-            <div className="form-group compact-group full-width">
-              <label className="form-label compact-label">첫 가사</label>
+            <div className="form-group compact-group full-width floating-label-group">
               <input
                 type="text"
                 name="firstLyrics"
                 value={formData.firstLyrics}
                 onChange={handleInputChange}
-                className="form-input compact-input"
-                placeholder="첫 번째 가사를 입력하세요"
+                className="form-input compact-input floating-input"
+                placeholder=" "
               />
+              <label className="floating-label">첫 가사</label>
             </div>
           </div>
 
           <div className="form-row">
-            <div className="form-group file-upload-group">
-              <label className="form-label">
+            <div className="form-group file-upload-group compact">
+              <label className="form-label compact-label">
                 <Upload className="label-icon" />
-                악보 파일 (JPG, PNG → JPG로 변환)
+                악보 파일
               </label>
-              <div className="file-upload-area">
+              <div className="file-upload-area compact">
                 <input
                   type="file"
                   id="file-upload"
                   onChange={handleFileUpload}
-                  accept=".jpg,.jpeg,.png"
+                  accept=".jpg,.jpeg,.png,.pdf"
                   className="file-input"
                   disabled={uploadStatus.isUploading}
                 />
-                <label htmlFor="file-upload" className={`file-upload-label ${uploadStatus.isUploading ? 'uploading' : ''}`}>
+                <label htmlFor="file-upload" className={`file-upload-label compact ${uploadStatus.isUploading ? 'uploading' : ''} ${uploadStatus.success ? 'success' : ''}`}>
                   {uploadStatus.isUploading ? (
                     <>
                       <div className="upload-spinner"></div>
                       <span>처리 중...</span>
                     </>
+                  ) : uploadStatus.success ? (
+                    <>
+                      <CheckCircle className="success-icon" />
+                      <span>{formData.fileName}</span>
+                    </>
                   ) : (
                     <>
                       <Upload className="upload-icon" />
-                      <span>JPG, PNG 파일을 선택하세요 (JPG로 변환됩니다)</span>
+                      <span>JPG, PNG, PDF 파일을 선택하세요</span>
                     </>
                   )}
                 </label>
-                
-                {uploadStatus.success && (
-                  <div className="upload-success">
-                    <CheckCircle className="success-icon" />
-                    <div className="success-content">
-                      <span>파일이 성공적으로 처리되었습니다!</span>
-                      <small>{formData.fileName}</small>
-                      {formData.filePath && <small>저장 위치: {formData.filePath}</small>}
-                    </div>
-                  </div>
-                )}
-                
-                {uploadStatus.error && (
-                  <div className="upload-error">
-                    <AlertCircle className="error-icon" />
-                    <span>{uploadStatus.error}</span>
-                  </div>
-                )}
               </div>
+              
+              {uploadStatus.success && (
+                <div className="upload-success-message">
+                  <span>파일이 성공적으로 처리되었습니다</span>
+                </div>
+              )}
+              
+              {uploadStatus.error && (
+                <div className="upload-error-message">
+                  <AlertCircle className="error-icon" />
+                  <span>{uploadStatus.error}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -263,13 +264,22 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
             <button 
               type="button" 
               className="btn-secondary"
-              onClick={() => setFormData({
-                title: '',
-                firstLyrics: '',
-                key: 'C',
-                tempo: 'Medium',
-                fileName: ''
-              })}
+              onClick={() => {
+                setFormData({
+                  title: '',
+                  firstLyrics: '',
+                  key: 'C',
+                  tempo: 'Medium',
+                  fileName: '',
+                  filePath: ''
+                });
+                setUploadStatus({
+                  isUploading: false,
+                  success: false,
+                  error: null,
+                  message: ''
+                });
+              }}
             >
               초기화
             </button>
@@ -277,26 +287,6 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
         </form>
       </div>
 
-      {songs.length > 0 && (
-        <div className="recent-songs">
-          <h3>최근 추가된 악보</h3>
-          <div className="songs-list">
-            {songs.slice(-3).reverse().map(song => (
-              <div 
-                key={song.id} 
-                className="song-item"
-                onClick={() => setSelectedSong(song)}
-              >
-                <div className="song-info">
-                  <h4>{song.title}</h4>
-                  <p>{song.key} • {song.tempo}</p>
-                </div>
-                <Music className="song-icon" />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Filter, Music, Hash, Clock, FileText, Edit, Trash2, Plus } from 'lucide-react';
 import { processFileUpload } from '../utils/fileConverter';
+import { saveSongs } from '../utils/storage';
 import './SearchSongs.css';
 
 const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
@@ -51,7 +52,26 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
       return matchesSearch && matchesKey && matchesTempo;
     });
     
-    return filtered;
+    // 정렬: 한글과 영어를 모두 고려한 알파벳/가나다 순서
+    const sorted = filtered.sort((a, b) => {
+      const titleA = a.title.toLowerCase();
+      const titleB = b.title.toLowerCase();
+      
+      // 한글과 영어를 구분하여 정렬
+      const isKoreanA = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(titleA);
+      const isKoreanB = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(titleB);
+      
+      if (isKoreanA && !isKoreanB) {
+        return -1; // 한글이 영어보다 앞에
+      } else if (!isKoreanA && isKoreanB) {
+        return 1; // 영어가 한글보다 뒤에
+      } else {
+        // 같은 언어군 내에서는 일반적인 정렬
+        return titleA.localeCompare(titleB, 'ko', { numeric: true });
+      }
+    });
+    
+    return sorted;
   }, [songs, searchTerm, filters]);
 
   const handleFilterChange = (filterType, value) => {
@@ -177,7 +197,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
     }
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editFormData.title.trim()) {
       alert('찬양 이름을 입력해주세요.');
@@ -190,9 +210,26 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong }) => {
       updatedAt: new Date().toISOString()
     };
 
-    setSongs(prev => prev.map(song => 
+    // 상태 업데이트
+    const updatedSongs = songs.map(song => 
       song.id === editingSong.id ? updatedSong : song
-    ));
+    );
+    
+    setSongs(updatedSongs);
+    
+    // OneDrive와 localStorage에 저장
+    try {
+      const saveResult = await saveSongs(updatedSongs);
+      if (!saveResult) {
+        console.error('찬양 저장 실패');
+        alert('찬양 저장에 실패했습니다. 다시 시도해주세요.');
+        return;
+      }
+    } catch (error) {
+      console.error('찬양 저장 중 오류:', error);
+      alert('찬양 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+      return;
+    }
     
     // 수정된 곡이 현재 선택된 곡이면 업데이트, 아니면 원래 선택된 곡 유지
     if (selectedSong && selectedSong.id === editingSong.id) {

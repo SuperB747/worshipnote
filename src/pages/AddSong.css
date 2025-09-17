@@ -5,10 +5,10 @@
 
 .page-header {
   text-align: center;
-  margin-bottom: 20px;
-  padding: 15px;
+  margin-bottom: 15px;
+  padding: 12px;
   background: linear-gradient(135deg, rgba(74, 124, 89, 0.1), rgba(107, 142, 107, 0.1));
-  border-radius: 15px;
+  border-radius: 12px;
   border: 1px solid rgba(74, 124, 89, 0.2);
 }
 
@@ -16,44 +16,44 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  font-size: 24px;
-  font-weight: 700;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
   color: var(--text-dark);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .header-icon {
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   color: var(--primary-green);
 }
 
 .page-header p {
-  font-size: 14px;
+  font-size: 12px;
   color: #666;
   font-weight: 500;
 }
 
 .form-container {
   background: white;
-  border-radius: 15px;
-  padding: 25px;
-  box-shadow: 0 8px 25px var(--shadow-soft);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 6px 20px var(--shadow-soft);
   border: 1px solid rgba(74, 124, 89, 0.1);
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 .song-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20px;
+  gap: 12px;
 }
 
 .form-row:has(.form-group:nth-child(2)) {
@@ -62,10 +62,20 @@
 
 /* 컴팩트 레이아웃 */
 .compact-row {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.compact-row .form-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
   align-items: end;
+}
+
+.compact-row .full-width {
+  grid-column: 1 / -1;
 }
 
 .compact-group {
@@ -105,6 +115,7 @@
 .form-group {
   display: flex;
   flex-direction: column;
+  margin-bottom: 4px;
 }
 
 .form-label {
@@ -138,6 +149,85 @@
   outline: none;
   border-color: var(--primary-green);
   box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
+}
+
+/* Floating Label Effect */
+.floating-label-group {
+  position: relative;
+}
+
+.floating-input {
+  padding: 16px 15px 8px 15px;
+  border: 2px solid var(--soft-brown);
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.floating-input:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
+}
+
+.floating-label {
+  position: absolute;
+  left: 12px;
+  top: -8px;
+  background: white;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-green);
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floating-input:focus + .floating-label {
+  color: var(--primary-green);
+}
+
+.floating-input:not(:placeholder-shown) + .floating-label {
+  color: var(--text-dark);
+}
+
+/* Floating Select Styles */
+.floating-select {
+  padding: 16px 15px 8px 15px;
+  border: 2px solid var(--soft-brown);
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.3s ease;
+  width: 100%;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234a7c59' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.floating-select:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
+}
+
+.floating-select:focus + .floating-label {
+  color: var(--primary-green);
+}
+
+.floating-select:not([value=""]) + .floating-label {
+  color: var(--text-dark);
+}
+
+.floating-select option {
+  padding: 8px 12px;
+  color: var(--text-dark);
 }
 
 .form-textarea {
@@ -182,8 +272,17 @@
   grid-column: 1 / -1;
 }
 
+.file-upload-group.compact {
+  margin-top: 10px;
+}
+
 .file-upload-area {
   position: relative;
+}
+
+.file-upload-area.compact {
+  width: 100%;
+  margin: 0;
 }
 
 .file-input {
@@ -208,6 +307,36 @@
   text-align: center;
 }
 
+.file-upload-label.compact {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border: 2px solid var(--soft-brown);
+  border-radius: 8px;
+  background: white;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.file-upload-label.compact:hover {
+  border-color: var(--primary-green);
+  background: rgba(74, 124, 89, 0.05);
+}
+
+.file-upload-label.compact.success {
+  border-color: var(--primary-green);
+  background: rgba(74, 124, 89, 0.1);
+  color: var(--primary-green);
+}
+
+.file-upload-label.compact.uploading {
+  border-color: var(--primary-green);
+  background: rgba(74, 124, 89, 0.1);
+  cursor: not-allowed;
+}
+
 
 .file-upload-label.uploading {
   background: rgba(74, 124, 89, 0.1);
@@ -222,10 +351,26 @@
   margin-bottom: 10px;
 }
 
+.file-upload-label.compact .upload-icon {
+  width: 20px;
+  height: 20px;
+  margin-bottom: 0;
+}
+
 .file-upload-label span {
   font-size: 16px;
   color: var(--text-dark);
   font-weight: 500;
+}
+
+.file-upload-label.compact span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.file-upload-label.compact.success span {
+  color: var(--primary-green);
+  font-weight: 600;
 }
 
 .file-selected {
@@ -267,10 +412,23 @@
   box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
 }
 
+.upload-success-message {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--primary-green);
+  font-weight: 500;
+}
+
 .success-icon {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
+}
+
+.file-upload-label.compact .success-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .success-content {
@@ -302,10 +460,27 @@
   box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
 }
 
+.upload-error-message {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: #e74c3c;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
 .error-icon {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
+}
+
+.upload-error-message .error-icon {
+  width: 14px;
+  height: 14px;
 }
 
 .upload-error span {

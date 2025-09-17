@@ -49,15 +49,15 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit }) => {
         <GripVertical className="grip-icon" />
       </div>
       
-      <div 
-        className="song-content"
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect && onSelect(song);
-        }}
-      >
+      <div className="song-content">
         <div className="song-number">{index + 1}</div>
-        <div className="song-details">
+        <div 
+          className="song-details"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect && onSelect(song);
+          }}
+        >
           <h5 className="song-title">{song.title}</h5>
         </div>
         <button 
@@ -99,11 +99,35 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   );
 
   const filteredSongs = useMemo(() => {
-    if (!searchTerm) return songs;
-    return songs.filter(song => 
-      song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      song.firstLyrics.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    let filtered = songs;
+    
+    if (searchTerm) {
+      filtered = songs.filter(song => 
+        song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        song.firstLyrics.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // 정렬: 한글과 영어를 모두 고려한 알파벳/가나다 순서
+    const sorted = filtered.sort((a, b) => {
+      const titleA = a.title.toLowerCase();
+      const titleB = b.title.toLowerCase();
+      
+      // 한글과 영어를 구분하여 정렬
+      const isKoreanA = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(titleA);
+      const isKoreanB = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(titleB);
+      
+      if (isKoreanA && !isKoreanB) {
+        return -1; // 한글이 영어보다 앞에
+      } else if (!isKoreanA && isKoreanB) {
+        return 1; // 영어가 한글보다 뒤에
+      } else {
+        // 같은 언어군 내에서는 일반적인 정렬
+        return titleA.localeCompare(titleB, 'ko', { numeric: true });
+      }
+    });
+    
+    return sorted;
   }, [songs, searchTerm]);
 
   const currentDateKey = format(selectedDate, 'yyyy-MM-dd');
@@ -187,6 +211,21 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     setShowSongSearch(false);
     setPreviewSong(null);
     setSelectedSongs([]);
+  };
+
+  const handleOpenSongSearch = () => {
+    setSearchTerm(''); // 검색어 리셋
+    setShowSongSearch(true);
+    setPreviewSong(null);
+    setSelectedSongs([]);
+    
+    // 검색 입력 필드에 포커스 (모달이 열린 후)
+    setTimeout(() => {
+      const searchInput = document.querySelector('.search-input');
+      if (searchInput) {
+        searchInput.focus();
+      }
+    }, 100);
   };
 
   const handleAddSong = () => {
@@ -341,7 +380,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
             </h3>
             <button 
               className="add-song-btn"
-              onClick={() => setShowSongSearch(true)}
+              onClick={handleOpenSongSearch}
             >
               <Plus className="btn-icon" />
               곡 추가
@@ -395,9 +434,11 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                       >
                         {isSelected && <div className="checkmark">✓</div>}
                       </div>
-                      <Music className="song-icon" />
                       <div className="song-info">
-                        <h5 className="song-title">{song.title}</h5>
+                        <div className="song-title-row">
+                          <h5 className="song-title">{song.title}</h5>
+                          <span className="song-key">{song.key}</span>
+                        </div>
                       </div>
                     </div>
                   );

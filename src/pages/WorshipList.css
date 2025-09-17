@@ -5,10 +5,10 @@
 
 .page-header {
   text-align: center;
-  margin-bottom: 40px;
-  padding: 20px;
+  margin-bottom: 20px;
+  padding: 12px;
   background: linear-gradient(135deg, rgba(74, 124, 89, 0.1), rgba(107, 142, 107, 0.1));
-  border-radius: 20px;
+  border-radius: 12px;
   border: 1px solid rgba(74, 124, 89, 0.2);
 }
 
@@ -16,21 +16,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 15px;
-  font-size: 32px;
-  font-weight: 700;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
   color: var(--text-dark);
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 
 .header-icon {
-  width: 32px;
-  height: 32px;
+  width: 18px;
+  height: 18px;
   color: var(--primary-green);
 }
 
 .page-header p {
-  font-size: 16px;
+  font-size: 12px;
   color: #666;
   font-weight: 500;
 }
@@ -38,15 +38,15 @@
 .worship-list-container {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 20px;
   align-items: stretch;
 }
 
 .calendar-section {
   background: white;
-  border-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 8px 25px var(--shadow-soft);
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 6px 20px var(--shadow-soft);
   border: 1px solid rgba(74, 124, 89, 0.1);
   display: flex;
   flex-direction: column;
@@ -198,14 +198,14 @@
 
 .list-section {
   background: white;
-  border-radius: 20px;
-  padding: 25px;
-  box-shadow: 0 10px 30px var(--shadow-soft);
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 6px 20px var(--shadow-soft);
   border: 1px solid rgba(74, 124, 89, 0.1);
   display: flex;
   flex-direction: column;
   position: relative;
-  min-height: 400px;
+  min-height: 300px;
   width: 100%;
 }
 
@@ -553,18 +553,36 @@
   min-width: 0;
 }
 
+.song-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+}
+
 .song-info .song-title {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-dark);
-  margin: 0 0 2px 0;
+  margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: left;
+  flex: 1;
+  min-width: 0;
 }
 
-.song-info /* song-key 스타일 제거됨 */
+.song-key {
+  background: var(--primary-green);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
 
 .song-icon {
   width: 20px;
@@ -667,7 +685,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  cursor: pointer;
+  min-width: 0;
 }
 
 .song-number {
@@ -687,17 +705,19 @@
 .song-details {
   flex: 1;
   min-width: 0;
+  cursor: pointer;
 }
 
 .song-title {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-dark);
-  margin: 0 0 2px 0;
+  margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: left;
+  width: 100%;
 }
 
 /* song-key 스타일 제거됨 */

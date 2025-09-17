@@ -1,18 +1,90 @@
 // OneDrive 경로 설정
 const ONEDRIVE_PATH = 'WorshipNote_Data/Music_Sheets';
 
+// PDF.js 라이브러리 동적 로드
+const loadPDFJS = async () => {
+  if (window.pdfjsLib) {
+    return window.pdfjsLib;
+  }
+  
+  // PDF.js 라이브러리 동적 로드
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  script.async = true;
+  
+  return new Promise((resolve, reject) => {
+    script.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve(window.pdfjsLib);
+    };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+};
+
+// PDF를 JPG로 변환하는 함수
+const convertPDFToJPG = async (file) => {
+  try {
+    const pdfjsLib = await loadPDFJS();
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
+    // 첫 번째 페이지만 변환 (악보는 보통 첫 페이지만 필요)
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 2.0 }); // 고해상도로 변환
+    
+    // Canvas 생성
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    
+    // PDF 페이지를 Canvas에 렌더링
+    const renderContext = {
+      canvasContext: context,
+      viewport: viewport
+    };
+    
+    await page.render(renderContext).promise;
+    
+    // Canvas를 JPG Blob으로 변환
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const fileName = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
+          const jpgFile = new File([blob], fileName, { type: 'image/jpeg' });
+          resolve({
+            success: true,
+            file: jpgFile,
+            fileName: fileName
+          });
+        } else {
+          resolve({
+            success: false,
+            error: 'PDF를 JPG로 변환하는데 실패했습니다.'
+          });
+        }
+      }, 'image/jpeg', 0.95);
+    });
+  } catch (error) {
+    console.error('PDF 변환 중 오류:', error);
+    return {
+      success: false,
+      error: `PDF 변환 실패: ${error.message}`
+    };
+  }
+};
+
 // 파일을 JPG로 변환하는 함수
 export const convertToJPG = async (file) => {
   try {
     const fileType = file.type;
-    const fileName = file.name.replace(/\.[^/.]+$/, ''); // 확장자 제거
+    const originalFileName = file.name; // 원본 파일명 유지 (확장자 포함)
+    const fileName = file.name.replace(/\.[^/.]+$/, ''); // 확장자 제거 (변환용)
     
     if (fileType === 'application/pdf') {
-      // PDF 파일인 경우 에러 반환 (PDF는 변환하지 않음)
-      return {
-        success: false,
-        error: 'PDF 파일은 JPG로 변환할 수 없습니다. JPG 또는 PNG 파일을 업로드해주세요.'
-      };
+      // PDF 파일을 JPG로 변환
+      return await convertPDFToJPG(file);
     } else if (fileType.startsWith('image/')) {
       // 이미지 파일인 경우 JPG로 변환
       const arrayBuffer = await file.arrayBuffer();
@@ -49,6 +121,10 @@ export const convertToJPG = async (file) => {
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
           
+          // PNG 투명 배경을 위한 흰색 배경 그리기
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+          
           // Canvas에 이미지 그리기
           ctx.drawImage(img, 0, 0, width, height);
           
@@ -59,7 +135,7 @@ export const convertToJPG = async (file) => {
               resolve({
                 success: true,
                 file: jpgFile,
-                fileName: fileName,
+                fileName: `${fileName}.jpg`, // 변환된 JPG 파일명 반환
                 filePath: null
               });
             } else {
