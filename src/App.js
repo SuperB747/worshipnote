@@ -275,11 +275,11 @@ function App() {
             <Routes>
               <Route 
                 path="/" 
-                element={<AddSong songs={songs} setSongs={setSongs} setSelectedSong={setSelectedSong} />} 
+                element={<SearchSongs songs={songs} setSongs={setSongs} selectedSong={selectedSong} setSelectedSong={setSelectedSong} fileExistenceMap={fileExistenceMap} />} 
               />
               <Route 
-                path="/search" 
-                element={<SearchSongs songs={songs} setSongs={setSongs} selectedSong={selectedSong} setSelectedSong={setSelectedSong} fileExistenceMap={fileExistenceMap} />} 
+                path="/add" 
+                element={<AddSong songs={songs} setSongs={setSongs} setSelectedSong={setSelectedSong} />} 
               />
               <Route 
                 path="/worship-list" 

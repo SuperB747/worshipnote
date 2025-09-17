@@ -8,9 +8,9 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
   const location = useLocation();
 
   const menuItems = [
-    { path: '/', icon: Plus, label: '악보 추가', color: '#4a7c59' },
-    { path: '/search', icon: Search, label: '악보 검색', color: '#6b8e6b' },
-    { path: '/worship-list', icon: Calendar, label: '찬양 리스트', color: '#8b7355' },
+    { path: '/', icon: Search, label: '악보 검색', color: '#6b8e6b' },
+    { path: '/add', icon: Plus, label: '악보 추가', color: '#4a7c59' },
+    { path: '/worship-list', icon: Calendar, label: '찬양 리스트 관리', color: '#8b7355' },
   ];
 
   const handleDatabaseBackup = async () => {
