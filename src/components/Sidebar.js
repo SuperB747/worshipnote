@@ -15,11 +15,7 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
 
   const handleDatabaseBackup = async () => {
     try {
-      console.log('통합 데이터베이스 백업 시작...');
-      console.log('현재 songs 개수:', songs.length);
-      console.log('현재 worshipLists 개수:', Object.keys(worshipLists).length);
       const result = await createDatabaseBackup(songs, worshipLists, fileExistenceMap);
-      console.log('통합 데이터베이스 백업 결과:', result);
       
       if (result.success) {
         alert(`데이터베이스 백업이 생성되었습니다!\n${result.message}`);
@@ -44,7 +40,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
       if (!file) return;
 
       try {
-        console.log('데이터베이스 복원 시작...');
         
         // 파일을 직접 읽어서 처리
         const fileContent = await new Promise((resolve, reject) => {
@@ -78,8 +73,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
         const songs = backupData.songs || [];
         const worshipLists = backupData.worshipLists || {};
         
-        console.log('복원할 songs 개수:', songs.length);
-        console.log('복원할 worshipLists 개수:', Object.keys(worshipLists).length);
 
         // 상태 업데이트
         setSongs(songs);
@@ -107,7 +100,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
 
               await window.electronAPI.writeFile(`${oneDrivePath}/songs.json`, JSON.stringify(songsData, null, 2));
               await window.electronAPI.writeFile(`${oneDrivePath}/worship_lists.json`, JSON.stringify(worshipListsData, null, 2));
-              console.log('OneDrive에 데이터 저장 완료');
             }
           } catch (oneDriveError) {
             console.warn('OneDrive 저장 실패:', oneDriveError);

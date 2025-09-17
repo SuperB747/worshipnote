@@ -47,10 +47,8 @@ function App() {
       try {
         // Electron 환경에서 electronAPI가 준비될 때까지 기다림
         if (window.electronAPI) {
-          console.log('Electron API 사용 가능, OneDrive에서 데이터 로드 시도...');
           const { songs, worshipLists } = await initializeData();
           
-          console.log('데이터 로드 완료 - songs:', songs.length, 'worshipLists:', Object.keys(worshipLists).length);
           setSongs(songs);
           setWorshipLists(worshipLists);
           // 마지막 저장된 데이터로 설정 (초기 저장 방지)
@@ -58,7 +56,6 @@ function App() {
           setLastSavedWorshipLists(JSON.parse(JSON.stringify(worshipLists)));
         } else {
           // 웹 환경이거나 Electron API가 아직 준비되지 않은 경우
-          console.log('Electron API 사용 불가, localStorage에서 직접 로드...');
           
           // localStorage에서 직접 데이터 로드
           const localData = localStorage.getItem('worshipnote_data');
@@ -67,7 +64,6 @@ function App() {
             const songs = parsedData.songs || [];
             const worshipLists = parsedData.worshipLists || {};
             
-            console.log('localStorage에서 로드됨 - songs:', songs.length, 'worshipLists:', Object.keys(worshipLists).length);
             setSongs(songs);
             setWorshipLists(worshipLists);
             // 마지막 저장된 데이터로 설정 (초기 저장 방지)
@@ -75,7 +71,6 @@ function App() {
             setLastSavedWorshipLists(JSON.parse(JSON.stringify(worshipLists)));
           } else {
             // localStorage에도 데이터가 없으면 샘플 데이터 생성
-            console.log('데이터가 없음, 샘플 데이터 생성...');
             const sampleSongs = [
               {
                 id: 1,
@@ -130,7 +125,6 @@ function App() {
               worshipLists: {}
             }));
             
-            console.log('샘플 데이터 생성 완료:', sampleSongs.length, '개');
             setSongs(sampleSongs);
             setWorshipLists({});
             // 마지막 저장된 데이터로 설정 (초기 저장 방지)
@@ -243,7 +237,6 @@ function App() {
             setLastSavedWorshipLists(JSON.parse(JSON.stringify(worshipLists))); // 깊은 복사
             hideSnackbar();
             showSuccess('변경사항이 저장되었습니다');
-            console.log('찬양 리스트 저장 완료:', Object.keys(worshipLists).length, '개 날짜');
           } catch (error) {
             console.error('찬양 리스트 저장 실패:', error);
             hideSnackbar();

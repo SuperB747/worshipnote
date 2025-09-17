@@ -104,7 +104,6 @@ export const saveSongs = async (songs) => {
           const jsonData = JSON.stringify(songsData, null, 2);
           
           await window.electronAPI.writeFile(filePath, jsonData);
-          console.log('악보 데이터가 OneDrive에 저장되었습니다:', filePath);
         }
       } catch (oneDriveError) {
         console.error('OneDrive 저장 실패:', oneDriveError);
@@ -131,28 +130,23 @@ export const loadSongs = async () => {
           
           if (fileData) {
             const songsData = JSON.parse(fileData);
-            console.log('OneDrive에서 악보 데이터 로드됨:', songsData.lastUpdated);
             
             // localStorage에도 저장 (동기화)
             saveToStorage('songs', songsData.songs);
             
             return songsData.songs || [];
           } else {
-            console.log('OneDrive에 songs.json 파일이 없음, localStorage에서 로드 시도');
           }
         }
       } catch (oneDriveError) {
-        console.log('OneDrive에서 악보 데이터 로드 실패, localStorage에서 로드:', oneDriveError.message);
       }
     }
     
     // OneDrive에서 로드 실패하면 localStorage에서 로드
     const localSongs = loadFromStorage('songs', []);
-    console.log('localStorage에서 악보 데이터 로드됨:', localSongs.length, '개');
     
     // 데이터가 없으면 샘플 데이터 생성
     if (localSongs.length === 0) {
-      console.log('샘플 데이터 생성');
       const sampleSongs = [
         {
           id: 1,
@@ -203,7 +197,6 @@ export const loadSongs = async () => {
       
       // 샘플 데이터를 localStorage에 저장
       saveToStorage('songs', sampleSongs);
-      console.log('샘플 데이터 저장 완료:', sampleSongs.length, '개');
       
       return sampleSongs;
     }
@@ -236,7 +229,6 @@ export const saveWorshipLists = async (worshipLists) => {
           const jsonData = JSON.stringify(worshipListsData, null, 2);
           
           await window.electronAPI.writeFile(filePath, jsonData);
-          console.log('찬양 리스트가 OneDrive에 저장되었습니다:', filePath);
         }
       } catch (oneDriveError) {
         console.error('OneDrive 저장 실패:', oneDriveError);
@@ -263,24 +255,20 @@ export const loadWorshipLists = async () => {
           
           if (fileData) {
             const worshipListsData = JSON.parse(fileData);
-            console.log('OneDrive에서 찬양 리스트 로드됨:', worshipListsData.lastUpdated);
             
             // localStorage에도 저장 (동기화)
             saveToStorage('worshipLists', worshipListsData.worshipLists);
             
             return worshipListsData.worshipLists || {};
           } else {
-            console.log('OneDrive에 worship_lists.json 파일이 없음, localStorage에서 로드 시도');
           }
         }
       } catch (oneDriveError) {
-        console.log('OneDrive에서 찬양 리스트 로드 실패, localStorage에서 로드:', oneDriveError.message);
       }
     }
     
     // OneDrive에서 로드 실패하면 localStorage에서 로드
     const localWorshipLists = loadFromStorage('worshipLists', {});
-    console.log('localStorage에서 찬양 리스트 로드됨:', Object.keys(localWorshipLists).length, '개 날짜');
     return localWorshipLists;
   } catch (error) {
     console.error('찬양 리스트 로드 실패:', error);
@@ -360,7 +348,6 @@ export const createWorshipListsBackup = async () => {
       throw new Error(`파일 쓰기 실패: ${writeResult.error}`);
     }
     
-    console.log('찬양 리스트 백업 생성 완료 (OneDrive):', backupFilePath);
     return { 
       success: true, 
       filePath: backupFilePath,
@@ -417,8 +404,6 @@ export const createDatabaseBackup = async (currentSongs = null, currentWorshipLi
     const songs = currentSongs || await loadSongs();
     const worshipLists = currentWorshipLists || await loadWorshipLists();
     
-    console.log('백업할 songs 개수:', songs.length);
-    console.log('백업할 worshipLists 개수:', Object.keys(worshipLists).length);
     
     // 통합 데이터베이스 파일명 (타임스탬프 포함)
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -473,8 +458,6 @@ export const createDatabaseBackup = async (currentSongs = null, currentWorshipLi
       return { success: false, error: '생성된 JSON 데이터가 비어있습니다.' };
     }
     
-    console.log('JSON 데이터 크기:', jsonData.length, '문자');
-    console.log('JSON 데이터 미리보기 (처음 200자):', jsonData.substring(0, 200));
     
     const writeResult = await window.electronAPI.writeFile(backupFilePath, jsonData);
     if (!writeResult.success) {
@@ -485,8 +468,6 @@ export const createDatabaseBackup = async (currentSongs = null, currentWorshipLi
     const fileSize = new Blob([jsonData]).size;
     databaseData.stats.backupSize = fileSize;
     
-    console.log('통합 데이터베이스 백업 생성 완료 (OneDrive):', backupFilePath);
-    console.log('백업 파일 크기:', (fileSize / 1024 / 1024).toFixed(2), 'MB');
     
     // 악보가 없는 찬양 개수 계산 (악보 검색과 동일한 로직 사용)
     const songsWithoutMusicSheet = songs.filter(song => {
@@ -558,8 +539,6 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
     const songs = backupData.songs || [];
     const worshipLists = backupData.worshipLists || {};
     
-    console.log('복원할 songs 개수:', songs.length);
-    console.log('복원할 worshipLists 개수:', Object.keys(worshipLists).length);
     
     // localStorage에 저장
     saveToStorage('songs', songs);
@@ -573,7 +552,6 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
     if (setSongs) setSongs(songs);
     if (setWorshipLists) setWorshipLists(worshipLists);
     
-    console.log('통합 데이터베이스 복원 완료:', backupData.backupDate || backupData.backupDate);
     
     const stats = {
       totalSongs: songs.length,
@@ -630,7 +608,6 @@ export const restoreWorshipListsFromBackup = async (backupFilePath) => {
       
       if (backupData.worshipLists) {
         await saveWorshipLists(backupData.worshipLists);
-        console.log('찬양 리스트 복원 완료:', backupData.backupDate);
         return { success: true };
       } else {
         return { success: false, error: 'Invalid backup file format' };

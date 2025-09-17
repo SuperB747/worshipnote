@@ -277,13 +277,11 @@ ipcMain.handle('read-file', async (event, filePath) => {
 
 ipcMain.handle('delete-file', async (event, filePath) => {
   try {
-    console.log('파일 삭제 시도:', filePath);
     
     // 파일 존재 여부 확인
     try {
       await fs.access(filePath);
     } catch (accessError) {
-      console.log('파일이 존재하지 않음:', filePath);
       return {
         success: true,
         message: '파일이 이미 존재하지 않습니다.'
@@ -292,7 +290,6 @@ ipcMain.handle('delete-file', async (event, filePath) => {
     
     // 파일 삭제
     await fs.unlink(filePath);
-    console.log('파일 삭제 성공:', filePath);
     
     return {
       success: true,
