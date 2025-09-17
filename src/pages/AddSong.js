@@ -39,22 +39,31 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     }));
   }, []);
 
-  // 입력 필드 클릭 핸들러 추가
+  // 입력 필드 클릭 핸들러 - 더 안정적인 버전
   const handleInputClick = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    // 즉시 포커스 적용
-    setTimeout(() => {
-      e.target.focus();
-    }, 0);
+    
+    // 즉시 포커스 적용 (setTimeout 제거)
+    const target = e.target;
+    if (target && target.focus) {
+      target.focus();
+    }
   }, []);
 
-  // 입력 필드 포커스 핸들러 추가
+  // 입력 필드 포커스 핸들러 - 더 안정적인 버전
   const handleInputFocus = useCallback((e) => {
-    // 포커스 후 약간의 지연을 두고 텍스트 선택
-    setTimeout(() => {
-      e.target.select();
-    }, 10);
+    const target = e.target;
+    if (target && target.select) {
+      // 포커스 즉시 텍스트 선택 (setTimeout 제거)
+      target.select();
+    }
+  }, []);
+
+  // 마우스 다운 핸들러 - 클릭과 분리
+  const handleInputMouseDown = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
   }, []);
 
   const handleFileUpload = async (e) => {
@@ -174,7 +183,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                 onChange={handleInputChange}
                 onClick={handleInputClick}
                 onFocus={handleInputFocus}
-                onMouseDown={handleInputClick}
+                onMouseDown={handleInputMouseDown}
                 className={`form-input compact-input floating-input ${formData.title ? 'has-value' : ''}`}
                 placeholder=" "
                 required
@@ -191,7 +200,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                   value={formData.key}
                   onChange={handleInputChange}
                   onClick={handleInputClick}
-                  onMouseDown={handleInputClick}
+                  onMouseDown={handleInputMouseDown}
                   className={`form-select compact-select floating-select ${formData.key ? 'has-value' : ''}`}
                   tabIndex={3}
                 >
@@ -209,7 +218,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                   value={formData.tempo}
                   onChange={handleInputChange}
                   onClick={handleInputClick}
-                  onMouseDown={handleInputClick}
+                  onMouseDown={handleInputMouseDown}
                   className={`form-select compact-select floating-select ${formData.tempo ? 'has-value' : ''}`}
                   tabIndex={4}
                 >
@@ -232,7 +241,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                 onChange={handleInputChange}
                 onClick={handleInputClick}
                 onFocus={handleInputFocus}
-                onMouseDown={handleInputClick}
+                onMouseDown={handleInputMouseDown}
                 className={`form-input compact-input floating-input ${formData.firstLyrics ? 'has-value' : ''}`}
                 placeholder=" "
                 autoComplete="off"

@@ -153,16 +153,29 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     }));
   };
 
-  // 수정 모달 입력 필드 클릭 핸들러
+  // 수정 모달 입력 필드 클릭 핸들러 - 더 안정적인 버전
   const handleEditInputClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    e.target.focus();
+    
+    const target = e.target;
+    if (target && target.focus) {
+      target.focus();
+    }
   };
 
-  // 수정 모달 입력 필드 포커스 핸들러
+  // 수정 모달 입력 필드 포커스 핸들러 - 더 안정적인 버전
   const handleEditInputFocus = (e) => {
-    e.target.select();
+    const target = e.target;
+    if (target && target.select) {
+      target.select();
+    }
+  };
+
+  // 수정 모달 마우스 다운 핸들러
+  const handleEditInputMouseDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   const handleEditFileUpload = async (e) => {
@@ -513,7 +526,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     onChange={handleEditInputChange}
                     onClick={handleEditInputClick}
                     onFocus={handleEditInputFocus}
-                    onMouseDown={handleEditInputClick}
+                    onMouseDown={handleEditInputMouseDown}
                     className="form-input compact-input"
                     placeholder="찬양 이름을 입력하세요"
                     required
@@ -529,7 +542,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     value={editFormData.key}
                     onChange={handleEditInputChange}
                     onClick={handleEditInputClick}
-                    onMouseDown={handleEditInputClick}
+                    onMouseDown={handleEditInputMouseDown}
                     className="form-select compact-select"
                     tabIndex={2}
                   >
@@ -546,7 +559,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     value={editFormData.tempo}
                     onChange={handleEditInputChange}
                     onClick={handleEditInputClick}
-                    onMouseDown={handleEditInputClick}
+                    onMouseDown={handleEditInputMouseDown}
                     className="form-select compact-select"
                     tabIndex={3}
                   >
@@ -567,7 +580,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     onChange={handleEditInputChange}
                     onClick={handleEditInputClick}
                     onFocus={handleEditInputFocus}
-                    onMouseDown={handleEditInputClick}
+                    onMouseDown={handleEditInputMouseDown}
                     className="form-input compact-input"
                     placeholder="첫 번째 가사를 입력하세요"
                     autoComplete="off"

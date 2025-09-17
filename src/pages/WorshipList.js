@@ -311,16 +311,29 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     setEditForm({ title: '', key: '', tempo: '', firstLyrics: '' });
   };
 
-  // 수정 모달 입력 필드 클릭 핸들러
+  // 수정 모달 입력 필드 클릭 핸들러 - 더 안정적인 버전
   const handleEditInputClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    e.target.focus();
+    
+    const target = e.target;
+    if (target && target.focus) {
+      target.focus();
+    }
   };
 
-  // 수정 모달 입력 필드 포커스 핸들러
+  // 수정 모달 입력 필드 포커스 핸들러 - 더 안정적인 버전
   const handleEditInputFocus = (e) => {
-    e.target.select();
+    const target = e.target;
+    if (target && target.select) {
+      target.select();
+    }
+  };
+
+  // 수정 모달 마우스 다운 핸들러
+  const handleEditInputMouseDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
 
 
@@ -553,7 +566,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                   onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
                   onClick={handleEditInputClick}
                   onFocus={handleEditInputFocus}
-                  onMouseDown={handleEditInputClick}
+                  onMouseDown={handleEditInputMouseDown}
                   placeholder="찬양 제목을 입력하세요"
                   className="form-input"
                   autoComplete="off"
@@ -569,7 +582,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                   onChange={(e) => setEditForm(prev => ({ ...prev, key: e.target.value }))}
                   onClick={handleEditInputClick}
                   onFocus={handleEditInputFocus}
-                  onMouseDown={handleEditInputClick}
+                  onMouseDown={handleEditInputMouseDown}
                   placeholder="예: C, D, E..."
                   className="form-input"
                   autoComplete="off"
@@ -585,7 +598,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                   onChange={(e) => setEditForm(prev => ({ ...prev, tempo: e.target.value }))}
                   onClick={handleEditInputClick}
                   onFocus={handleEditInputFocus}
-                  onMouseDown={handleEditInputClick}
+                  onMouseDown={handleEditInputMouseDown}
                   placeholder="예: 120, 140..."
                   className="form-input"
                   autoComplete="off"
@@ -600,7 +613,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                   onChange={(e) => setEditForm(prev => ({ ...prev, firstLyrics: e.target.value }))}
                   onClick={handleEditInputClick}
                   onFocus={handleEditInputFocus}
-                  onMouseDown={handleEditInputClick}
+                  onMouseDown={handleEditInputMouseDown}
                   placeholder="찬양의 첫 가사를 입력하세요"
                   className="form-textarea"
                   rows="3"
