@@ -72,39 +72,32 @@
   font-size: 14px;
 }
 
-.form-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid var(--soft-brown);
-  border-radius: 15px;
-  font-size: 14px;
-  background: white;
-  transition: all 0.3s ease;
-  box-shadow: inset 0 2px 4px var(--shadow-soft);
+
+/* 전역 입력 필드 스타일 강화 */
+input[type="text"], 
+input[type="email"], 
+input[type="password"], 
+input[type="number"], 
+textarea, 
+select {
+  position: relative !important;
+  z-index: 10 !important;
+  pointer-events: auto !important;
+  user-select: text !important;
+  cursor: text !important;
 }
 
-.form-input:focus {
-  outline: none;
-  border-color: var(--primary-green);
-  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
+input[type="text"]:focus, 
+input[type="email"]:focus, 
+input[type="password"]:focus, 
+input[type="number"]:focus, 
+textarea:focus, 
+select:focus {
+  z-index: 20 !important;
 }
 
-.form-select {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid var(--soft-brown);
-  border-radius: 15px;
-  font-size: 14px;
-  background: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: inset 0 2px 4px var(--shadow-soft);
-}
-
-.form-select:focus {
-  outline: none;
-  border-color: var(--primary-green);
-  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
+select {
+  cursor: pointer !important;
 }
 
 /* 카드 스타일 */

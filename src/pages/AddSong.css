@@ -150,16 +150,25 @@
   background: white;
   transition: all 0.3s ease;
   cursor: text;
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+  user-select: text;
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--primary-green);
   box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
+  z-index: 20;
 }
 
 .form-input:hover {
   border-color: var(--primary-green);
+}
+
+.form-input:active {
+  cursor: text;
 }
 
 .form-select {
@@ -177,16 +186,25 @@
   background-position: right 12px center;
   background-size: 16px;
   padding-right: 40px;
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+  user-select: none;
 }
 
 .form-select:focus {
   outline: none;
   border-color: var(--primary-green);
   box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
+  z-index: 20;
 }
 
 .form-select:hover {
   border-color: var(--primary-green);
+}
+
+.form-select:active {
+  cursor: pointer;
 }
 
 .form-select option {

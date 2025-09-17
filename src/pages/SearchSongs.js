@@ -157,25 +157,48 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
   const handleEditInputClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
     
     const target = e.target;
-    if (target && target.focus) {
+    if (target) {
       target.focus();
+      target.click();
+      
+      if (target.setSelectionRange && target.value) {
+        const len = target.value.length;
+        target.setSelectionRange(len, len);
+      }
     }
   };
 
-  // 수정 모달 입력 필드 포커스 핸들러 - 더 안정적인 버전
+  // 수정 모달 입력 필드 포커스 핸들러 - 강화된 버전
   const handleEditInputFocus = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     const target = e.target;
-    if (target && target.select) {
-      target.select();
+    if (target) {
+      if (target.select) {
+        target.select();
+      }
+      
+      if (target.setSelectionRange && target.value) {
+        const len = target.value.length;
+        target.setSelectionRange(len, len);
+      }
     }
   };
 
-  // 수정 모달 마우스 다운 핸들러
+  // 수정 모달 마우스 다운 핸들러 - 강화된 버전
   const handleEditInputMouseDown = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    
+    const target = e.target;
+    if (target) {
+      target.focus();
+    }
   };
 
   const handleEditFileUpload = async (e) => {

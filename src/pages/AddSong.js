@@ -39,31 +39,57 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     }));
   }, []);
 
-  // 입력 필드 클릭 핸들러 - 더 안정적인 버전
+  // 입력 필드 클릭 핸들러 - 강화된 버전
   const handleInputClick = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
     
-    // 즉시 포커스 적용 (setTimeout 제거)
     const target = e.target;
-    if (target && target.focus) {
+    if (target) {
+      // 강제로 포커스 설정
       target.focus();
+      target.click();
+      
+      // 커서 위치 설정
+      if (target.setSelectionRange && target.value) {
+        const len = target.value.length;
+        target.setSelectionRange(len, len);
+      }
     }
   }, []);
 
-  // 입력 필드 포커스 핸들러 - 더 안정적인 버전
+  // 입력 필드 포커스 핸들러 - 강화된 버전
   const handleInputFocus = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     const target = e.target;
-    if (target && target.select) {
-      // 포커스 즉시 텍스트 선택 (setTimeout 제거)
-      target.select();
+    if (target) {
+      // 텍스트 선택
+      if (target.select) {
+        target.select();
+      }
+      
+      // 커서를 끝으로 이동
+      if (target.setSelectionRange && target.value) {
+        const len = target.value.length;
+        target.setSelectionRange(len, len);
+      }
     }
   }, []);
 
-  // 마우스 다운 핸들러 - 클릭과 분리
+  // 마우스 다운 핸들러 - 강화된 버전
   const handleInputMouseDown = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    
+    const target = e.target;
+    if (target) {
+      // 즉시 포커스 설정
+      target.focus();
+    }
   }, []);
 
   const handleFileUpload = async (e) => {
