@@ -177,16 +177,35 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     if (target) {
       target.focus();
       
-      // 클릭한 위치에 커서 설정
+      // 클릭한 위치에 커서 설정 - 더 정확한 계산
       if (target.setSelectionRange) {
         const rect = target.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
-        const textWidth = target.scrollWidth;
-        const charWidth = textWidth / (target.value.length || 1);
-        const clickPosition = Math.round(clickX / charWidth);
-        const clampedPosition = Math.max(0, Math.min(clickPosition, target.value.length));
         
-        target.setSelectionRange(clampedPosition, clampedPosition);
+        // 패딩과 보더를 고려한 실제 텍스트 영역 계산
+        const computedStyle = window.getComputedStyle(target);
+        const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+        const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0;
+        const textStartX = paddingLeft + borderLeft;
+        const actualClickX = clickX - textStartX;
+        
+        // 텍스트 너비 계산 (스크롤 너비 사용)
+        const textWidth = target.scrollWidth;
+        const textLength = target.value.length;
+        
+        if (textLength > 0 && textWidth > 0) {
+          const charWidth = textWidth / textLength;
+          const clickPosition = Math.round(actualClickX / charWidth);
+          const clampedPosition = Math.max(0, Math.min(clickPosition, textLength));
+          
+          // 약간의 지연을 두고 커서 위치 설정
+          setTimeout(() => {
+            target.setSelectionRange(clampedPosition, clampedPosition);
+          }, 0);
+        } else {
+          // 텍스트가 없으면 시작 위치에 커서 설정
+          target.setSelectionRange(0, 0);
+        }
       }
     }
   };
