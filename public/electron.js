@@ -1,8 +1,13 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
-const isDev = require('electron-is-dev');
 const path = require('path');
 const fs = require('fs').promises;
 const os = require('os');
+
+// 개발 모드 감지 (electron-is-dev 대신 직접 구현)
+const isDev = process.env.NODE_ENV === 'development' || 
+              process.env.ELECTRON_IS_DEV === '1' || 
+              process.defaultApp || 
+              /[\\/]electron/.test(process.execPath);
 
 let mainWindow;
 
@@ -41,16 +46,38 @@ function createWindow() {
 // OneDrive 경로 찾기 함수
 const findOneDrivePath = () => {
   const homeDir = os.homedir();
-  const possiblePaths = [
-    path.join(homeDir, 'OneDrive', 'WorshipNote_Data'),
-    path.join(homeDir, 'OneDrive - Personal', 'WorshipNote_Data'),
-    path.join(homeDir, 'OneDrive - 회사명', 'WorshipNote_Data'),
-    path.join(homeDir, 'Documents', 'WorshipNote_Data', 'Music_Sheets') // 폴백 경로
-  ];
+  const platform = os.platform();
+  
+  let possiblePaths = [];
+  
+  if (platform === 'darwin') {
+    // macOS 경로들
+    possiblePaths = [
+      path.join(homeDir, 'Library', 'CloudStorage', 'OneDrive-Personal', 'WorshipNote_Data'),
+      path.join(homeDir, 'Library', 'CloudStorage', 'OneDrive-회사명', 'WorshipNote_Data'),
+      path.join(homeDir, 'OneDrive', 'WorshipNote_Data'), // 심볼릭 링크 경로
+      path.join(homeDir, 'Documents', 'WorshipNote_Data') // 폴백 경로
+    ];
+  } else if (platform === 'win32') {
+    // Windows 경로들
+    possiblePaths = [
+      path.join(homeDir, 'OneDrive', 'WorshipNote_Data'),
+      path.join(homeDir, 'OneDrive - Personal', 'WorshipNote_Data'),
+      path.join(homeDir, 'OneDrive - 회사명', 'WorshipNote_Data'),
+      path.join(homeDir, 'Documents', 'WorshipNote_Data') // 폴백 경로
+    ];
+  } else {
+    // Linux/기타 OS
+    possiblePaths = [
+      path.join(homeDir, 'OneDrive', 'WorshipNote_Data'),
+      path.join(homeDir, 'Documents', 'WorshipNote_Data') // 폴백 경로
+    ];
+  }
   
   for (const oneDrivePath of possiblePaths) {
     try {
       if (require('fs').existsSync(oneDrivePath)) {
+        console.log('OneDrive 경로 발견:', oneDrivePath);
         return oneDrivePath;
       }
     } catch (error) {
@@ -58,23 +85,57 @@ const findOneDrivePath = () => {
     }
   }
   
-  // OneDrive 폴더가 없으면 Documents에 생성
-  return path.join(homeDir, 'Documents', 'WorshipNote_Data');
+  // OneDrive 폴더가 없으면 첫 번째 가능한 경로에 생성 시도
+  const firstOneDrivePath = possiblePaths[0];
+  try {
+    require('fs').mkdirSync(firstOneDrivePath, { recursive: true });
+    console.log('OneDrive 폴더 생성됨:', firstOneDrivePath);
+    return firstOneDrivePath;
+  } catch (error) {
+    console.log('OneDrive 폴더 생성 실패, 폴백 경로 사용:', error.message);
+  }
+  
+  // 폴백 경로 사용
+  const fallbackPath = path.join(homeDir, 'Documents', 'WorshipNote_Data');
+  console.log('폴백 경로 사용:', fallbackPath);
+  return fallbackPath;
 };
 
 // Music_Sheets 경로 찾기 함수
 const findMusicSheetsPath = () => {
   const homeDir = os.homedir();
-  const possiblePaths = [
-    path.join(homeDir, 'OneDrive', 'WorshipNote_Data', 'Music_Sheets'),
-    path.join(homeDir, 'OneDrive - Personal', 'WorshipNote_Data', 'Music_Sheets'),
-    path.join(homeDir, 'OneDrive - 회사명', 'WorshipNote_Data', 'Music_Sheets'),
-    path.join(homeDir, 'Documents', 'WorshipNote_Data', 'Music_Sheets') // 폴백 경로
-  ];
+  const platform = os.platform();
+  
+  let possiblePaths = [];
+  
+  if (platform === 'darwin') {
+    // macOS 경로들
+    possiblePaths = [
+      path.join(homeDir, 'Library', 'CloudStorage', 'OneDrive-Personal', 'WorshipNote_Data', 'Music_Sheets'),
+      path.join(homeDir, 'Library', 'CloudStorage', 'OneDrive-회사명', 'WorshipNote_Data', 'Music_Sheets'),
+      path.join(homeDir, 'OneDrive', 'WorshipNote_Data', 'Music_Sheets'), // 심볼릭 링크 경로
+      path.join(homeDir, 'Documents', 'WorshipNote_Data', 'Music_Sheets') // 폴백 경로
+    ];
+  } else if (platform === 'win32') {
+    // Windows 경로들
+    possiblePaths = [
+      path.join(homeDir, 'OneDrive', 'WorshipNote_Data', 'Music_Sheets'),
+      path.join(homeDir, 'OneDrive - Personal', 'WorshipNote_Data', 'Music_Sheets'),
+      path.join(homeDir, 'OneDrive - 회사명', 'WorshipNote_Data', 'Music_Sheets'),
+      path.join(homeDir, 'Documents', 'WorshipNote_Data', 'Music_Sheets') // 폴백 경로
+    ];
+  } else {
+    // Linux/기타 OS
+    possiblePaths = [
+      path.join(homeDir, 'OneDrive', 'WorshipNote_Data', 'Music_Sheets'),
+      path.join(homeDir, 'Documents', 'WorshipNote_Data', 'Music_Sheets') // 폴백 경로
+    ];
+  }
   
   for (const musicSheetsPath of possiblePaths) {
     try {
       if (require('fs').existsSync(musicSheetsPath)) {
+        console.log('Music_Sheets 경로 발견:', musicSheetsPath);
         return musicSheetsPath;
       }
     } catch (error) {
@@ -82,8 +143,20 @@ const findMusicSheetsPath = () => {
     }
   }
   
-  // Music_Sheets 폴더가 없으면 Documents에 생성
-  return path.join(homeDir, 'Documents', 'WorshipNote_Data', 'Music_Sheets');
+  // Music_Sheets 폴더가 없으면 첫 번째 가능한 경로에 생성 시도
+  const firstMusicSheetsPath = possiblePaths[0];
+  try {
+    require('fs').mkdirSync(firstMusicSheetsPath, { recursive: true });
+    console.log('Music_Sheets 폴더 생성됨:', firstMusicSheetsPath);
+    return firstMusicSheetsPath;
+  } catch (error) {
+    console.log('Music_Sheets 폴더 생성 실패, 폴백 경로 사용:', error.message);
+  }
+  
+  // 폴백 경로 사용
+  const fallbackPath = path.join(homeDir, 'Documents', 'WorshipNote_Data', 'Music_Sheets');
+  console.log('폴백 경로 사용:', fallbackPath);
+  return fallbackPath;
 };
 
 // 폴더 생성 함수

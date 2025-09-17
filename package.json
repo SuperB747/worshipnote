@@ -10,7 +10,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "electron": "electron .",
-    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\" --kill-others-on-fail --prefix-colors blue,green",
+    "electron-dev": "concurrently \"npm start\" \"sleep 10 && electron .\" --kill-others-on-fail --prefix-colors blue,green",
     "dev": "npm run electron-dev",
     "electron-only": "npx electron . --disable-gpu --no-sandbox",
     "electron-pack": "electron-builder",
