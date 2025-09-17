@@ -1,0 +1,264 @@
+.song-preview {
+  flex: 2.0;
+  background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+  border-left: 1px solid rgba(74, 124, 89, 0.1);
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
+  overflow: hidden;
+  min-width: 300px;
+  padding: 10px;
+}
+
+.preview-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+  text-align: center;
+  color: var(--text-dark);
+}
+
+.placeholder-icon {
+  width: 80px;
+  height: 80px;
+  color: var(--primary-green);
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.preview-placeholder h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-dark);
+}
+
+.preview-placeholder p {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.5;
+}
+
+
+.score-preview {
+  flex: 1;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+}
+
+.score-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  text-align: center;
+  color: #666;
+}
+
+.score-icon {
+  width: 80px;
+  height: 80px;
+  color: var(--primary-green);
+  margin-bottom: 30px;
+  opacity: 0.6;
+}
+
+.score-placeholder p {
+  font-size: 18px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.file-info {
+  background: var(--warm-beige);
+  padding: 10px 15px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text-dark);
+  border: 1px solid var(--soft-brown);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1200px) {
+  .song-preview {
+    min-width: 350px;
+    flex: 1.5;
+  }
+  
+  .preview-header {
+    padding: 20px;
+  }
+  
+  .preview-content {
+    padding: 20px;
+  }
+  
+  .song-meta {
+    gap: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .song-preview {
+    min-width: 300px;
+    flex: 1;
+  }
+}
+
+/* JPG 이미지 미리보기 스타일 */
+.image-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 400px;
+}
+
+.image-viewer {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  background: white;
+  overflow: hidden;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px var(--shadow-soft);
+  border: 1px solid rgba(74, 124, 89, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.score-image {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: block;
+  visibility: visible;
+}
+
+/* 호버 효과 제거 - 이미지 확대/축소 효과 없음 */
+
+.pdf-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+  text-align: center;
+  color: #666;
+}
+
+.fallback-icon {
+  width: 60px;
+  height: 60px;
+  color: var(--primary-green);
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.pdf-fallback p {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-dark);
+  margin-bottom: 10px;
+}
+
+.fallback-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+/* 로딩 스타일 */
+.loading-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  text-align: center;
+  color: #666;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(74, 124, 89, 0.1);
+  border-left: 4px solid var(--primary-green);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-container p {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+/* 에러 스타일 */
+.error-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  text-align: center;
+  color: #666;
+}
+
+.error-icon {
+  width: 60px;
+  height: 60px;
+  color: #f44336;
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.error-container p {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-dark);
+  margin-bottom: 20px;
+}
+
+.retry-btn {
+  background: var(--primary-green);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.retry-btn:hover {
+  background: var(--primary-green-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 124, 89, 0.3);
+}
