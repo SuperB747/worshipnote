@@ -4,6 +4,7 @@
 }
 
 .page-header {
+  text-align: center;
   margin-bottom: 20px;
   padding: 12px;
   background: linear-gradient(135deg, rgba(74, 124, 89, 0.1), rgba(107, 142, 107, 0.1));
@@ -11,64 +12,15 @@
   border: 1px solid rgba(74, 124, 89, 0.2);
 }
 
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-}
-
-.header-left {
-  flex: 1;
-  text-align: left;
-}
-
-.header-right {
-  flex: 0 0 auto;
-}
-
 .page-header h1 {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   font-size: 18px;
   font-weight: 600;
   color: var(--text-dark);
   margin-bottom: 4px;
-}
-
-.export-pdf-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: linear-gradient(135deg, var(--primary-green), #5a8a5a);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(74, 124, 89, 0.3);
-}
-
-.export-pdf-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5a8a5a, var(--primary-green));
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(74, 124, 89, 0.4);
-}
-
-.export-pdf-button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.button-icon {
-  width: 16px;
-  height: 16px;
 }
 
 .header-icon {
@@ -266,6 +218,12 @@
   border-bottom: 1px solid var(--soft-brown);
 }
 
+.list-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -370,6 +328,35 @@
   box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
 }
 
+
+.export-pdf-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(145deg, #6c757d, #5a6268);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px var(--shadow-soft);
+}
+
+.export-pdf-btn:hover:not(:disabled) {
+  background: linear-gradient(145deg, #5a6268, #6c757d);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+}
+
+.export-pdf-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 
 .add-song-btn {
   display: flex;

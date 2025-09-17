@@ -403,26 +403,11 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   return (
     <div className="worship-list-page">
       <div className="page-header">
-        <div className="header-content">
-          <div className="header-left">
-            <h1>
-              <Calendar className="header-icon" />
-              찬양 리스트
-            </h1>
-            <p>달력에서 날짜를 선택하여 찬양 리스트를 관리하세요</p>
-          </div>
-          <div className="header-right">
-            <button
-              className="export-pdf-button"
-              onClick={handleExportPdf}
-              disabled={isExportingPdf}
-              title="선택된 날짜의 찬양 리스트를 PDF로 내보내기"
-            >
-              <Download className="button-icon" />
-              {isExportingPdf ? 'PDF 생성 중...' : 'PDF 내보내기'}
-            </button>
-          </div>
-        </div>
+        <h1>
+          <Calendar className="header-icon" />
+          찬양 리스트
+        </h1>
+        <p>달력에서 날짜를 선택하여 찬양 리스트를 관리하세요</p>
       </div>
 
       <div className="worship-list-container">
@@ -472,13 +457,24 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
             <h3>
               {format(selectedDate, 'M월 d일', { locale: ko })} 찬양 리스트
             </h3>
-            <button 
-              className="add-song-btn"
-              onClick={handleOpenSongSearch}
-            >
-              <Plus className="btn-icon" />
-              곡 추가
-            </button>
+            <div className="list-actions">
+              <button
+                className="export-pdf-btn"
+                onClick={handleExportPdf}
+                disabled={isExportingPdf}
+                title="선택된 날짜의 찬양 리스트를 PDF로 내보내기"
+              >
+                <Download className="btn-icon" />
+                {isExportingPdf ? 'PDF 생성 중...' : 'PDF 내보내기'}
+              </button>
+              <button 
+                className="add-song-btn"
+                onClick={handleOpenSongSearch}
+              >
+                <Plus className="btn-icon" />
+                곡 추가
+              </button>
+            </div>
           </div>
 
           {showSongSearch && (

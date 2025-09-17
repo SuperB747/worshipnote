@@ -2,10 +2,10 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 // OneDrive 경로 찾기 함수
-const findOneDrivePath = () => {
+const findOneDrivePath = async () => {
   const { ipcRenderer } = window.electronAPI;
   if (ipcRenderer) {
-    return ipcRenderer.invoke('find-one-drive-path');
+    return await ipcRenderer.invoke('get-onedrive-path');
   }
   return null;
 };
