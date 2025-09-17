@@ -311,71 +311,24 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     setEditForm({ title: '', key: '', tempo: '', firstLyrics: '' });
   };
 
-  // 수정 모달 입력 필드 클릭 핸들러 - 더 안정적인 버전
+  // 수정 모달 입력 필드 클릭 핸들러 - 간단한 버전
   const handleEditInputClick = (e) => {
-    e.preventDefault();
     e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
     
     const target = e.target;
     if (target) {
       target.focus();
-      
-      // 클릭한 위치에 커서 설정 - 더 정확한 계산
-      if (target.setSelectionRange) {
-        const rect = target.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        
-        // 패딩과 보더를 고려한 실제 텍스트 영역 계산
-        const computedStyle = window.getComputedStyle(target);
-        const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
-        const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0;
-        const textStartX = paddingLeft + borderLeft;
-        const actualClickX = clickX - textStartX;
-        
-        // 텍스트 너비 계산 (스크롤 너비 사용)
-        const textWidth = target.scrollWidth;
-        const textLength = target.value.length;
-        
-        if (textLength > 0 && textWidth > 0) {
-          const charWidth = textWidth / textLength;
-          const clickPosition = Math.round(actualClickX / charWidth);
-          const clampedPosition = Math.max(0, Math.min(clickPosition, textLength));
-          
-          // 약간의 지연을 두고 커서 위치 설정
-          setTimeout(() => {
-            target.setSelectionRange(clampedPosition, clampedPosition);
-          }, 0);
-        } else {
-          // 텍스트가 없으면 시작 위치에 커서 설정
-          target.setSelectionRange(0, 0);
-        }
-      }
     }
   };
 
-  // 수정 모달 입력 필드 포커스 핸들러 - 강화된 버전
+  // 수정 모달 입력 필드 포커스 핸들러 - 간단한 버전
   const handleEditInputFocus = (e) => {
-    e.preventDefault();
     e.stopPropagation();
-    
-    const target = e.target;
-    if (target) {
-      // 포커스만 설정하고 커서 위치는 클릭 핸들러에서 처리
-      target.focus();
-    }
   };
 
-  // 수정 모달 마우스 다운 핸들러 - 강화된 버전
+  // 수정 모달 마우스 다운 핸들러 - 간단한 버전
   const handleEditInputMouseDown = (e) => {
-    e.preventDefault();
     e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
-    
-    const target = e.target;
-    if (target) {
-      target.focus();
-    }
   };
 
 
