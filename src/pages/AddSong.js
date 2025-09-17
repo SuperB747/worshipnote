@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Upload, Music, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { processFileUpload } from '../utils/fileConverter';
+import GhibliDialog from '../components/GhibliDialog';
 import './AddSong.css';
 
 const AddSong = ({ songs, setSongs, setSelectedSong }) => {
@@ -20,6 +21,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     error: null,
     message: ''
   });
+  const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
 
   const keys = ['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Eb', 'F', 'G'];
   const tempos = ['Fast', 'Medium', 'Slow'];
@@ -154,7 +156,11 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.title.trim()) {
-      alert('찬양 이름을 입력해주세요.');
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: '찬양 이름을 입력해주세요.'
+      });
       return;
     }
 
@@ -184,7 +190,11 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
       message: ''
     });
 
-    alert('악보가 성공적으로 추가되었습니다!');
+    setDialog({
+      isVisible: true,
+      type: 'success',
+      message: '악보가 성공적으로 추가되었습니다!'
+    });
   };
 
   return (
@@ -360,7 +370,13 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
           </div>
         </form>
       </div>
-
+      
+      <GhibliDialog
+        isVisible={dialog.isVisible}
+        type={dialog.type}
+        message={dialog.message}
+        onClose={() => setDialog({ isVisible: false, type: 'success', message: '' })}
+      />
     </div>
   );
 };

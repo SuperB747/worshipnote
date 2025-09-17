@@ -10,7 +10,8 @@ const GhibliDialog = ({
   onClose, 
   showCloseButton = true,
   autoClose = false,
-  autoCloseDelay = 3000
+  autoCloseDelay = 3000,
+  children
 }) => {
   React.useEffect(() => {
     if (isVisible && autoClose) {
@@ -81,12 +82,16 @@ const GhibliDialog = ({
           </div>
           
           <div className="ghibli-dialog-footer">
-            <button 
-              className="ghibli-dialog-button"
-              onClick={onClose}
-            >
-              확인
-            </button>
+            {children ? (
+              children
+            ) : (
+              <button 
+                className="ghibli-dialog-button"
+                onClick={onClose}
+              >
+                확인
+              </button>
+            )}
           </div>
         </div>
       </div>
