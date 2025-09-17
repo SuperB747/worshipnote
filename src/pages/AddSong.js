@@ -73,16 +73,8 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     
     const target = e.target;
     if (target) {
-      // 텍스트 선택
-      if (target.select) {
-        target.select();
-      }
-      
-      // 커서를 끝으로 이동
-      if (target.setSelectionRange && target.value) {
-        const len = target.value.length;
-        target.setSelectionRange(len, len);
-      }
+      // 포커스만 설정하고 커서 위치는 클릭 핸들러에서 처리
+      target.focus();
     }
   }, []);
 

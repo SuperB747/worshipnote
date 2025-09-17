@@ -198,14 +198,8 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     
     const target = e.target;
     if (target) {
-      if (target.select) {
-        target.select();
-      }
-      
-      if (target.setSelectionRange && target.value) {
-        const len = target.value.length;
-        target.setSelectionRange(len, len);
-      }
+      // 포커스만 설정하고 커서 위치는 클릭 핸들러에서 처리
+      target.focus();
     }
   };
 
