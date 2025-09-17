@@ -174,7 +174,11 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
       <div className="form-container">
         <form onSubmit={handleSubmit} className="song-form">
           <div className="form-row compact-row">
-            <div className="form-group compact-group full-width floating-label-group">
+            <div className="form-group compact-group full-width">
+              <label className="form-label compact-label">
+                <Music className="label-icon" />
+                찬양 이름 *
+              </label>
               <input
                 ref={titleInputRef}
                 type="text"
@@ -184,56 +188,56 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                 onClick={handleInputClick}
                 onFocus={handleInputFocus}
                 onMouseDown={handleInputMouseDown}
-                className={`form-input compact-input floating-input ${formData.title ? 'has-value' : ''}`}
-                placeholder=" "
+                className="form-input compact-input"
+                placeholder="찬양 이름을 입력하세요"
                 required
                 autoComplete="off"
                 tabIndex={1}
               />
-              <label className="floating-label">찬양 이름 *</label>
             </div>
 
             <div className="form-row">
-              <div className="form-group compact-group floating-label-group">
+              <div className="form-group compact-group">
+                <label className="form-label compact-label">코드</label>
                 <select
                   name="key"
                   value={formData.key}
                   onChange={handleInputChange}
                   onClick={handleInputClick}
                   onMouseDown={handleInputMouseDown}
-                  className={`form-select compact-select floating-select ${formData.key ? 'has-value' : ''}`}
+                  className="form-select compact-select"
                   tabIndex={3}
                 >
-                  <option value=""> </option>
+                  <option value="">선택하세요</option>
                   {keys.map(key => (
                     <option key={key} value={key}>{key}</option>
                   ))}
                 </select>
-                <label className="floating-label">코드</label>
               </div>
 
-              <div className="form-group compact-group floating-label-group">
+              <div className="form-group compact-group">
+                <label className="form-label compact-label">빠르기</label>
                 <select
                   name="tempo"
                   value={formData.tempo}
                   onChange={handleInputChange}
                   onClick={handleInputClick}
                   onMouseDown={handleInputMouseDown}
-                  className={`form-select compact-select floating-select ${formData.tempo ? 'has-value' : ''}`}
+                  className="form-select compact-select"
                   tabIndex={4}
                 >
-                  <option value=""> </option>
+                  <option value="">선택하세요</option>
                   {tempos.map(tempo => (
                     <option key={tempo} value={tempo}>{tempo}</option>
                   ))}
                 </select>
-                <label className="floating-label">빠르기</label>
               </div>
             </div>
           </div>
 
           <div className="form-row compact-row">
-            <div className="form-group compact-group full-width floating-label-group">
+            <div className="form-group compact-group full-width">
+              <label className="form-label compact-label">첫 가사</label>
               <input
                 type="text"
                 name="firstLyrics"
@@ -242,12 +246,11 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                 onClick={handleInputClick}
                 onFocus={handleInputFocus}
                 onMouseDown={handleInputMouseDown}
-                className={`form-input compact-input floating-input ${formData.firstLyrics ? 'has-value' : ''}`}
-                placeholder=" "
+                className="form-input compact-input"
+                placeholder="첫 번째 가사를 입력하세요"
                 autoComplete="off"
                 tabIndex={2}
               />
-              <label className="floating-label">첫 가사</label>
             </div>
           </div>
 

@@ -112,37 +112,44 @@
   min-height: 50px;
 }
 
+
+/* Compact Form Styles */
 .form-group {
   display: flex;
   flex-direction: column;
-  margin-bottom: 4px;
+  margin-bottom: 12px;
 }
 
 .form-label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-bottom: 6px;
   font-weight: 600;
   color: var(--text-dark);
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.compact-label {
+  font-size: 12px;
+  margin-bottom: 4px;
 }
 
 .label-icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   color: var(--primary-green);
 }
 
 .form-input {
   width: 100%;
-  padding: 15px 20px;
+  padding: 10px 12px;
   border: 2px solid var(--soft-brown);
-  border-radius: 15px;
-  font-size: 16px;
+  border-radius: 8px;
+  font-size: 14px;
   background: white;
   transition: all 0.3s ease;
-  box-shadow: inset 0 2px 4px var(--shadow-soft);
+  cursor: text;
 }
 
 .form-input:focus {
@@ -151,115 +158,38 @@
   box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
 }
 
-/* Floating Label Effect */
-.floating-label-group {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-
-.floating-label-group:hover .floating-input {
+.form-input:hover {
   border-color: var(--primary-green);
 }
 
-.floating-label-group:hover .floating-select {
-  border-color: var(--primary-green);
-}
-
-.floating-input {
-  padding: 16px 15px 8px 15px;
+.form-select {
+  width: 100%;
+  padding: 10px 12px;
   border: 2px solid var(--soft-brown);
   border-radius: 8px;
   font-size: 14px;
   background: white;
+  cursor: pointer;
   transition: all 0.3s ease;
-  width: 100%;
-  cursor: text;
-  position: relative;
-  z-index: 10;
-  pointer-events: auto;
-}
-
-.floating-input:focus {
-  outline: none;
-  border-color: var(--primary-green);
-  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
-  z-index: 20;
-}
-
-.floating-input:hover {
-  border-color: var(--primary-green);
-}
-
-.floating-label {
-  position: absolute;
-  left: 12px;
-  top: 16px;
-  background: white;
-  padding: 0 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #999;
-  transition: all 0.3s ease;
-  pointer-events: none;
-  z-index: 5;
-}
-
-.floating-input:focus + .floating-label,
-.floating-input.has-value + .floating-label {
-  top: -8px;
-  font-size: 12px;
-  color: var(--primary-green);
-}
-
-.floating-input.has-value + .floating-label {
-  color: var(--text-dark);
-}
-
-/* Floating Select Styles */
-.floating-select {
-  padding: 16px 15px 8px 15px;
-  border: 2px solid var(--soft-brown);
-  border-radius: 8px;
-  font-size: 14px;
-  background: white;
-  transition: all 0.3s ease;
-  width: 100%;
   appearance: none;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234a7c59' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 16px;
   padding-right: 40px;
-  cursor: pointer;
-  position: relative;
-  z-index: 10;
-  pointer-events: auto;
 }
 
-.floating-select:focus {
+.form-select:focus {
   outline: none;
   border-color: var(--primary-green);
   box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
-  z-index: 20;
 }
 
-.floating-select:hover {
+.form-select:hover {
   border-color: var(--primary-green);
 }
 
-.floating-select:focus + .floating-label,
-.floating-select.has-value + .floating-label {
-  top: -8px;
-  font-size: 12px;
-  color: var(--primary-green);
-}
-
-.floating-select.has-value + .floating-label {
-  color: var(--text-dark);
-}
-
-.floating-select option {
+.form-select option {
   padding: 8px 12px;
   color: var(--text-dark);
 }
@@ -284,23 +214,6 @@
   box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
 }
 
-.form-select {
-  width: 100%;
-  padding: 15px 20px;
-  border: 2px solid var(--soft-brown);
-  border-radius: 15px;
-  font-size: 16px;
-  background: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: inset 0 2px 4px var(--shadow-soft);
-}
-
-.form-select:focus {
-  outline: none;
-  border-color: var(--primary-green);
-  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
-}
 
 .file-upload-group {
   grid-column: 1 / -1;
