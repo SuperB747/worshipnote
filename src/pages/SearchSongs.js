@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Filter, Music, Hash, Clock, FileText, Edit, Trash2, Plus, FileX } from 'lucide-react';
 import { processFileUpload } from '../utils/fileConverter';
 import { saveSongs } from '../utils/storage';
+import GhibliDialog from '../components/GhibliDialog';
 import './SearchSongs.css';
 
 const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExistenceMap }) => {
@@ -28,6 +29,8 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [originalSelectedSong, setOriginalSelectedSong] = useState(null);
+  const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
+  const [confirmDialog, setConfirmDialog] = useState({ isVisible: false, message: '', onConfirm: null });
 
   const keys = ['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Eb', 'F', 'G'];
   const tempos = ['Fast', 'Medium', 'Slow'];
@@ -119,30 +122,36 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
   };
 
   const handleDelete = async (songId) => {
-    if (window.confirm('정말로 이 찬양을 삭제하시겠습니까?')) {
-      // 삭제할 곡 찾기
-      const songToDelete = songs.find(song => song.id === songId);
+    setConfirmDialog({
+      isVisible: true,
+      message: '정말로 이 찬양을 삭제하시겠습니까?',
+      onConfirm: async () => {
+        // 삭제할 곡 찾기
+        const songToDelete = songs.find(song => song.id === songId);
       
-      // OneDrive에서 파일 삭제
-      if (songToDelete && songToDelete.filePath && window.electronAPI && window.electronAPI.deleteFile) {
-        try {
-          const result = await window.electronAPI.deleteFile(songToDelete.filePath);
-          if (!result.success) {
-            console.error('OneDrive 파일 삭제 실패:', result.error);
+        // OneDrive에서 파일 삭제
+        if (songToDelete && songToDelete.filePath && window.electronAPI && window.electronAPI.deleteFile) {
+          try {
+            const result = await window.electronAPI.deleteFile(songToDelete.filePath);
+            if (!result.success) {
+              console.error('OneDrive 파일 삭제 실패:', result.error);
+            }
+          } catch (error) {
+            console.error('파일 삭제 중 오류:', error);
           }
-        } catch (error) {
-          console.error('파일 삭제 중 오류:', error);
         }
+        
+        // UI에서 곡 제거
+        setSongs(prev => prev.filter(song => song.id !== songId));
+        
+        // 삭제된 곡이 현재 선택된 곡이면 선택 해제
+        if (setSelectedSong) {
+          setSelectedSong(null);
+        }
+
+        setConfirmDialog({ isVisible: false, message: '', onConfirm: null });
       }
-      
-      // UI에서 곡 제거
-      setSongs(prev => prev.filter(song => song.id !== songId));
-      
-      // 삭제된 곡이 현재 선택된 곡이면 선택 해제
-      if (setSelectedSong) {
-        setSelectedSong(null);
-      }
-    }
+    });
   };
 
   const handleEditInputChange = (e) => {
@@ -260,7 +269,11 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editFormData.title.trim()) {
-      alert('찬양 이름을 입력해주세요.');
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: '찬양 이름을 입력해주세요.'
+      });
       return;
     }
 
@@ -282,12 +295,20 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
       const saveResult = await saveSongs(updatedSongs);
       if (!saveResult) {
         console.error('찬양 저장 실패');
-        alert('찬양 저장에 실패했습니다. 다시 시도해주세요.');
+        setDialog({
+          isVisible: true,
+          type: 'error',
+          message: '찬양 저장에 실패했습니다. 다시 시도해주세요.'
+        });
         return;
       }
     } catch (error) {
       console.error('찬양 저장 중 오류:', error);
-      alert('찬양 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: '찬양 저장 중 오류가 발생했습니다. 다시 시도해주세요.'
+      });
       return;
     }
     
@@ -300,7 +321,11 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     
     setEditingSong(null);
     setOriginalSelectedSong(null);
-    alert('찬양이 성공적으로 수정되었습니다!');
+    setDialog({
+      isVisible: true,
+      type: 'success',
+      message: '찬양이 성공적으로 수정되었습니다!'
+    });
   };
 
   const handleEditCancel = () => {
@@ -727,6 +752,42 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
           </div>
         </div>
       )}
+      
+      <GhibliDialog
+        isVisible={dialog.isVisible}
+        type={dialog.type}
+        message={dialog.message}
+        onClose={() => setDialog({ isVisible: false, type: 'success', message: '' })}
+      />
+      
+      <GhibliDialog
+        isVisible={confirmDialog.isVisible}
+        type="info"
+        title="확인"
+        message={confirmDialog.message}
+        onClose={() => setConfirmDialog({ isVisible: false, message: '', onConfirm: null })}
+        showCloseButton={false}
+      >
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
+          <button 
+            className="ghibli-dialog-button"
+            onClick={() => setConfirmDialog({ isVisible: false, message: '', onConfirm: null })}
+            style={{ background: 'linear-gradient(135deg, #8b7355 0%, #a68b5b 100%)' }}
+          >
+            취소
+          </button>
+          <button 
+            className="ghibli-dialog-button"
+            onClick={() => {
+              if (confirmDialog.onConfirm) {
+                confirmDialog.onConfirm();
+              }
+            }}
+          >
+            확인
+          </button>
+        </div>
+      </GhibliDialog>
     </div>
   );
 };
