@@ -89,6 +89,11 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     return sorted;
   }, [songs, searchTerm, filters]);
 
+  // 악보 누락 개수 계산
+  const missingMusicSheetCount = useMemo(() => {
+    return filteredSongs.filter(song => !hasMusicSheet(song)).length;
+  }, [filteredSongs, fileExistenceMap]);
+
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => ({
       ...prev,
@@ -469,9 +474,18 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
 
       <div className="results-container">
         <div className="results-header">
-          <h3>
-            찬양 악보 리스트 ({filteredSongs.length}개)
-          </h3>
+          <div className="header-left">
+            <h3>
+              찬양 악보 리스트 ({filteredSongs.length}개)
+            </h3>
+          </div>
+          {missingMusicSheetCount > 0 && (
+            <div className="header-right">
+              <span className="missing-count">
+                악보 누락 ({missingMusicSheetCount}개)
+              </span>
+            </div>
+          )}
         </div>
 
         {filteredSongs.length === 0 ? (
