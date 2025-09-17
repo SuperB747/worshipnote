@@ -32,7 +32,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
   const [confirmDialog, setConfirmDialog] = useState({ isVisible: false, message: '', onConfirm: null });
 
-  const keys = ['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Eb', 'F', 'G'];
+  const keys = ['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Em', 'Eb', 'F', 'G'];
   const tempos = ['Fast', 'Medium', 'Slow'];
 
   // 악보 파일이 있는지 확인하는 함수 (실제 파일 존재 여부 포함)

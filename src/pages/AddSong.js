@@ -23,7 +23,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
   });
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
 
-  const keys = ['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Eb', 'F', 'G'];
+  const keys = ['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Em', 'Eb', 'F', 'G'];
   const tempos = ['Fast', 'Medium', 'Slow'];
 
   // 컴포넌트 마운트 시 입력 필드 포커스
