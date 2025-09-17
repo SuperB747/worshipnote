@@ -3,11 +3,16 @@ import html2canvas from 'html2canvas';
 
 // OneDrive 경로 찾기 함수
 const findOneDrivePath = async () => {
-  const { ipcRenderer } = window.electronAPI;
-  if (ipcRenderer) {
-    return await ipcRenderer.invoke('get-onedrive-path');
+  try {
+    if (!window.electronAPI || !window.electronAPI.getOneDrivePath) {
+      console.error('Electron API를 사용할 수 없습니다. window.electronAPI:', window.electronAPI);
+      return null;
+    }
+    return await window.electronAPI.getOneDrivePath();
+  } catch (error) {
+    console.error('OneDrive 경로 찾기 실패:', error);
+    return null;
   }
-  return null;
 };
 
 // PDF 저장 경로 생성
@@ -27,17 +32,30 @@ const getPdfSavePath = async (date) => {
   const serviceType = dayOfWeek === 5 ? '금요기도회' : '주일예배';
   const fileName = `${year}${month}${day} ${serviceType} 찬양 리스트.pdf`;
 
-  // OneDrive 경로 구성
-  const pdfPath = `${oneDrivePath}/Documents/Archive/한소망교회/찬양 리스트/찬양리스트모음/${fileName}`;
+  // OneDrive 경로 구성 (수동으로 경로 구분자 처리)
+  const pathSeparator = oneDrivePath.includes('\\') ? '\\' : '/';
+  const pdfPath = `${oneDrivePath}${pathSeparator}Documents${pathSeparator}Archive${pathSeparator}한소망교회${pathSeparator}찬양 리스트${pathSeparator}찬양리스트모음${pathSeparator}${fileName}`;
   
   return pdfPath;
 };
 
-// 이미지 URL을 Blob으로 변환
-const imageUrlToBlob = async (url) => {
+// Electron을 통해 이미지 파일을 읽어서 Blob으로 변환
+const imageFileToBlob = async (filePath) => {
   try {
-    const response = await fetch(url);
-    const blob = await response.blob();
+    // Electron API 사용 가능 여부 확인
+    if (!window.electronAPI || !window.electronAPI.readFile) {
+      console.error('Electron API를 사용할 수 없습니다. window.electronAPI:', window.electronAPI);
+      throw new Error('Electron API를 사용할 수 없습니다.');
+    }
+
+    // Electron의 readFile API를 사용하여 파일 읽기
+    const fileData = await window.electronAPI.readFile(filePath);
+    if (!fileData) {
+      throw new Error('파일을 읽을 수 없습니다.');
+    }
+
+    // Buffer를 Blob으로 변환
+    const blob = new Blob([fileData], { type: 'image/jpeg' });
     return blob;
   } catch (error) {
     console.error('이미지 로드 실패:', error);
@@ -89,11 +107,8 @@ export const generateWorshipListPDF = async (songs, date) => {
       // 악보 파일이 있는 경우에만 처리
       if (song.fileName && song.filePath) {
         try {
-          // 이미지 URL 생성 (Electron의 file:// 프로토콜 사용)
-          const imageUrl = `file://${song.filePath}`;
-          
-          // 이미지를 Blob으로 로드
-          const blob = await imageUrlToBlob(imageUrl);
+          // Electron을 통해 이미지 파일을 Blob으로 로드
+          const blob = await imageFileToBlob(song.filePath);
           if (!blob) {
             console.warn(`이미지 로드 실패: ${song.fileName}`);
             continue;
@@ -147,24 +162,23 @@ export const generateWorshipListPDF = async (songs, date) => {
     const pdfBlob = pdf.output('blob');
     
     // Electron을 통해 파일 저장
-    const { ipcRenderer } = window.electronAPI;
-    if (ipcRenderer) {
-      const result = await ipcRenderer.invoke('save-pdf', {
-        pdfBlob: pdfBlob,
-        filePath: pdfPath
-      });
-      
-      if (result.success) {
-        return {
-          success: true,
-          message: `PDF가 성공적으로 생성되었습니다!\n저장 위치: ${pdfPath}`,
-          filePath: pdfPath
-        };
-      } else {
-        throw new Error(result.error);
-      }
-    } else {
+    if (!window.electronAPI || !window.electronAPI.savePdf) {
       throw new Error('Electron API를 사용할 수 없습니다.');
+    }
+
+    const result = await window.electronAPI.savePdf({
+      pdfBlob: pdfBlob,
+      filePath: pdfPath
+    });
+    
+    if (result.success) {
+      return {
+        success: true,
+        message: `PDF가 성공적으로 생성되었습니다!\n저장 위치: ${pdfPath}`,
+        filePath: pdfPath
+      };
+    } else {
+      throw new Error(result.error);
     }
 
   } catch (error) {

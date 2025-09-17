@@ -337,6 +337,16 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
 
   // PDF 내보내기 함수
   const handleExportPdf = async () => {
+    // Electron API 사용 가능 여부 확인
+    if (!window.electronAPI) {
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: 'Electron API를 사용할 수 없습니다. 앱을 다시 시작해주세요.'
+      });
+      return;
+    }
+
     const currentDateKey = format(selectedDate, 'yyyy-MM-dd');
     const currentSongs = worshipLists[currentDateKey] || [];
     
