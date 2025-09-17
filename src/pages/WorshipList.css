@@ -4,7 +4,6 @@
 }
 
 .page-header {
-  text-align: center;
   margin-bottom: 20px;
   padding: 12px;
   background: linear-gradient(135deg, rgba(74, 124, 89, 0.1), rgba(107, 142, 107, 0.1));
@@ -12,15 +11,64 @@
   border: 1px solid rgba(74, 124, 89, 0.2);
 }
 
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-left {
+  flex: 1;
+  text-align: left;
+}
+
+.header-right {
+  flex: 0 0 auto;
+}
+
 .page-header h1 {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
   font-size: 18px;
   font-weight: 600;
   color: var(--text-dark);
   margin-bottom: 4px;
+}
+
+.export-pdf-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, var(--primary-green), #5a8a5a);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(74, 124, 89, 0.3);
+}
+
+.export-pdf-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5a8a5a, var(--primary-green));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(74, 124, 89, 0.4);
+}
+
+.export-pdf-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.button-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .header-icon {

@@ -35,6 +35,11 @@ const writeFile = async (filePath, data) => {
   return await ipcRenderer.invoke('write-file', filePath, data);
 };
 
+// PDF 저장 함수 (IPC로 메인 프로세스에 위임)
+const savePdf = async (pdfData) => {
+  return await ipcRenderer.invoke('save-pdf', pdfData);
+};
+
 // API를 렌더러 프로세스에 노출
 contextBridge.exposeInMainWorld('electronAPI', {
   saveFile: (fileData) => saveFile(fileData),
@@ -43,5 +48,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readFile: (filePath) => readFile(filePath),
   deleteFile: (filePath) => deleteFile(filePath),
   createDirectory: (dirPath) => createDirectory(dirPath),
-  writeFile: (filePath, data) => writeFile(filePath, data)
+  writeFile: (filePath, data) => writeFile(filePath, data),
+  savePdf: (pdfData) => savePdf(pdfData)
 });

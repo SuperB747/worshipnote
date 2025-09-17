@@ -17,10 +17,12 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3 } from 'lucide-react';
+import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3, Download } from 'lucide-react';
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { saveWorshipLists } from '../utils/storage';
+import { generateWorshipListPDF } from '../utils/pdfExporter';
+import GhibliDialog from '../components/GhibliDialog';
 import './WorshipList.css';
 
 // SortableItem 컴포넌트
@@ -90,6 +92,8 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const [selectedSongs, setSelectedSongs] = useState([]);
   const [editingSong, setEditingSong] = useState(null);
   const [editForm, setEditForm] = useState({ title: '', key: '', tempo: '', firstLyrics: '' });
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -331,6 +335,61 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     e.stopPropagation();
   };
 
+  // PDF 내보내기 함수
+  const handleExportPdf = async () => {
+    const currentDateKey = format(selectedDate, 'yyyy-MM-dd');
+    const currentSongs = worshipLists[currentDateKey] || [];
+    
+    if (currentSongs.length === 0) {
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: '선택된 날짜에 찬양이 없습니다.'
+      });
+      return;
+    }
+
+    // 악보가 있는 찬양만 필터링
+    const songsWithMusicSheets = currentSongs.filter(song => song.fileName && song.filePath);
+    
+    if (songsWithMusicSheets.length === 0) {
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: '선택된 날짜에 악보가 있는 찬양이 없습니다.'
+      });
+      return;
+    }
+
+    setIsExportingPdf(true);
+    
+    try {
+      const result = await generateWorshipListPDF(songsWithMusicSheets, currentDateKey);
+      
+      if (result.success) {
+        setDialog({
+          isVisible: true,
+          type: 'success',
+          message: result.message
+        });
+      } else {
+        setDialog({
+          isVisible: true,
+          type: 'error',
+          message: `PDF 생성 실패: ${result.error}`
+        });
+      }
+    } catch (error) {
+      console.error('PDF 내보내기 오류:', error);
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: `PDF 내보내기 중 오류가 발생했습니다: ${error.message}`
+      });
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
 
   const getDateClass = (date) => {
     const dateKey = format(date, 'yyyy-MM-dd');
@@ -344,11 +403,26 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   return (
     <div className="worship-list-page">
       <div className="page-header">
-        <h1>
-          <Calendar className="header-icon" />
-          찬양 리스트
-        </h1>
-        <p>달력에서 날짜를 선택하여 찬양 리스트를 관리하세요</p>
+        <div className="header-content">
+          <div className="header-left">
+            <h1>
+              <Calendar className="header-icon" />
+              찬양 리스트
+            </h1>
+            <p>달력에서 날짜를 선택하여 찬양 리스트를 관리하세요</p>
+          </div>
+          <div className="header-right">
+            <button
+              className="export-pdf-button"
+              onClick={handleExportPdf}
+              disabled={isExportingPdf}
+              title="선택된 날짜의 찬양 리스트를 PDF로 내보내기"
+            >
+              <Download className="button-icon" />
+              {isExportingPdf ? 'PDF 생성 중...' : 'PDF 내보내기'}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="worship-list-container">
@@ -636,6 +710,14 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
           </div>
         </div>
       )}
+
+      {/* PDF 내보내기 다이얼로그 */}
+      <GhibliDialog
+        isVisible={dialog.isVisible}
+        type={dialog.type}
+        message={dialog.message}
+        onClose={() => setDialog({ isVisible: false, type: 'success', message: '' })}
+      />
     </div>
   );
 };
