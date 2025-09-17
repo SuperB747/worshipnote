@@ -320,11 +320,17 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     const target = e.target;
     if (target) {
       target.focus();
-      target.click();
       
-      if (target.setSelectionRange && target.value) {
-        const len = target.value.length;
-        target.setSelectionRange(len, len);
+      // 클릭한 위치에 커서 설정
+      if (target.setSelectionRange) {
+        const rect = target.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const textWidth = target.scrollWidth;
+        const charWidth = textWidth / (target.value.length || 1);
+        const clickPosition = Math.round(clickX / charWidth);
+        const clampedPosition = Math.max(0, Math.min(clickPosition, target.value.length));
+        
+        target.setSelectionRange(clampedPosition, clampedPosition);
       }
     }
   };

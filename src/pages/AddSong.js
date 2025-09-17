@@ -41,7 +41,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     }));
   }, []);
 
-  // 입력 필드 클릭 핸들러 - 강화된 버전
+  // 입력 필드 클릭 핸들러 - 개선된 버전
   const handleInputClick = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -49,14 +49,19 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     
     const target = e.target;
     if (target) {
-      // 강제로 포커스 설정
+      // 포커스 설정
       target.focus();
-      target.click();
       
-      // 커서 위치 설정
-      if (target.setSelectionRange && target.value) {
-        const len = target.value.length;
-        target.setSelectionRange(len, len);
+      // 클릭한 위치에 커서 설정
+      if (target.setSelectionRange) {
+        const rect = target.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const textWidth = target.scrollWidth;
+        const charWidth = textWidth / (target.value.length || 1);
+        const clickPosition = Math.round(clickX / charWidth);
+        const clampedPosition = Math.max(0, Math.min(clickPosition, target.value.length));
+        
+        target.setSelectionRange(clampedPosition, clampedPosition);
       }
     }
   }, []);
@@ -91,6 +96,20 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     if (target) {
       // 즉시 포커스 설정
       target.focus();
+    }
+  }, []);
+
+  // 드롭다운 클릭 핸들러 - 드롭다운 전용
+  const handleSelectClick = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    
+    const target = e.target;
+    if (target) {
+      // 드롭다운 열기
+      target.focus();
+      target.click();
     }
   }, []);
 
@@ -239,7 +258,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                   name="key"
                   value={formData.key}
                   onChange={handleInputChange}
-                  onClick={handleInputClick}
+                  onClick={handleSelectClick}
                   onMouseDown={handleInputMouseDown}
                   className="form-select compact-select"
                   tabIndex={3}
@@ -257,7 +276,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                   name="tempo"
                   value={formData.tempo}
                   onChange={handleInputChange}
-                  onClick={handleInputClick}
+                  onClick={handleSelectClick}
                   onMouseDown={handleInputMouseDown}
                   className="form-select compact-select"
                   tabIndex={4}

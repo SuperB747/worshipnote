@@ -176,11 +176,17 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     const target = e.target;
     if (target) {
       target.focus();
-      target.click();
       
-      if (target.setSelectionRange && target.value) {
-        const len = target.value.length;
-        target.setSelectionRange(len, len);
+      // 클릭한 위치에 커서 설정
+      if (target.setSelectionRange) {
+        const rect = target.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const textWidth = target.scrollWidth;
+        const charWidth = textWidth / (target.value.length || 1);
+        const clickPosition = Math.round(clickX / charWidth);
+        const clampedPosition = Math.max(0, Math.min(clickPosition, target.value.length));
+        
+        target.setSelectionRange(clampedPosition, clampedPosition);
       }
     }
   };
@@ -212,6 +218,19 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     const target = e.target;
     if (target) {
       target.focus();
+    }
+  };
+
+  // 드롭다운 클릭 핸들러 - 드롭다운 전용
+  const handleEditSelectClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    
+    const target = e.target;
+    if (target) {
+      target.focus();
+      target.click();
     }
   };
 
@@ -599,15 +618,15 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
 
                 <div className="form-group compact-group">
                   <label className="form-label compact-label">코드</label>
-                  <select
-                    name="key"
-                    value={editFormData.key}
-                    onChange={handleEditInputChange}
-                    onClick={handleEditInputClick}
-                    onMouseDown={handleEditInputMouseDown}
-                    className="form-select compact-select"
-                    tabIndex={2}
-                  >
+                    <select
+                      name="key"
+                      value={editFormData.key}
+                      onChange={handleEditInputChange}
+                      onClick={handleEditSelectClick}
+                      onMouseDown={handleEditInputMouseDown}
+                      className="form-select compact-select"
+                      tabIndex={2}
+                    >
                     {keys.map(key => (
                       <option key={key} value={key}>{key}</option>
                     ))}
@@ -616,15 +635,15 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
 
                 <div className="form-group compact-group">
                   <label className="form-label compact-label">빠르기</label>
-                  <select
-                    name="tempo"
-                    value={editFormData.tempo}
-                    onChange={handleEditInputChange}
-                    onClick={handleEditInputClick}
-                    onMouseDown={handleEditInputMouseDown}
-                    className="form-select compact-select"
-                    tabIndex={3}
-                  >
+                    <select
+                      name="tempo"
+                      value={editFormData.tempo}
+                      onChange={handleEditInputChange}
+                      onClick={handleEditSelectClick}
+                      onMouseDown={handleEditInputMouseDown}
+                      className="form-select compact-select"
+                      tabIndex={3}
+                    >
                     {tempos.map(tempo => (
                       <option key={tempo} value={tempo}>{tempo}</option>
                     ))}
