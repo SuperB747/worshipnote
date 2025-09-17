@@ -373,7 +373,7 @@ export const createWorshipListsBackup = async () => {
 };
 
 // 통합 데이터베이스 백업 생성 (찬양 리스트 + 악보 정보)
-export const createDatabaseBackup = async (currentSongs = null, currentWorshipLists = null) => {
+export const createDatabaseBackup = async (currentSongs = null, currentWorshipLists = null, fileExistenceMap = {}) => {
   try {
     // Electron API 사용 가능 여부 확인
     if (!window.electronAPI) {
@@ -488,8 +488,16 @@ export const createDatabaseBackup = async (currentSongs = null, currentWorshipLi
     console.log('통합 데이터베이스 백업 생성 완료 (OneDrive):', backupFilePath);
     console.log('백업 파일 크기:', (fileSize / 1024 / 1024).toFixed(2), 'MB');
     
-    // 악보가 없는 찬양 개수 계산
-    const songsWithoutMusicSheet = songs.filter(song => !song.fileName || song.fileName.trim() === '').length;
+    // 악보가 없는 찬양 개수 계산 (악보 검색과 동일한 로직 사용)
+    const songsWithoutMusicSheet = songs.filter(song => {
+      // fileName이 없으면 악보 없음
+      if (!song.fileName || song.fileName.trim() === '') {
+        return true;
+      }
+      
+      // fileExistenceMap에서 실제 파일 존재 여부 확인
+      return fileExistenceMap[song.id] !== true;
+    }).length;
     
     return { 
       success: true, 

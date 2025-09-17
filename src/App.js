@@ -275,6 +275,7 @@ function App() {
           worshipLists={worshipLists}
           setSongs={setSongs}
           setWorshipLists={setWorshipLists}
+          fileExistenceMap={fileExistenceMap}
         />
         <div className="main-content">
           <div className="content-area">

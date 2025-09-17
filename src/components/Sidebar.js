@@ -4,7 +4,7 @@ import { Music, Search, Calendar, Plus, Download, RotateCcw } from 'lucide-react
 import { createDatabaseBackup, restoreDatabaseFromBackup } from '../utils/storage';
 import './Sidebar.css';
 
-const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists }) => {
+const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistenceMap }) => {
   const location = useLocation();
 
   const menuItems = [
@@ -18,7 +18,7 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists }) => {
       console.log('통합 데이터베이스 백업 시작...');
       console.log('현재 songs 개수:', songs.length);
       console.log('현재 worshipLists 개수:', Object.keys(worshipLists).length);
-      const result = await createDatabaseBackup(songs, worshipLists);
+      const result = await createDatabaseBackup(songs, worshipLists, fileExistenceMap);
       console.log('통합 데이터베이스 백업 결과:', result);
       
       if (result.success) {
