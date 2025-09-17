@@ -103,6 +103,19 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
           try {
             const oneDrivePath = await window.electronAPI.getOneDrivePath();
             if (oneDrivePath) {
+              // WorshipNote_Data/Database 디렉토리 생성
+              const dataDirPath = `${oneDrivePath}/WorshipNote_Data`;
+              const databaseDirPath = `${dataDirPath}/Database`;
+              
+              try {
+                await window.electronAPI.createDirectory(dataDirPath);
+                await window.electronAPI.createDirectory(databaseDirPath);
+              } catch (dirError) {
+                if (!dirError.message.includes('already exists')) {
+                  console.warn('디렉토리 생성 실패:', dirError);
+                }
+              }
+
               const songsData = {
                 songs,
                 lastUpdated: new Date().toISOString()
@@ -112,8 +125,11 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
                 lastUpdated: new Date().toISOString()
               };
 
-              await window.electronAPI.writeFile(`${oneDrivePath}/songs.json`, JSON.stringify(songsData, null, 2));
-              await window.electronAPI.writeFile(`${oneDrivePath}/worship_lists.json`, JSON.stringify(worshipListsData, null, 2));
+              // Database 폴더에 저장
+              await window.electronAPI.writeFile(`${databaseDirPath}/songs.json`, JSON.stringify(songsData, null, 2));
+              await window.electronAPI.writeFile(`${databaseDirPath}/worship_lists.json`, JSON.stringify(worshipListsData, null, 2));
+              
+              console.log('복원 완료: Database 폴더에 저장됨');
             }
           } catch (oneDriveError) {
             console.warn('OneDrive 저장 실패:', oneDriveError);

@@ -15,17 +15,62 @@ const findOneDrivePath = async () => {
   }
 };
 
+// Music_Sheets 경로 찾기 함수
+const findMusicSheetsPath = async () => {
+  try {
+    if (!window.electronAPI || !window.electronAPI.getMusicSheetsPath) {
+      console.error('Electron API를 사용할 수 없습니다. window.electronAPI:', window.electronAPI);
+      return null;
+    }
+    const path = await window.electronAPI.getMusicSheetsPath();
+    console.log('findMusicSheetsPath 결과:', path);
+    return path;
+  } catch (error) {
+    console.error('Music_Sheets 경로 찾기 실패:', error);
+    return null;
+  }
+};
+
+// 파일 경로를 현재 플랫폼에 맞게 변환하는 함수
+const convertFilePathToCurrentPlatform = async (originalFilePath) => {
+  try {
+    // Music_Sheets 경로 가져오기
+    const musicSheetsPath = await findMusicSheetsPath();
+    if (!musicSheetsPath) {
+      console.error('Music_Sheets 경로를 찾을 수 없습니다.');
+      return null;
+    }
+
+    // 원본 파일 경로에서 파일명만 추출
+    const fileName = originalFilePath.split('/').pop() || originalFilePath.split('\\').pop();
+    if (!fileName) {
+      console.error('파일명을 추출할 수 없습니다:', originalFilePath);
+      return null;
+    }
+
+    // 현재 플랫폼의 Music_Sheets 경로와 파일명을 결합
+    const currentPlatformPath = `${musicSheetsPath}${musicSheetsPath.endsWith('/') || musicSheetsPath.endsWith('\\') ? '' : '\\'}${fileName}`;
+    
+    console.log('경로 변환:', originalFilePath, '->', currentPlatformPath);
+    return currentPlatformPath;
+  } catch (error) {
+    console.error('파일 경로 변환 실패:', error);
+    return null;
+  }
+};
+
 // PDF 저장 경로 생성
 const getPdfSavePath = async (date) => {
+  console.log('=== getPdfSavePath 함수 시작 ===');
   const oneDrivePath = await findOneDrivePath();
+  console.log('findOneDrivePath 결과:', oneDrivePath);
   if (!oneDrivePath) {
     throw new Error('OneDrive 경로를 찾을 수 없습니다.');
   }
 
-  const dateObj = new Date(date);
-  const year = dateObj.getFullYear();
-  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-  const day = String(dateObj.getDate()).padStart(2, '0');
+  // YYYY-MM-DD 형식의 문자열을 직접 파싱하여 시간대 문제 방지
+  const [year, month, day] = date.split('-');
+  const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
   const dayOfWeek = dateObj.getDay(); // 0=일요일, 5=금요일
 
   // 요일별 파일명 설정
@@ -36,6 +81,7 @@ const getPdfSavePath = async (date) => {
   const pathSeparator = oneDrivePath.includes('\\') ? '\\' : '/';
   const pdfPath = `${oneDrivePath}${pathSeparator}Documents${pathSeparator}Archive${pathSeparator}한소망교회${pathSeparator}찬양 리스트${pathSeparator}찬양리스트모음${pathSeparator}${fileName}`;
   
+  console.log('PDF 저장 경로:', pdfPath);
   return pdfPath;
 };
 
@@ -48,13 +94,24 @@ const imageFileToBlob = async (filePath) => {
       throw new Error('Electron API를 사용할 수 없습니다.');
     }
 
-    console.log('이미지 파일 읽기 시도:', filePath);
+    // filePath가 이미 전체 경로인지 확인
+    let finalFilePath = filePath;
+    
+    // macOS 경로가 포함되어 있으면 Windows 경로로 변환
+    if (filePath.includes('/Users/') || filePath.includes('OneDrive-Personal')) {
+      const convertedFilePath = await convertFilePathToCurrentPlatform(filePath);
+      if (convertedFilePath) {
+        finalFilePath = convertedFilePath;
+      }
+    }
+
+    console.log('이미지 파일 읽기 시도:', finalFilePath);
 
     // 파일 존재 여부 확인을 위해 먼저 읽기 시도
     try {
-      const fileData = await window.electronAPI.readFile(filePath);
+      const fileData = await window.electronAPI.readFile(finalFilePath);
       if (!fileData) {
-        console.error('파일 데이터가 null입니다:', filePath);
+        console.error('파일 데이터가 null입니다:', finalFilePath);
         throw new Error('파일을 읽을 수 없습니다.');
       }
 
@@ -68,7 +125,7 @@ const imageFileToBlob = async (filePath) => {
       console.error('파일 읽기 오류:', readError);
       // 파일이 존재하지 않거나 접근할 수 없는 경우
       if (readError.message.includes('ENOENT') || readError.message.includes('파일을 읽을 수 없습니다')) {
-        console.warn('파일이 존재하지 않거나 접근할 수 없습니다:', filePath);
+        console.warn('파일이 존재하지 않거나 접근할 수 없습니다:', finalFilePath);
         return null;
       }
       throw readError;
@@ -92,6 +149,16 @@ const blobToBase64 = (blob) => {
 // PDF 생성 함수
 export const generateWorshipListPDF = async (songs, date) => {
   try {
+    console.log('=== PDF 생성 시작 ===');
+    console.log('입력된 날짜:', date);
+    console.log('찬양 개수:', songs.length);
+    console.log('찬양 리스트 상세:', songs.map(song => ({
+      title: song.title,
+      fileName: song.fileName,
+      hasFilePath: !!song.filePath,
+      filePath: song.filePath
+    })));
+    
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'in',
@@ -113,6 +180,14 @@ export const generateWorshipListPDF = async (songs, date) => {
     for (let i = 0; i < songs.length; i++) {
       const song = songs[i];
       
+      console.log(`처리 중인 곡 ${i + 1}/${songs.length}:`, {
+        title: song.title,
+        fileName: song.fileName,
+        filePath: song.filePath,
+        hasFileName: !!song.fileName,
+        hasFilePath: !!song.filePath
+      });
+      
       // 새 페이지가 필요한지 확인
       if (currentY > pageHeight - margin - 1) {
         pdf.addPage();
@@ -121,10 +196,22 @@ export const generateWorshipListPDF = async (songs, date) => {
       }
 
       // 악보 파일이 있는 경우에만 처리
-      if (song.fileName && song.filePath) {
+      if (song.fileName) {
+        // filePath가 비어있으면 fileName을 기반으로 경로 구성
+        let filePath = song.filePath;
+        if (!filePath || filePath === '') {
+          const musicSheetsPath = await findMusicSheetsPath();
+          if (musicSheetsPath) {
+            filePath = `${musicSheetsPath}/${song.fileName}`;
+            console.log(`filePath가 비어있어서 구성된 경로: ${filePath}`);
+          } else {
+            console.warn(`Music_Sheets 경로를 찾을 수 없어서 건너뛰기: ${song.fileName}`);
+            continue;
+          }
+        }
         try {
           // Electron을 통해 이미지 파일을 Blob으로 로드
-          const blob = await imageFileToBlob(song.filePath);
+          const blob = await imageFileToBlob(filePath);
           if (!blob) {
             console.warn(`이미지 로드 실패, 건너뛰기: ${song.fileName}`);
             continue;
@@ -180,7 +267,9 @@ export const generateWorshipListPDF = async (songs, date) => {
     }
 
     // PDF 저장
+    console.log('=== PDF 저장 시작 ===');
     const pdfPath = await getPdfSavePath(date);
+    console.log('최종 PDF 저장 경로:', pdfPath);
     const pdfArrayBuffer = pdf.output('arraybuffer');
     
     // ArrayBuffer를 Uint8Array로 변환

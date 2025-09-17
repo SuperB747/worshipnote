@@ -65,6 +65,45 @@ npm run build
 npm run electron-pack
 ```
 
+## 🛠️ 명령줄 도구
+
+WorshipNote는 OS별 OneDrive 경로를 자동으로 찾아서 백업하고 PDF 내보내기를 할 수 있는 명령줄 도구를 제공합니다.
+
+### 사용 가능한 명령어
+
+```bash
+# OneDrive 경로 정보 확인
+npm run info
+
+# 데이터베이스 및 악보 파일 백업
+npm run backup
+
+# 특정 날짜의 찬양 리스트를 PDF로 내보내기
+npm run pdf 2024-01-15
+
+# 모든 찬양 리스트를 PDF로 내보내기
+npm run pdf-all
+
+# 백업 + PDF 내보내기 전체 실행
+npm run full
+```
+
+### OS별 OneDrive 경로 지원
+
+- **Windows**: `OneDrive`, `OneDrive - Personal`, `OneDrive - 회사명`
+- **macOS**: `Library/CloudStorage/OneDrive-Personal`, `Library/CloudStorage/OneDrive-회사명`
+- **Linux**: `OneDrive`, `Documents/OneDrive`
+
+### 스크립트 파일 구조
+
+```
+scripts/
+├── onedrive-utils.js      # OS별 OneDrive 경로 찾기
+├── backup-script.js       # 백업 스크립트
+├── pdf-export-script.js   # PDF 내보내기 스크립트
+└── worshipnote-manager.js # 통합 관리 스크립트
+```
+
 ## 🎨 디자인 특징
 
 - 지브리 애니메이션 스타일의 부드러운 색상

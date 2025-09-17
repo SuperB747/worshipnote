@@ -59,24 +59,24 @@ const findOneDrivePath = () => {
   if (platform === 'darwin') {
     // macOS 경로들
     possiblePaths = [
-      path.join(homeDir, 'Library', 'CloudStorage', 'OneDrive-Personal', 'WorshipNote_Data'),
-      path.join(homeDir, 'Library', 'CloudStorage', 'OneDrive-회사명', 'WorshipNote_Data'),
-      path.join(homeDir, 'OneDrive', 'WorshipNote_Data'), // 심볼릭 링크 경로
-      path.join(homeDir, 'Documents', 'WorshipNote_Data') // 폴백 경로
+      path.join(homeDir, 'Library', 'CloudStorage', 'OneDrive-Personal'),
+      path.join(homeDir, 'Library', 'CloudStorage', 'OneDrive-회사명'),
+      path.join(homeDir, 'OneDrive'), // 심볼릭 링크 경로
+      path.join(homeDir, 'Documents') // 폴백 경로
     ];
   } else if (platform === 'win32') {
     // Windows 경로들
     possiblePaths = [
-      path.join(homeDir, 'OneDrive', 'WorshipNote_Data'),
-      path.join(homeDir, 'OneDrive - Personal', 'WorshipNote_Data'),
-      path.join(homeDir, 'OneDrive - 회사명', 'WorshipNote_Data'),
-      path.join(homeDir, 'Documents', 'WorshipNote_Data') // 폴백 경로
+      path.join(homeDir, 'OneDrive'),
+      path.join(homeDir, 'OneDrive - Personal'),
+      path.join(homeDir, 'OneDrive - 회사명'),
+      path.join(homeDir, 'Documents') // 폴백 경로
     ];
   } else {
     // Linux/기타 OS
     possiblePaths = [
-      path.join(homeDir, 'OneDrive', 'WorshipNote_Data'),
-      path.join(homeDir, 'Documents', 'WorshipNote_Data') // 폴백 경로
+      path.join(homeDir, 'OneDrive'),
+      path.join(homeDir, 'Documents') // 폴백 경로
     ];
   }
   

@@ -10,12 +10,17 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "electron": "electron .",
-    "electron-dev": "concurrently \"npm start\" \"sleep 10 && electron .\" --kill-others-on-fail --prefix-colors blue,green",
+    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\" --kill-others-on-fail --prefix-colors blue,green",
     "dev": "npm run electron-dev",
     "electron-only": "npx electron . --disable-gpu --no-sandbox --disable-web-security --disable-features=VizDisplayCompositor",
     "electron-safe": "npx electron . --disable-gpu --no-sandbox --disable-web-security --disable-features=VizDisplayCompositor --disable-dev-shm-usage --disable-extensions --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding",
     "electron-pack": "electron-builder",
-    "preelectron-pack": "npm run build"
+    "preelectron-pack": "npm run build",
+    "backup": "node scripts/worshipnote-manager.js backup",
+    "pdf": "node scripts/worshipnote-manager.js pdf",
+    "pdf-all": "node scripts/worshipnote-manager.js pdf-all",
+    "info": "node scripts/worshipnote-manager.js info",
+    "full": "node scripts/worshipnote-manager.js full"
   },
   "build": {
     "appId": "com.worshipnote.app",
@@ -54,12 +59,13 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.8.1",
     "react-scripts": "5.0.1",
+    "sharp": "^0.34.4",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "concurrently": "^7.6.0",
     "electron-builder": "^24.6.4",
-    "wait-on": "^7.0.1"
+    "wait-on": "^7.2.0"
   },
   "browserslist": {
     "production": [

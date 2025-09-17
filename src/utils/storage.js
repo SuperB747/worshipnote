@@ -84,10 +84,12 @@ export const saveSongs = async (songs) => {
       try {
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
         if (oneDrivePath) {
-          // WorshipNote_Data 디렉토리 생성
-          const dataDirPath = `${oneDrivePath}`;
+          // WorshipNote_Data/Database 디렉토리 생성
+          const dataDirPath = `${oneDrivePath}/WorshipNote_Data`;
+          const databaseDirPath = `${dataDirPath}/Database`;
           try {
             await window.electronAPI.createDirectory(dataDirPath);
+            await window.electronAPI.createDirectory(databaseDirPath);
           } catch (dirError) {
             // 디렉토리가 이미 존재하는 경우 무시
             if (!dirError.message.includes('already exists')) {
@@ -100,7 +102,7 @@ export const saveSongs = async (songs) => {
             lastUpdated: new Date().toISOString()
           };
           
-          const filePath = `${dataDirPath}/songs.json`;
+          const filePath = `${databaseDirPath}/songs.json`;
           const jsonData = JSON.stringify(songsData, null, 2);
           
           await window.electronAPI.writeFile(filePath, jsonData);
@@ -125,7 +127,7 @@ export const loadSongs = async () => {
       try {
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
         if (oneDrivePath) {
-          const filePath = `${oneDrivePath}/songs.json`;
+          const filePath = `${oneDrivePath}/WorshipNote_Data/Database/songs.json`;
           const fileData = await window.electronAPI.readFile(filePath);
           
           if (fileData) {
@@ -219,13 +221,25 @@ export const saveWorshipLists = async (worshipLists) => {
       try {
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
         if (oneDrivePath) {
-          // oneDrivePath가 이미 WorshipNote_Data 경로이므로 바로 사용
+          // WorshipNote_Data/Database 디렉토리 생성
+          const dataDirPath = `${oneDrivePath}/WorshipNote_Data`;
+          const databaseDirPath = `${dataDirPath}/Database`;
+          try {
+            await window.electronAPI.createDirectory(dataDirPath);
+            await window.electronAPI.createDirectory(databaseDirPath);
+          } catch (dirError) {
+            // 디렉토리가 이미 존재하는 경우 무시
+            if (!dirError.message.includes('already exists')) {
+              console.warn('디렉토리 생성 실패:', dirError);
+            }
+          }
+          
           const worshipListsData = {
             worshipLists,
             lastUpdated: new Date().toISOString()
           };
           
-          const filePath = `${oneDrivePath}/worship_lists.json`;
+          const filePath = `${databaseDirPath}/worship_lists.json`;
           const jsonData = JSON.stringify(worshipListsData, null, 2);
           
           await window.electronAPI.writeFile(filePath, jsonData);
@@ -250,7 +264,7 @@ export const loadWorshipLists = async () => {
       try {
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
         if (oneDrivePath) {
-          const filePath = `${oneDrivePath}/worship_lists.json`;
+          const filePath = `${oneDrivePath}/WorshipNote_Data/Database/worship_lists.json`;
           const fileData = await window.electronAPI.readFile(filePath);
           
           if (fileData) {
@@ -308,7 +322,7 @@ export const createWorshipListsBackup = async () => {
       return { success: false, error: 'OneDrive 경로를 찾을 수 없습니다.' };
     }
     
-    const dataDirPath = `${oneDrivePath}`;
+    const dataDirPath = `${oneDrivePath}/WorshipNote_Data`;
     
     // 백업 디렉토리 생성
     const backupDirPath = `${dataDirPath}/Backups`;
@@ -380,7 +394,7 @@ export const createDatabaseBackup = async (currentSongs = null, currentWorshipLi
       return { success: false, error: 'OneDrive 경로를 찾을 수 없습니다.' };
     }
     
-    const dataDirPath = `${oneDrivePath}`;
+    const dataDirPath = `${oneDrivePath}/WorshipNote_Data`;
     
     // 백업 디렉토리 생성
     const backupDirPath = `${dataDirPath}/Backups`;
@@ -539,14 +553,21 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
     const songs = backupData.songs || [];
     const worshipLists = backupData.worshipLists || {};
     
+    console.log('복원할 데이터:', {
+      songsCount: songs.length,
+      worshipListsCount: Object.keys(worshipLists).length,
+      worshipListsKeys: Object.keys(worshipLists).slice(0, 5) // 처음 5개 키만 표시
+    });
     
     // localStorage에 저장
     saveToStorage('songs', songs);
     saveToStorage('worshipLists', worshipLists);
     
     // OneDrive에도 저장
-    await saveSongs(songs);
-    await saveWorshipLists(worshipLists);
+    console.log('OneDrive에 저장 시작...');
+    const songsResult = await saveSongs(songs);
+    const worshipListsResult = await saveWorshipLists(worshipLists);
+    console.log('OneDrive 저장 결과:', { songsResult, worshipListsResult });
     
     // React 상태 업데이트
     if (setSongs) setSongs(songs);

@@ -134,7 +134,8 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     return sorted;
   }, [songs, searchTerm]);
 
-  const currentDateKey = format(selectedDate, 'yyyy-MM-dd');
+  // 시차 문제를 방지하기 위해 로컬 날짜를 직접 사용
+  const currentDateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
   const currentWorshipList = worshipLists[currentDateKey] || [];
 
   const calendarDays = useMemo(() => {
@@ -347,8 +348,20 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       return;
     }
 
-    const currentDateKey = format(selectedDate, 'yyyy-MM-dd');
+    // 시차 문제를 방지하기 위해 로컬 날짜를 직접 사용
+    const currentDateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
     const currentSongs = worshipLists[currentDateKey] || [];
+    
+    // 디버깅: 앱에서 실제로 로드된 찬양 리스트 확인
+    console.log('=== 앱에서 로드된 찬양 리스트 ===');
+    console.log('선택된 날짜:', currentDateKey);
+    console.log('찬양 개수:', currentSongs.length);
+    console.log('찬양 리스트 상세:', currentSongs.map(song => ({
+      title: song.title,
+      fileName: song.fileName,
+      hasFilePath: !!song.filePath,
+      filePath: song.filePath
+    })));
     
     if (currentSongs.length === 0) {
       setDialog({
@@ -359,8 +372,8 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       return;
     }
 
-    // 악보가 있는 찬양만 필터링
-    const songsWithMusicSheets = currentSongs.filter(song => song.fileName && song.filePath);
+    // 악보가 있는 찬양만 필터링 (fileName이 있으면 filePath가 비어있어도 처리 가능)
+    const songsWithMusicSheets = currentSongs.filter(song => song.fileName);
     
     if (songsWithMusicSheets.length === 0) {
       setDialog({
