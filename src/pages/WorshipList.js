@@ -90,6 +90,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const [showSongSearch, setShowSongSearch] = useState(false);
   const [previewSong, setPreviewSong] = useState(null);
   const [selectedSongs, setSelectedSongs] = useState([]);
+  const [selectionOrder, setSelectionOrder] = useState([]);
   const [editingSong, setEditingSong] = useState(null);
   const [editForm, setEditForm] = useState({ title: '', key: '', tempo: '', firstLyrics: '' });
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -167,33 +168,39 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     setSelectedSong(song);
   };
 
-  // 다중 선택 핸들러
+  // 곡 선택 핸들러
   const handleSongSelect = (song, event) => {
     event.stopPropagation();
     
-    if (event.ctrlKey || event.metaKey) {
-      // Ctrl/Cmd 키가 눌린 상태에서 클릭
-      setSelectedSongs(prev => {
-        const isSelected = prev.some(s => s.id === song.id);
-        if (isSelected) {
-          // 이미 선택된 곡이면 선택 해제
-          return prev.filter(s => s.id !== song.id);
-        } else {
-          // 선택되지 않은 곡이면 선택에 추가
-          return [...prev, song];
-        }
-      });
-    } else {
-      // Ctrl/Cmd 키가 안 눌린 상태에서 클릭
-      setSelectedSongs([song]);
-    }
+    setSelectedSongs(prev => {
+      const isSelected = prev.some(s => s.id === song.id);
+      if (isSelected) {
+        // 이미 선택된 곡이면 선택 해제
+        return prev.filter(s => s.id !== song.id);
+      } else {
+        // 선택되지 않은 곡이면 선택 목록에 추가
+        return [...prev, song];
+      }
+    });
+
+    setSelectionOrder(prev => {
+      const isSelected = prev.some(s => s.id === song.id);
+      if (isSelected) {
+        // 이미 선택된 곡이면 순서에서 제거
+        return prev.filter(s => s.id !== song.id);
+      } else {
+        // 선택되지 않은 곡이면 순서 목록에 추가 (체크 순서대로)
+        return [...prev, song];
+      }
+    });
   };
 
-  // 선택된 곡들을 리스트에 추가
+  // 선택된 곡들을 리스트에 추가 (체크 순서대로)
   const handleAddSelectedSongs = () => {
     if (selectedSongs.length === 0) return;
 
-    const newSongs = selectedSongs.filter(song => 
+    // 체크 순서대로 필터링하여 중복 제거
+    const newSongs = selectionOrder.filter(song => 
       !currentWorshipList.some(existingSong => existingSong.id === song.id)
     );
 
@@ -206,6 +213,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       
       // 선택 초기화
       setSelectedSongs([]);
+      setSelectionOrder([]);
       setShowSongSearch(false);
       setPreviewSong(null);
     }
@@ -216,6 +224,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     setShowSongSearch(false);
     setPreviewSong(null);
     setSelectedSongs([]);
+    setSelectionOrder([]);
   };
 
   const handleOpenSongSearch = () => {
@@ -589,11 +598,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                     <Plus className="btn-icon" />
                     리스트에 추가
                   </button>
-                ) : (
-                  <div className="selection-hint">
-                    Ctrl/Cmd + 클릭으로 여러 곡을 선택하세요
-                  </div>
-                )}
+                ) : null}
               </div>
             </div>
           )}

@@ -553,15 +553,6 @@
   box-shadow: 0 4px 12px rgba(74, 124, 89, 0.3);
 }
 
-.selection-hint {
-  color: var(--text-muted);
-  font-size: 12px;
-  text-align: center;
-  padding: 10px;
-  background: rgba(74, 124, 89, 0.05);
-  border-radius: 8px;
-  border: 1px dashed var(--soft-brown);
-}
 
 .preview-actions {
   margin-top: 20px;
@@ -666,7 +657,7 @@
 .draggable-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
   min-height: 500px;
 }
 
@@ -679,7 +670,7 @@
   padding: 10px 12px;
   border: 1px solid var(--soft-brown);
   transition: background-color 0.2s ease;
-  margin-bottom: 8px;
+  margin-bottom: 2px;
 }
 
 .list-item:hover {

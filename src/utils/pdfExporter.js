@@ -278,12 +278,12 @@ export const generateWorshipListPDF = async (songs, date) => {
     for (let i = 0; i < songs.length; i++) {
       const song = songs[i];
       
-      // 새 페이지가 필요한지 확인
-      if (currentY > pageHeight - margin - 1) {
+      // 각 곡마다 새 페이지 시작 (첫 번째 곡이 아닌 경우)
+      if (!isFirstPage) {
         pdf.addPage();
         currentY = margin;
-        isFirstPage = false;
       }
+      isFirstPage = false;
 
       // filePath 변수 선언 (스코프 문제 해결)
       let filePath = null;
@@ -406,7 +406,7 @@ export const generateWorshipListPDF = async (songs, date) => {
           img.src = base64;
         });
 
-        // 이미지 비율 유지하면서 최대 크기 계산
+        // 이미지 비율 유지하면서 페이지를 최대한 활용하도록 크기 계산
         const imgAspectRatio = img.width / img.height;
         const contentAspectRatio = contentWidth / contentHeight;
         
@@ -421,16 +421,13 @@ export const generateWorshipListPDF = async (songs, date) => {
           imgWidth = contentHeight * imgAspectRatio;
         }
 
-        // 이미지를 페이지 중간 위쪽에 배치
+        // 이미지를 페이지 중앙에 배치
         const x = margin + (contentWidth - imgWidth) / 2;
-        const y = currentY + (contentHeight - imgHeight) / 2 - 0.5; // 위쪽으로 0.5인치 이동
+        const y = margin + (contentHeight - imgHeight) / 2;
         
         // 이미지를 PDF에 추가
         pdf.addImage(base64, 'JPEG', x, y, imgWidth, imgHeight);
         successCount++;
-
-        // 다음 이미지를 위해 Y 위치 업데이트
-        currentY += imgHeight + 0.2; // 이미지 높이 + 여백
 
       } catch (error) {
         failCount++;
