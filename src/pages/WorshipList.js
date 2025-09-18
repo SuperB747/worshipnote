@@ -336,6 +336,20 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     e.stopPropagation();
   };
 
+  // 요일에 따른 찬양 리스트 제목 생성 함수
+  const getWorshipListTitle = (date) => {
+    const dayOfWeek = date.getDay(); // 0: 일요일, 1: 월요일, ..., 6: 토요일
+    const dateStr = format(date, 'M월 d일', { locale: ko });
+    
+    if (dayOfWeek === 0) { // 일요일
+      return `${dateStr} 주일예배 찬양 리스트`;
+    } else if (dayOfWeek === 5) { // 금요일
+      return `${dateStr} 금요기도회 찬양 리스트`;
+    } else {
+      return `${dateStr} 찬양 리스트`;
+    }
+  };
+
   // PDF 내보내기 함수
   const handleExportPdf = async () => {
     // Electron API 사용 가능 여부 확인
@@ -478,7 +492,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         <div className="list-section">
           <div className="list-header">
             <h3>
-              {format(selectedDate, 'M월 d일', { locale: ko })} 찬양 리스트
+              {getWorshipListTitle(selectedDate)}
             </h3>
             <div className="list-actions">
               <button

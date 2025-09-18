@@ -393,6 +393,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 40px var(--shadow-medium);
+  min-height: 600px;
 }
 
 .modal-header {
@@ -460,6 +461,8 @@
   flex-direction: column;
   gap: 8px;
   padding: 10px 0;
+  min-height: 400px;
+  max-height: 500px;
 }
 
 .search-result-item {
