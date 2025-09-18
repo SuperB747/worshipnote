@@ -206,6 +206,11 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const currentDateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
   const currentWorshipList = worshipLists[currentDateKey] || [];
 
+  // 파일명 에러 개수 계산
+  const filenameErrorCount = useMemo(() => {
+    return currentWorshipList.filter(song => song.fileName && !isCorrectFileName(song)).length;
+  }, [currentWorshipList]);
+
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
@@ -661,9 +666,16 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
 
         <div className="list-section">
           <div className="list-header">
-            <h3>
-              {getWorshipListTitle(selectedDate)}
-            </h3>
+            <div className="list-header-left">
+              <h3>
+                {getWorshipListTitle(selectedDate)}
+              </h3>
+              {filenameErrorCount > 0 && (
+                <span className="filename-error-count">
+                  파일이름 에러 ({filenameErrorCount}개)
+                </span>
+              )}
+            </div>
             <div className="list-actions">
               <button
                 className="export-pdf-btn"
@@ -825,9 +837,9 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
               </button>
             </div>
             
-            <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} className="edit-form">
+            <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} className="edit-form compact-form">
               <div className="form-row compact-row">
-                <div className="form-group compact-group">
+                <div className="form-group compact-group full-width">
                   <label className="form-label compact-label">
                     <Music className="label-icon" />
                     찬양 이름 *
@@ -840,43 +852,50 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                     onClick={handleEditInputClick}
                     onFocus={handleEditInputFocus}
                     onMouseDown={handleEditInputMouseDown}
-                    className="form-input compact-input"
+                    className="form-input compact-input full-width"
                     placeholder="찬양 이름을 입력하세요"
                     required
                     autoComplete="off"
                     tabIndex={1}
                   />
                 </div>
+              </div>
 
-                <div className="form-group compact-group">
-                  <label className="form-label compact-label">코드</label>
-                  <select
-                    name="key"
-                    value={editForm.key}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, key: e.target.value }))}
-                    className="form-select compact-select"
-                    tabIndex={2}
-                  >
-                    {['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Em', 'Eb', 'F', 'G'].map(key => (
-                      <option key={key} value={key}>{key}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group compact-group">
-                  <label className="form-label compact-label">빠르기</label>
-                  <select
-                    name="tempo"
-                    value={editForm.tempo}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, tempo: e.target.value }))}
-                    className="form-select compact-select"
-                    tabIndex={3}
-                  >
-                    {['Fast', 'Medium', 'Slow'].map(tempo => (
-                      <option key={tempo} value={tempo}>{tempo}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="form-row compact-row">
+                <table className="form-table">
+                  <tbody>
+                    <tr>
+                      <td className="form-cell">
+                        <label className="form-label compact-label">코드</label>
+                        <select
+                          name="key"
+                          value={editForm.key}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, key: e.target.value }))}
+                          className="form-select compact-select"
+                          tabIndex={2}
+                        >
+                          {['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Em', 'Eb', 'F', 'G'].map(key => (
+                            <option key={key} value={key}>{key}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="form-cell">
+                        <label className="form-label compact-label">빠르기</label>
+                        <select
+                          name="tempo"
+                          value={editForm.tempo}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, tempo: e.target.value }))}
+                          className="form-select compact-select"
+                          tabIndex={3}
+                        >
+                          {['Fast', 'Medium', 'Slow'].map(tempo => (
+                            <option key={tempo} value={tempo}>{tempo}</option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
               <div className="form-row compact-row">
@@ -890,7 +909,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                     onClick={handleEditInputClick}
                     onFocus={handleEditInputFocus}
                     onMouseDown={handleEditInputMouseDown}
-                    className="form-input compact-input"
+                    className="form-input compact-input full-width"
                     placeholder="첫 번째 가사를 입력하세요"
                     autoComplete="off"
                     tabIndex={4}
@@ -902,7 +921,24 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                 <div className="form-group file-upload-group">
                   <label className="form-label">
                     <FileText className="label-icon" />
-                    악보 파일 (JPG, PNG, PDF)
+                    악보 파일
+                    {editForm.fileName && (
+                      <span className="current-file-name">: {editForm.fileName}</span>
+                    )}
+                    {editForm.fileName && (
+                      <button 
+                        type="button"
+                        className="delete-file-btn-inline"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setEditForm(prev => ({ ...prev, fileName: '', filePath: '' }));
+                        }}
+                        title="파일 삭제"
+                      >
+                        <X className="delete-icon" />
+                      </button>
+                    )}
                   </label>
                   <div className="file-upload-area">
                     <input
@@ -915,7 +951,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                     />
                     <label 
                       htmlFor="edit-file-upload" 
-                      className={`file-upload-label ${uploadStatus.isUploading ? 'uploading' : ''}`}
+                      className={`file-upload-label compact-upload-label ${uploadStatus.isUploading ? 'uploading' : ''}`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       {uploadStatus.isUploading ? (
@@ -932,16 +968,16 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                     </label>
                   </div>
                   
-                  {editForm.fileName && (
-                    <div className="current-file">
-                      <FileText className="file-icon" />
-                      <span>현재 파일: {editForm.fileName}</span>
+                  
+                  {uploadStatus.success && (
+                    <div className="upload-success-text">
+                      파일이 성공적으로 업데이트되었습니다!
                     </div>
                   )}
                   
-                  {uploadStatus.message && (
-                    <div className={`upload-message ${uploadStatus.success ? 'success' : 'error'}`}>
-                      {uploadStatus.message}
+                  {uploadStatus.error && (
+                    <div className="upload-error-text">
+                      {uploadStatus.error}
                     </div>
                   )}
                 </div>

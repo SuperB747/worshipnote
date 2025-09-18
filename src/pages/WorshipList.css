@@ -218,6 +218,12 @@
   border-bottom: 1px solid var(--soft-brown);
 }
 
+.list-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .list-actions {
   display: flex;
   align-items: center;
@@ -234,6 +240,16 @@
   font-size: 16px;
   font-weight: 700;
   color: var(--text-dark);
+}
+
+.filename-error-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ff9800;
+  background: #fff8e1;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ffcc80;
 }
 
 .backup-btn {
@@ -1322,6 +1338,260 @@
   background: #ffebee;
   color: #c62828;
   border: 1px solid #ffcdd2;
+}
+
+.compact-form {
+  padding: 15px 25px 20px;
+}
+
+.compact-form .form-row {
+  margin-bottom: 12px;
+}
+
+.compact-form .form-row:last-child {
+  margin-bottom: 0;
+}
+
+.compact-form .form-group {
+  margin-bottom: 0;
+}
+
+.compact-form .form-group.full-width {
+  width: 100%;
+}
+
+.compact-form .form-input.full-width,
+.compact-form .form-select.full-width {
+  width: 100%;
+}
+
+.compact-form .form-label {
+  font-size: 14px;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.compact-form .form-input,
+.compact-form .form-select {
+  padding: 8px 10px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  transition: all 0.2s ease;
+}
+
+.compact-form .form-input:focus,
+.compact-form .form-select:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
+}
+
+.compact-form .form-row.compact-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.compact-form .form-row.compact-row .form-group {
+  flex: 1;
+}
+
+.compact-form .form-row.compact-row .form-group.full-width {
+  flex: 1;
+}
+
+.compact-form .form-row.compact-row .left-group {
+  flex: 1;
+  margin-right: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.compact-form .form-row.compact-row .right-group {
+  flex: 1;
+  margin-left: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.form-cell {
+  padding: 0 6px;
+  vertical-align: top;
+  width: 50%;
+}
+
+.form-cell:first-child {
+  padding-left: 0;
+}
+
+.form-cell:last-child {
+  padding-right: 0;
+}
+
+/* 악보 파일 업로드 영역 컴팩트 스타일 */
+.compact-form .file-upload-group {
+  margin-bottom: 0;
+}
+
+.compact-form .file-upload-group .form-label {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.compact-form .current-file-name {
+  color: #333;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.compact-form .delete-file-btn-inline {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  padding: 2px 4px;
+  margin-left: 6px;
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+}
+
+.compact-form .delete-file-btn-inline:hover {
+  background: #f8d7da;
+}
+
+.compact-form .delete-file-btn-inline .delete-icon {
+  width: 10px;
+  height: 10px;
+}
+
+.compact-form .upload-success-text {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #28a745;
+  text-align: center;
+}
+
+.compact-form .upload-error-text {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #dc3545;
+  text-align: center;
+}
+
+.compact-form .compact-upload-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  min-height: auto;
+  white-space: nowrap;
+}
+
+.compact-form .compact-upload-label .upload-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.compact-form .compact-upload-label span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.compact-form .file-upload-area {
+  border: 2px dashed #ddd;
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+  background: #fafafa;
+  transition: all 0.2s ease;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.compact-form .file-upload-area:hover {
+  border-color: var(--primary-green);
+  background: #f8fff8;
+}
+
+.compact-form .file-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #666;
+}
+
+.compact-form .upload-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.compact-form .current-file {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.compact-form .upload-message {
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.compact-form .current-file-simple {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #666;
+  background: #f8f9fa;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.compact-form .delete-file-btn-simple {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.compact-form .delete-file-btn-simple:hover {
+  background: #f8d7da;
+}
+
+.compact-form .delete-file-btn-simple .delete-icon {
+  width: 12px;
+  height: 12px;
 }
 
 .edit-modal-actions {
