@@ -218,23 +218,28 @@ const sanitizeFileName = (fileName) => {
   // Windows와 Mac에서 파일명에 사용할 수 없는 문자들을 안전한 문자로 변환
   return fileName
     .replace(/[<>:"/\\|?*]/g, '-')  // 특수문자를 하이픈으로 변환
-    .replace(/\s+/g, '_')           // 공백을 언더스코어로 변환
     .trim()                         // 앞뒤 공백 제거
     .substring(0, 200);             // 파일명 길이 제한 (Windows 제한 고려)
 };
 
-// 찬양 정보를 기반으로 파일명을 생성하는 함수
+// 찬양 정보를 기반으로 파일명을 생성하는 함수 (새로운 규칙)
 const generateSongFileName = (songTitle, songKey, songId) => {
   if (!songId) {
     return null; // ID가 없으면 null 반환
   }
   
+  // 찬양 제목에서 1/2, 2/2 같은 패턴을 처리
+  const processedTitle = songTitle.replace(/\s+\d+\/\d+$/, (match) => {
+    const number = match.trim().split('/')[0];
+    return ` ${number}`;
+  });
+  
   // 제목과 코드를 안전한 파일명으로 변환
-  const safeTitle = sanitizeFileName(songTitle);
+  const safeTitle = sanitizeFileName(processedTitle);
   const safeKey = sanitizeFileName(songKey);
   
-  // 파일명 형식: "제목_코드_(ID).jpg"
-  const fileName = `${safeTitle}_${safeKey}_(${songId}).jpg`;
+  // 파일명 형식: "찬양 제목 (코드) (ID).jpg"
+  const fileName = `${safeTitle} (${safeKey}) (${songId}).jpg`;
   
   return fileName;
 };

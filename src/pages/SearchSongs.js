@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Filter, Music, Hash, Clock, FileText, Edit, Trash2, Plus, FileX } from 'lucide-react';
+import { Search, Filter, Music, Hash, Clock, FileText, Edit, Trash2, Plus, FileX, AlertTriangle } from 'lucide-react';
 import { processFileUpload } from '../utils/fileConverter';
 import { saveSongs } from '../utils/storage';
+import { isCorrectFileName } from '../utils/fileNameUtils';
 import GhibliDialog from '../components/GhibliDialog';
 import './SearchSongs.css';
 
@@ -44,6 +45,14 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     
     // 파일 존재 여부 상태에서 확인
     return fileExistenceMap[song.id] === true;
+  };
+
+  // 파일명이 올바른 형식인지 확인하는 함수
+  const hasCorrectFileName = (song) => {
+    if (!song.fileName || song.fileName.trim() === '') {
+      return false;
+    }
+    return isCorrectFileName(song.fileName);
   };
 
   // 컴포넌트 마운트 시 검색 입력 필드 포커스
@@ -493,9 +502,11 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     {/* 악보 상태 아이콘 */}
                     <div className="music-sheet-status">
                       {hasMusicSheet(song) ? (
-                        <div className="status-with-file" title="악보 파일 있음">
-                          <FileText className="status-icon file-icon" />
-                        </div>
+                        hasCorrectFileName(song) ? null : (
+                          <div className="status-incorrect-filename" title="파일명 형식이 올바르지 않음">
+                            <AlertTriangle className="status-icon warning-icon" />
+                          </div>
+                        )
                       ) : (
                         <div className="status-no-file" title="악보 파일 없음">
                           <FileX className="status-icon no-file-icon" />

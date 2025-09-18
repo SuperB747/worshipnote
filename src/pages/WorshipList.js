@@ -18,12 +18,13 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3, Download, FileText, Upload } from 'lucide-react';
+import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3, Download, FileText, Upload, AlertTriangle } from 'lucide-react';
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { saveWorshipLists, saveSongs } from '../utils/storage';
 import { generateWorshipListPDF } from '../utils/pdfExporter';
 import { processFileUpload } from '../utils/fileConverter';
+import { isCorrectFileName } from '../utils/fileNameUtils';
 import GhibliDialog from '../components/GhibliDialog';
 import './WorshipList.css';
 
@@ -63,6 +64,20 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit }) => {
         <div className="song-number">{index + 1}</div>
         <div className="song-details">
           <h5 className="song-title">{song.title}</h5>
+          {/* 악보 상태 아이콘 */}
+          <div className="music-sheet-status">
+            {song.fileName ? (
+              isCorrectFileName(song) ? null : (
+                <div className="status-incorrect-filename" title="파일명 형식이 올바르지 않음">
+                  <AlertTriangle className="status-icon warning-icon" />
+                </div>
+              )
+            ) : (
+              <div className="status-no-file" title="악보 파일 없음">
+                <FileText className="status-icon no-file-icon" />
+              </div>
+            )}
+          </div>
         </div>
         <button 
           className="edit-btn"

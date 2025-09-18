@@ -311,6 +311,16 @@
   color: #f44336;
 }
 
+.warning-icon {
+  color: #ff9800;
+}
+
+.status-incorrect-filename {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 
 .song-meta {
   display: flex;
