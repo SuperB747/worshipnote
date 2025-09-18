@@ -217,7 +217,7 @@ const convertPDFToImage = async (pdfData) => {
     
     // 첫 번째 페이지만 변환 (악보는 보통 첫 페이지만 필요)
     const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 3.0 }); // 최고 해상도로 변환
+    const viewport = page.getViewport({ scale: 4.0 }); // 더 높은 해상도로 변환
     
     // Canvas 생성
     const canvas = document.createElement('canvas');
@@ -233,7 +233,7 @@ const convertPDFToImage = async (pdfData) => {
     
     await page.render(renderContext).promise;
     
-    // Canvas를 Blob으로 변환
+    // Canvas를 Blob으로 변환 (최고 품질)
     return new Promise((resolve) => {
       canvas.toBlob((blob) => {
         if (blob) {
@@ -241,7 +241,7 @@ const convertPDFToImage = async (pdfData) => {
         } else {
           resolve(null);
         }
-      }, 'image/jpeg', 1.0);
+      }, 'image/jpeg', 0.95); // 높은 품질로 설정
     });
   } catch (error) {
     return null;
@@ -267,8 +267,8 @@ export const generateWorshipListPDF = async (songs, date) => {
     const pageWidth = 8.5;
     const pageHeight = 11;
     
-    // Narrow 여백 설정 (0.5인치)
-    const margin = 0.5;
+    // 최소 여백 설정 (0.1인치)
+    const margin = 0.1;
     const contentWidth = pageWidth - (margin * 2);
     const contentHeight = pageHeight - (margin * 2);
 
@@ -418,16 +418,16 @@ export const generateWorshipListPDF = async (songs, date) => {
         
         let imgWidth, imgHeight;
         if (imgAspectRatio > contentAspectRatio) {
-          // 이미지가 더 넓음 - 너비를 기준으로 조정
+          // 이미지가 더 넓음 - 너비를 기준으로 조정하여 페이지를 꽉 채움
           imgWidth = contentWidth;
           imgHeight = contentWidth / imgAspectRatio;
         } else {
-          // 이미지가 더 높음 - 높이를 기준으로 조정
+          // 이미지가 더 높음 - 높이를 기준으로 조정하여 페이지를 꽉 채움
           imgHeight = contentHeight;
           imgWidth = contentHeight * imgAspectRatio;
         }
 
-        // 이미지를 페이지 중앙에 배치
+        // 이미지를 페이지 중앙에 배치 (여백 최소화)
         const x = margin + (contentWidth - imgWidth) / 2;
         const y = margin + (contentHeight - imgHeight) / 2;
         
