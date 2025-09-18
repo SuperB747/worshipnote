@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useSnackbar } from '../hooks/useSnackbar';
 import {
   DndContext,
   closestCenter,
@@ -85,6 +86,7 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit }) => {
 };
 
 const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, setSongs }) => {
+  const { showSnackbar } = useSnackbar();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [showSongSearch, setShowSongSearch] = useState(false);
@@ -95,6 +97,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const [editForm, setEditForm] = useState({ title: '', key: '', tempo: '', firstLyrics: '' });
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
+
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -244,7 +247,8 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
 
   const handleAddSong = () => {
     if (previewSong) {
-      const newList = [...currentWorshipList, { ...previewSong, id: Date.now() }];
+      // 원본 곡의 고유 ID를 그대로 사용 (새로운 ID 생성하지 않음)
+      const newList = [...currentWorshipList, previewSong];
       setWorshipLists(prev => ({
         ...prev,
         [currentDateKey]: newList
@@ -289,7 +293,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingSong || !editForm.title.trim()) return;
 
     const updatedSong = {
@@ -301,23 +305,48 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       updatedAt: new Date().toISOString()
     };
 
-    // 찬양 리스트에서 해당 곡 업데이트
-    const newList = currentWorshipList.map(song => 
-      song.id === editingSong.id ? updatedSong : song
-    );
+    try {
+      // 원본 데이터베이스에서 해당 곡 찾아서 업데이트
+      const updatedSongs = songs.map(song => 
+        song.id === editingSong.id ? updatedSong : song
+      );
+      
+      // 원본 songs 배열 업데이트
+      setSongs(updatedSongs);
+      
+      // 데이터베이스 파일에 저장
+      const updatedData = { songs: updatedSongs };
+      await window.electronAPI.writeFile(
+        'public/data.json',
+        JSON.stringify(updatedData, null, 2)
+      );
 
-    setWorshipLists(prev => ({
-      ...prev,
-      [currentDateKey]: newList
-    }));
+      // 모든 찬양 리스트에서 해당 곡 업데이트 (ID로 매칭)
+      setWorshipLists(prev => {
+        const updatedLists = {};
+        Object.keys(prev).forEach(dateKey => {
+          updatedLists[dateKey] = prev[dateKey].map(song => 
+            song.id === editingSong.id ? updatedSong : song
+          );
+        });
+        return updatedLists;
+      });
 
-    // 전체 songs 배열에서도 업데이트 (선택된 곡이 현재 곡인 경우)
-    if (selectedSong && selectedSong.id === editingSong.id) {
-      setSelectedSong(updatedSong);
+      // 전체 songs 배열에서도 업데이트 (선택된 곡이 현재 곡인 경우)
+      if (previewSong && previewSong.id === editingSong.id) {
+        setPreviewSong(updatedSong);
+      }
+
+      // 성공 메시지 표시
+      showSnackbar('찬양 정보가 성공적으로 업데이트되었습니다.', 'success');
+
+    } catch (error) {
+      console.error('찬양 정보 업데이트 실패:', error);
+      showSnackbar('찬양 정보 업데이트에 실패했습니다.', 'error');
     }
 
     setEditingSong(null);
-    setEditForm({ title: '', key: '', tempo: '' });
+    setEditForm({ title: '', key: '', tempo: '', firstLyrics: '' });
   };
 
   const handleCancelEdit = () => {
