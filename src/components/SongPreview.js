@@ -33,6 +33,7 @@ const SongPreview = ({ selectedSong }) => {
         return;
       }
       
+      
       // selectedSong이 null이 되지 않도록 보호
       const currentSong = selectedSong;
       if (!currentSong) {
@@ -40,14 +41,87 @@ const SongPreview = ({ selectedSong }) => {
         return;
       }
       
-      // 파일 경로 구성
-      const filePath = currentSong.filePath || `${musicSheetsPath}/${currentSong.fileName}`;
+      // 파일 경로 구성 - 플랫폼별 경로 문제 해결
+      let filePath;
+      
+      // filePath가 있고 다른 플랫폼 경로인 경우, 현재 플랫폼에 맞게 변환
+      if (currentSong.filePath) {
+        // Windows 경로인지 확인 (C:\ 또는 D:\ 등)
+        const isWindowsPath = /^[A-Za-z]:[\\/]/.test(currentSong.filePath) || currentSong.filePath.includes('\\');
+        const isMacPath = currentSong.filePath.startsWith('/') && !currentSong.filePath.includes('\\');
+        
+        if (isWindowsPath) {
+          // Windows 경로를 현재 플랫폼 경로로 변환
+          const fileName = currentSong.fileName || currentSong.filePath.split(/[\\/]/).pop();
+          filePath = `${musicSheetsPath}/${fileName}`;
+        } else if (isMacPath) {
+          // macOS 경로이지만 다른 위치인 경우, 현재 musicSheetsPath 사용
+          const fileName = currentSong.fileName || currentSong.filePath.split('/').pop();
+          filePath = `${musicSheetsPath}/${fileName}`;
+        } else {
+          // 상대 경로인 경우
+          filePath = `${musicSheetsPath}/${currentSong.filePath}`;
+        }
+      } else {
+        // filePath가 없는 경우 fileName 사용
+        filePath = `${musicSheetsPath}/${currentSong.fileName}`;
+      }
+      
+      // Music_Sheets 폴더에서 정확한 파일명을 찾지 못했다면 비슷한 파일명으로 시도
+      if (window.electronAPI && window.electronAPI.listFiles) {
+        try {
+          const files = await window.electronAPI.listFiles(musicSheetsPath);
+          const exactMatch = files.find(file => file === currentSong.fileName);
+          
+          if (!exactMatch) {
+            const similarFiles = files.filter(file => 
+              file.toLowerCase().includes(currentSong.fileName.toLowerCase()) ||
+              currentSong.fileName.toLowerCase().includes(file.toLowerCase())
+            );
+            
+            if (similarFiles.length > 0) {
+              const newFileName = similarFiles[0];
+              filePath = `${musicSheetsPath}/${newFileName}`;
+            }
+          }
+        } catch (error) {
+          // 파일명 매칭 실패 시 무시
+        }
+      }
+      
       
       try {
+        // 파일 존재 여부 먼저 확인
+        if (window.electronAPI && window.electronAPI.checkFileExists) {
+          const exists = await window.electronAPI.checkFileExists(filePath);
+          if (!exists) {
+            throw new Error(`파일이 존재하지 않습니다: ${filePath}`);
+          }
+        }
+        
         const fileData = await window.electronAPI.readFile(filePath);
         
         if (fileData && fileData.length > 0) {
-          const blob = new Blob([fileData], { type: 'image/jpeg' });
+          // 파일 확장자에 따라 MIME 타입 결정
+          const extension = currentSong.fileName.toLowerCase().split('.').pop();
+          let mimeType = 'image/jpeg'; // 기본값
+          
+          switch (extension) {
+            case 'jpg':
+            case 'jpeg':
+              mimeType = 'image/jpeg';
+              break;
+            case 'png':
+              mimeType = 'image/png';
+              break;
+            case 'pdf':
+              mimeType = 'application/pdf';
+              break;
+            default:
+              // 알 수 없는 파일 확장자는 JPEG로 처리
+          }
+          
+          const blob = new Blob([fileData], { type: mimeType });
           const url = URL.createObjectURL(blob);
           
           // 이전 URL 정리
@@ -111,6 +185,7 @@ const SongPreview = ({ selectedSong }) => {
 
   const handleImageLoadError = (e) => {
     setImageLoadError(true);
+    setError('이미지를 표시할 수 없습니다. 파일 형식을 확인해주세요.');
   };
 
   if (!selectedSong) {
@@ -141,6 +216,10 @@ const SongPreview = ({ selectedSong }) => {
         <div className="error-container">
           <FileText className="error-icon" />
           <p>{error}</p>
+          <div className="error-details">
+            <p>곡: {selectedSong?.title}</p>
+            <p>파일: {selectedSong?.fileName}</p>
+          </div>
           <button 
             className="retry-btn"
             onClick={loadImagePreview}
@@ -156,6 +235,11 @@ const SongPreview = ({ selectedSong }) => {
         <div className="error-container">
           <FileText className="error-icon" />
           <p>이미지를 불러올 수 없습니다.</p>
+          <div className="error-details">
+            <p>곡: {selectedSong?.title}</p>
+            <p>파일: {selectedSong?.fileName}</p>
+            <p>파일 형식을 확인해주세요.</p>
+          </div>
           <button 
             className="retry-btn"
             onClick={loadImagePreview}

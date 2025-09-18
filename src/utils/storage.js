@@ -497,7 +497,7 @@ export const createDatabaseBackup = async (currentSongs = null, currentWorshipLi
     return { 
       success: true, 
       filePath: backupFilePath,
-      message: `통합 데이터베이스 백업이 생성되었습니다!\n\n📊 데이터 현황:\n• 찬양 갯수: ${songs.length}개\n• 악보 없는 찬양: ${songsWithoutMusicSheet}개\n• 찬양 리스트: ${Object.keys(worshipLists).length}개\n• 파일 크기: ${(fileSize / 1024 / 1024).toFixed(2)}MB`,
+      message: `통합 데이터베이스 백업이 생성되었습니다!\n\n📊 데이터 현황:\n• 찬양 개수: ${songs.length}개\n• 악보 없는 찬양: ${songsWithoutMusicSheet}개\n• 찬양 리스트: ${Object.keys(worshipLists).length}개\n• 파일 크기: ${(fileSize / 1024 / 1024).toFixed(2)}MB`,
       stats: databaseData.stats,
       fileName: backupFileName
     };
@@ -638,6 +638,90 @@ export const restoreWorshipListsFromBackup = async (backupFilePath) => {
   } catch (error) {
     console.error('복원 실패:', error);
     return { success: false, error: error.message };
+  }
+};
+
+// 데이터베이스 마지막 업데이트 날짜 가져오기
+export const getDatabaseLastUpdated = async () => {
+  try {
+    // 먼저 OneDrive에서 확인
+    if (window.electronAPI && window.electronAPI.readFile) {
+      try {
+        const oneDrivePath = await window.electronAPI.getOneDrivePath();
+        if (oneDrivePath) {
+          const songsFilePath = `${oneDrivePath}/WorshipNote_Data/Database/songs.json`;
+          const worshipListsFilePath = `${oneDrivePath}/WorshipNote_Data/Database/worship_lists.json`;
+          
+          let latestUpdate = null;
+          
+          // songs.json 확인
+          try {
+            const songsData = await window.electronAPI.readFile(songsFilePath);
+            if (songsData) {
+              const songsJson = JSON.parse(songsData);
+              if (songsJson.lastUpdated) {
+                latestUpdate = new Date(songsJson.lastUpdated);
+              }
+            }
+          } catch (error) {
+            // 파일이 없거나 읽기 실패 시 무시
+          }
+          
+          // worship_lists.json 확인
+          try {
+            const worshipListsData = await window.electronAPI.readFile(worshipListsFilePath);
+            if (worshipListsData) {
+              const worshipListsJson = JSON.parse(worshipListsData);
+              if (worshipListsJson.lastUpdated) {
+                const worshipListsUpdate = new Date(worshipListsJson.lastUpdated);
+                if (!latestUpdate || worshipListsUpdate > latestUpdate) {
+                  latestUpdate = worshipListsUpdate;
+                }
+              }
+            }
+          } catch (error) {
+            // 파일이 없거나 읽기 실패 시 무시
+          }
+          
+          if (latestUpdate) {
+            return {
+              success: true,
+              lastUpdated: latestUpdate,
+              source: 'OneDrive'
+            };
+          }
+        }
+      } catch (oneDriveError) {
+        console.warn('OneDrive에서 마지막 업데이트 날짜를 가져올 수 없습니다:', oneDriveError);
+      }
+    }
+    
+    // OneDrive에서 가져올 수 없으면 localStorage에서 확인
+    try {
+      const localData = localStorage.getItem('worshipnote_data');
+      if (localData) {
+        const parsedData = JSON.parse(localData);
+        // localStorage에는 lastUpdated 정보가 없으므로 현재 시간 반환
+        return {
+          success: true,
+          lastUpdated: new Date(),
+          source: 'localStorage'
+        };
+      }
+    } catch (error) {
+      console.warn('localStorage에서 데이터를 가져올 수 없습니다:', error);
+    }
+    
+    return {
+      success: false,
+      error: '데이터베이스 마지막 업데이트 날짜를 찾을 수 없습니다.'
+    };
+  } catch (error) {
+    console.error('데이터베이스 마지막 업데이트 날짜 가져오기 실패:', error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 };
 

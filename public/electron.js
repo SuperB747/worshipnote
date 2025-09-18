@@ -25,7 +25,8 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'preload.js'),
+      webSecurity: true
     },
     icon: path.join(__dirname, 'icon.png'),
     titleBarStyle: 'default',
@@ -318,6 +319,24 @@ ipcMain.handle('save-pdf', async (event, pdfData) => {
     };
   } catch (error) {
     console.error('PDF 저장 실패:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+});
+
+// 파일 열기 핸들러
+ipcMain.handle('open-file', async (event, filePath) => {
+  try {
+    const { shell } = require('electron');
+    await shell.openPath(filePath);
+    return {
+      success: true,
+      message: `파일을 열었습니다: ${path.basename(filePath)}`
+    };
+  } catch (error) {
+    console.error('파일 열기 실패:', error);
     return {
       success: false,
       error: error.message

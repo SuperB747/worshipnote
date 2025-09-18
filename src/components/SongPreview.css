@@ -245,6 +245,22 @@
   margin-bottom: 20px;
 }
 
+.error-details {
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.2);
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  max-width: 400px;
+}
+
+.error-details p {
+  font-size: 14px;
+  color: #666;
+  margin: 5px 0;
+  font-weight: 400;
+}
+
 .retry-btn {
   background: var(--primary-green);
   color: white;

@@ -1,19 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Music, Search, Calendar, Plus, Download, RotateCcw } from 'lucide-react';
-import { createDatabaseBackup, restoreDatabaseFromBackup } from '../utils/storage';
+import { Music, Search, Calendar, Plus, Download, RotateCcw, Clock } from 'lucide-react';
+import { createDatabaseBackup, restoreDatabaseFromBackup, getDatabaseLastUpdated } from '../utils/storage';
 import GhibliDialog from './GhibliDialog';
 import './Sidebar.css';
 
 const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistenceMap }) => {
   const location = useLocation();
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const menuItems = [
     { path: '/', icon: Search, label: '악보 검색', color: '#6b8e6b' },
     { path: '/add', icon: Plus, label: '악보 추가', color: '#4a7c59' },
     { path: '/worship-list', icon: Calendar, label: '찬양 리스트 관리', color: '#8b7355' },
   ];
+
+  // 데이터베이스 마지막 업데이트 날짜 가져오기
+  useEffect(() => {
+    const fetchLastUpdated = async () => {
+      setIsLoading(true);
+      try {
+        const result = await getDatabaseLastUpdated();
+        if (result.success) {
+          setLastUpdated(result.lastUpdated);
+        } else {
+          console.warn('마지막 업데이트 날짜를 가져올 수 없습니다:', result.error);
+        }
+      } catch (error) {
+        console.error('마지막 업데이트 날짜 가져오기 실패:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLastUpdated();
+  }, [songs, worshipLists]); // songs나 worshipLists가 변경될 때마다 업데이트
 
   const handleDatabaseBackup = async () => {
     try {
@@ -186,6 +209,46 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
       
       <div className="sidebar-data-management">
         <div className="data-management-title">데이터 관리</div>
+        
+        {/* 데이터베이스 마지막 업데이트 정보 */}
+        <div className="database-info">
+          <div className="database-last-updated">
+            {isLoading ? (
+              <div className="loading-indicator">
+                <div className="loading-spinner"></div>
+                <span>로딩 중...</span>
+              </div>
+            ) : lastUpdated ? (
+              <div className="last-updated-info">
+                <Clock className="clock-icon" />
+                <div className="last-updated-text">
+                  <div className="last-updated-label">Last updated</div>
+                  <div className="last-updated-datetime">
+                    <div className="last-updated-date">
+                      {lastUpdated.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                      })}
+                    </div>
+                    <div className="last-updated-time">
+                      {lastUpdated.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="no-data">
+                <span>데이터 없음</span>
+              </div>
+            )}
+          </div>
+        </div>
+        
         <div className="data-management-buttons">
           <button 
             className="data-btn backup-btn"

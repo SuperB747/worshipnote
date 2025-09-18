@@ -488,7 +488,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                 title="선택된 날짜의 찬양 리스트를 PDF로 내보내기"
               >
                 <Download className="btn-icon" />
-                {isExportingPdf ? 'PDF 생성 중...' : 'PDF 내보내기'}
+                {isExportingPdf ? '생성 중...' : 'PDF'}
               </button>
               <button 
                 className="add-song-btn"
