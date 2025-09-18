@@ -8,7 +8,8 @@ import './Sidebar.css';
 const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistenceMap }) => {
   const location = useLocation();
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
-  const [lastUpdated, setLastUpdated] = useState(null);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [lastOneDriveSync, setLastOneDriveSync] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const menuItems = [
@@ -17,19 +18,20 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
     { path: '/worship-list', icon: Calendar, label: '찬양 리스트 관리', color: '#8b7355' },
   ];
 
-  // 데이터베이스 마지막 업데이트 날짜 가져오기
+  // 데이터베이스 마지막 저장 날짜와 OneDrive 동기화 시간 가져오기
   useEffect(() => {
     const fetchLastUpdated = async () => {
       setIsLoading(true);
       try {
         const result = await getDatabaseLastUpdated();
         if (result.success) {
-          setLastUpdated(result.lastUpdated);
+          setLastSaved(result.lastSaved);
+          setLastOneDriveSync(result.lastOneDriveSync);
         } else {
-          console.warn('마지막 업데이트 날짜를 가져올 수 없습니다:', result.error);
+          console.warn('마지막 저장 날짜를 가져올 수 없습니다:', result.error);
         }
       } catch (error) {
-        console.error('마지막 업데이트 날짜 가져오기 실패:', error);
+        console.error('마지막 저장 날짜 가져오기 실패:', error);
       } finally {
         setIsLoading(false);
       }
@@ -210,43 +212,66 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
       <div className="sidebar-data-management">
         <div className="data-management-title">데이터 관리</div>
         
-        {/* 데이터베이스 마지막 업데이트 정보 */}
+        {/* 데이터베이스 저장 정보 */}
         <div className="database-info">
-          <div className="database-last-updated">
-            {isLoading ? (
-              <div className="loading-indicator">
-                <div className="loading-spinner"></div>
-                <span>로딩 중...</span>
-              </div>
-            ) : lastUpdated ? (
-              <div className="last-updated-info">
+          {isLoading ? (
+            <div className="loading-indicator">
+              <div className="loading-spinner"></div>
+              <span>로딩 중...</span>
+            </div>
+          ) : (
+            <div className="database-times">
+              {/* 로컬 저장 시간 */}
+              <div className="time-info">
                 <Clock className="clock-icon" />
-                <div className="last-updated-text">
-                  <div className="last-updated-label">Last updated</div>
-                  <div className="last-updated-datetime">
-                    <div className="last-updated-date">
-                      {lastUpdated.toLocaleDateString('en-US', {
+                <div className="time-text">
+                  <div className="time-label">로컬 저장</div>
+                  <div className="time-datetime">
+                    <div className="time-date">
+                      {lastSaved ? lastSaved.toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit'
-                      })}
+                      }) : '--'}
                     </div>
-                    <div className="last-updated-time">
-                      {lastUpdated.toLocaleTimeString('en-US', {
+                    <div className="time-time">
+                      {lastSaved ? lastSaved.toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
                         hour12: false
-                      })}
+                      }) : '--'}
                     </div>
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="no-data">
-                <span>데이터 없음</span>
-              </div>
-            )}
-          </div>
+              
+              {/* OneDrive 동기화 시간 */}
+              {lastOneDriveSync && (
+                <div className="time-info onedrive-sync">
+                  <Clock className="clock-icon" />
+                  <div className="time-text">
+                    <div className="time-label">OneDrive 동기화</div>
+                    <div className="time-datetime">
+                      <div className="time-date">
+                        {lastOneDriveSync.toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit'
+                        })}
+                      </div>
+                      <div className="time-time">
+                        {lastOneDriveSync.toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         <div className="data-management-buttons">

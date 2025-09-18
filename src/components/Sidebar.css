@@ -136,10 +136,23 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.database-last-updated {
-  min-height: 24px;
+.database-times {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.time-info {
   display: flex;
   align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.time-info.onedrive-sync {
+  opacity: 0.8;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 8px;
 }
 
 .loading-indicator {
@@ -164,11 +177,11 @@
   100% { transform: rotate(360deg); }
 }
 
-.last-updated-info {
+.time-text {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
 }
 
 .clock-icon {
@@ -178,27 +191,20 @@
   flex-shrink: 0;
 }
 
-.last-updated-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.last-updated-label {
+.time-label {
   font-size: 10px;
   color: rgba(255, 255, 255, 0.7);
   font-weight: 500;
   line-height: 1.2;
 }
 
-.last-updated-datetime {
+.time-datetime {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.last-updated-date {
+.time-date {
   font-size: 11px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
@@ -206,12 +212,25 @@
   line-height: 1.2;
 }
 
-.last-updated-time {
+.time-time {
   font-size: 10px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.8);
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
   line-height: 1.2;
+}
+
+/* OneDrive 동기화 정보 스타일 */
+.time-info.onedrive-sync .time-label {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.time-info.onedrive-sync .time-date {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.time-info.onedrive-sync .time-time {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .no-data {
@@ -317,19 +336,23 @@
     margin-bottom: 12px;
   }
   
-  .last-updated-label {
+  .time-label {
     font-size: 9px;
   }
   
-  .last-updated-date {
+  .time-date {
     font-size: 10px;
   }
   
-  .last-updated-time {
+  .time-time {
     font-size: 9px;
   }
   
-  .last-updated-datetime {
+  .time-datetime {
+    gap: 6px;
+  }
+  
+  .database-times {
     gap: 6px;
   }
   

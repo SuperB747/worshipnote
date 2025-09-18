@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
+const fsPromises = require('fs').promises;
 const os = require('os');
 
 // 한글 파일명 처리를 위한 인코딩 설정
@@ -161,7 +162,7 @@ const findMusicSheetsPath = () => {
 // 폴더 생성 함수
 const ensureDirectoryExists = async (dirPath) => {
   try {
-    await fs.mkdir(dirPath, { recursive: true });
+    await fsPromises.mkdir(dirPath, { recursive: true });
     return true;
   } catch (error) {
     console.error('폴더 생성 실패:', error);
@@ -190,7 +191,7 @@ ipcMain.handle('create-directory', async (event, dirPath) => {
 ipcMain.handle('write-file', async (event, filePath, data) => {
   try {
     await ensureDirectoryExists(path.dirname(filePath));
-    await fs.writeFile(filePath, data);
+    await fsPromises.writeFile(filePath, data);
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
@@ -210,7 +211,7 @@ ipcMain.handle('save-file', async (event, fileData) => {
     
     // 파일이 이미 존재하는지 확인
     try {
-      await fs.access(fullPath);
+      await fsPromises.access(fullPath);
       // 파일이 이미 존재하면 건너뛰고 기존 파일과 연동
       return {
         success: true,
@@ -221,7 +222,7 @@ ipcMain.handle('save-file', async (event, fileData) => {
     } catch (accessError) {
       // 파일이 존재하지 않으면 새로 저장
       const buffer = Buffer.from(arrayBuffer);
-      await fs.writeFile(fullPath, buffer);
+      await fsPromises.writeFile(fullPath, buffer);
       
       return {
         success: true,
@@ -241,29 +242,45 @@ ipcMain.handle('save-file', async (event, fileData) => {
 
 ipcMain.handle('read-file', async (event, filePath) => {
   try {
+    console.log('=== read-file 핸들러 시작 ===');
+    console.log('요청된 파일 경로:', filePath);
+    
     // 한글 파일명 처리를 위한 인코딩 정규화
     const normalizedPath = path.normalize(filePath);
+    console.log('정규화된 파일 경로:', normalizedPath);
     
     // 파일 존재 여부 확인
     try {
-      await fs.access(normalizedPath);
+      await fsPromises.access(normalizedPath);
+      console.log('파일 존재 확인됨');
     } catch (accessError) {
+      console.log('파일이 존재하지 않음:', accessError.message);
       // 파일이 존재하지 않으면 null 반환 (에러를 던지지 않음)
       return null;
     }
     
-    const buffer = await fs.readFile(normalizedPath);
+    console.log('파일 읽기 시작...');
+    const buffer = await fsPromises.readFile(normalizedPath);
+    console.log('파일 읽기 완료, 버퍼 크기:', buffer.length);
     
     // JSON 파일인 경우 문자열로 변환
     if (normalizedPath.endsWith('.json')) {
+      console.log('JSON 파일로 처리');
       return buffer.toString('utf8');
     }
     
     // 이미지 파일인 경우 Buffer 그대로 반환
+    console.log('이미지 파일로 처리');
     return buffer;
   } catch (error) {
+    console.error('=== read-file 에러 발생 ===');
+    console.error('에러 코드:', error.code);
+    console.error('에러 메시지:', error.message);
+    console.error('에러 스택:', error.stack);
+    
     // ENOENT 오류(파일 없음)는 null 반환, 다른 오류는 에러 던지기
     if (error.code === 'ENOENT') {
+      console.log('ENOENT 오류로 null 반환');
       return null;
     }
     throw new Error(`Cannot read file: ${error.message}`);
@@ -275,7 +292,7 @@ ipcMain.handle('delete-file', async (event, filePath) => {
     
     // 파일 존재 여부 확인
     try {
-      await fs.access(filePath);
+      await fsPromises.access(filePath);
     } catch (accessError) {
       return {
         success: true,
@@ -302,15 +319,50 @@ ipcMain.handle('delete-file', async (event, filePath) => {
 // PDF 저장 핸들러
 ipcMain.handle('save-pdf', async (event, pdfData) => {
   try {
+    console.log('=== PDF 저장 핸들러 시작 ===');
     const { pdfData: pdfUint8Array, filePath } = pdfData;
+    console.log('저장 경로:', filePath);
+    console.log('PDF 데이터 크기:', pdfUint8Array.length);
+    
+    // 파일 존재 여부 확인
+    if (fs.existsSync(filePath)) {
+      console.log('기존 파일 발견, 덮어쓰기 확인 다이얼로그 표시');
+      const fileName = path.basename(filePath);
+      const message = `파일 "${fileName}"이(가) 이미 존재합니다.\n\n덮어쓰시겠습니까?`;
+      
+      // 메인 프로세스에서 다이얼로그 표시
+      const { dialog } = require('electron');
+      const result = await dialog.showMessageBox({
+        type: 'question',
+        buttons: ['덮어쓰기', '취소'],
+        defaultId: 0,
+        cancelId: 1,
+        message: '파일 덮어쓰기 확인',
+        detail: message
+      });
+      
+      if (result.response === 1) { // 취소 선택
+        console.log('사용자가 덮어쓰기를 취소함');
+        return {
+          success: false,
+          cancelled: true,
+          message: 'PDF 저장이 취소되었습니다.'
+        };
+      }
+      console.log('사용자가 덮어쓰기를 선택함');
+    }
     
     // 디렉토리 생성
+    console.log('디렉토리 생성 중...');
     const dirPath = path.dirname(filePath);
     await ensureDirectoryExists(dirPath);
+    console.log('디렉토리 생성 완료:', dirPath);
     
     // PDF 파일 저장
+    console.log('PDF 파일 저장 중...');
     const buffer = Buffer.from(pdfUint8Array);
-    await fs.writeFile(filePath, buffer);
+    await fsPromises.writeFile(filePath, buffer);
+    console.log('PDF 파일 저장 완료:', filePath);
     
     return {
       success: true,
@@ -319,6 +371,7 @@ ipcMain.handle('save-pdf', async (event, pdfData) => {
     };
   } catch (error) {
     console.error('PDF 저장 실패:', error);
+    console.error('에러 스택:', error.stack);
     return {
       success: false,
       error: error.message
@@ -326,11 +379,45 @@ ipcMain.handle('save-pdf', async (event, pdfData) => {
   }
 });
 
+
 // 파일 열기 핸들러
 ipcMain.handle('open-file', async (event, filePath) => {
   try {
     const { shell } = require('electron');
-    await shell.openPath(filePath);
+    
+    console.log('파일 열기 요청:', filePath);
+    
+    // 파일 존재 여부 확인
+    if (!fs.existsSync(filePath)) {
+      console.error('파일이 존재하지 않습니다:', filePath);
+      return {
+        success: false,
+        error: `파일을 찾을 수 없습니다: ${filePath}`
+      };
+    }
+    
+    console.log('파일 존재 확인됨, 열기 시도 중...');
+    
+    // macOS에서 더 안정적인 파일 열기
+    if (process.platform === 'darwin') {
+      const { exec } = require('child_process');
+      await new Promise((resolve, reject) => {
+        exec(`open "${filePath}"`, (error, stdout, stderr) => {
+          if (error) {
+            console.error('open 명령어 실패:', error);
+            reject(error);
+          } else {
+            console.log('open 명령어 성공');
+            resolve();
+          }
+        });
+      });
+    } else {
+      await shell.openPath(filePath);
+    }
+    
+    console.log('파일 열기 성공');
+    
     return {
       success: true,
       message: `파일을 열었습니다: ${path.basename(filePath)}`

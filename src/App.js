@@ -6,8 +6,9 @@ import SearchSongs from './pages/SearchSongs';
 import WorshipList from './pages/WorshipList';
 import SongPreview from './components/SongPreview';
 import Snackbar from './components/Snackbar';
+import SyncAnimation from './components/SyncAnimation';
 import { useSnackbar } from './hooks/useSnackbar';
-import { initializeData, saveSongs, saveWorshipLists } from './utils/storage';
+import { initializeData, saveSongs, saveWorshipLists, compareDatabaseVersions, syncFromOneDrive } from './utils/storage';
 import './App.css';
 
 function App() {
@@ -20,6 +21,8 @@ function App() {
   const [lastSavedSongs, setLastSavedSongs] = useState(null);
   const [lastSavedWorshipLists, setLastSavedWorshipLists] = useState(null);
   const [fileExistenceMap, setFileExistenceMap] = useState({});
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
 
   // 실제 파일 존재 여부를 확인하는 함수
   const checkFileExists = async (fileName) => {
@@ -47,13 +50,54 @@ function App() {
       try {
         // Electron 환경에서 electronAPI가 준비될 때까지 기다림
         if (window.electronAPI) {
-          const { songs, worshipLists } = await initializeData();
+          // 먼저 OneDrive와 로컬 데이터베이스 버전 비교
+          const versionComparison = await compareDatabaseVersions();
           
-          setSongs(songs);
-          setWorshipLists(worshipLists);
-          // 마지막 저장된 데이터로 설정 (초기 저장 방지)
-          setLastSavedSongs(JSON.parse(JSON.stringify(songs)));
-          setLastSavedWorshipLists(JSON.parse(JSON.stringify(worshipLists)));
+          if (versionComparison.success && versionComparison.needsSync) {
+            console.log('OneDrive 데이터베이스가 더 최신입니다. 동기화를 시작합니다...');
+            setIsSyncing(true);
+            setSyncMessage('OneDrive에서 최신 데이터를 동기화하는 중...');
+            
+            const syncResult = await syncFromOneDrive();
+            
+            if (syncResult.success) {
+              setSongs(syncResult.songs);
+              setWorshipLists(syncResult.worshipLists);
+              // 마지막 저장된 데이터로 설정 (초기 저장 방지)
+              setLastSavedSongs(JSON.parse(JSON.stringify(syncResult.songs)));
+              setLastSavedWorshipLists(JSON.parse(JSON.stringify(syncResult.worshipLists)));
+              
+              // 동기화 완료 애니메이션을 잠시 보여준 후 숨김
+              setSyncMessage('동기화가 완료되었습니다!');
+              setTimeout(() => {
+                setIsSyncing(false);
+                showSuccess(syncResult.message);
+              }, 1500);
+            } else {
+              console.warn('OneDrive 동기화 실패, 로컬 데이터를 사용합니다:', syncResult.error);
+              setSyncMessage('동기화에 실패했습니다. 로컬 데이터를 사용합니다.');
+              setTimeout(() => {
+                setIsSyncing(false);
+                showError(`OneDrive 동기화 실패: ${syncResult.error}`);
+              }, 1500);
+              
+              // 동기화 실패 시 로컬 데이터 로드
+              const { songs, worshipLists } = await initializeData();
+              setSongs(songs);
+              setWorshipLists(worshipLists);
+              setLastSavedSongs(JSON.parse(JSON.stringify(songs)));
+              setLastSavedWorshipLists(JSON.parse(JSON.stringify(worshipLists)));
+            }
+          } else {
+            // 동기화가 필요하지 않은 경우 기존 방식으로 로드
+            const { songs, worshipLists } = await initializeData();
+            
+            setSongs(songs);
+            setWorshipLists(worshipLists);
+            // 마지막 저장된 데이터로 설정 (초기 저장 방지)
+            setLastSavedSongs(JSON.parse(JSON.stringify(songs)));
+            setLastSavedWorshipLists(JSON.parse(JSON.stringify(worshipLists)));
+          }
         } else {
           // 웹 환경이거나 Electron API가 아직 준비되지 않은 경우
           
@@ -294,6 +338,10 @@ function App() {
           type={snackbar.type}
           message={snackbar.message}
           onClose={hideSnackbar}
+        />
+        <SyncAnimation 
+          isVisible={isSyncing}
+          message={syncMessage}
         />
       </div>
     </Router>

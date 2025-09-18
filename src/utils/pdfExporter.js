@@ -70,28 +70,17 @@ const listMusicSheetsFiles = async () => {
 // 파일 경로를 현재 플랫폼에 맞게 변환하는 함수
 const convertFilePathToCurrentPlatform = async (originalFilePath) => {
   try {
-    console.log('=== convertFilePathToCurrentPlatform 시작 ===');
-    console.log('원본 경로:', originalFilePath);
-    
     // Music_Sheets 경로 가져오기
     const musicSheetsPath = await findMusicSheetsPath();
     if (!musicSheetsPath) {
-      console.error('Music_Sheets 경로를 찾을 수 없습니다.');
       return null;
     }
-    
-    console.log('Music_Sheets 경로:', musicSheetsPath);
 
     // 원본 파일 경로에서 파일명만 추출
     const fileName = originalFilePath.split('/').pop() || originalFilePath.split('\\').pop();
     if (!fileName) {
-      console.error('파일명을 추출할 수 없습니다:', originalFilePath);
       return null;
     }
-    
-    console.log('추출된 파일명:', fileName);
-    console.log('파일명 바이트 길이:', new TextEncoder().encode(fileName).length);
-    console.log('파일명 인코딩:', encodeURIComponent(fileName));
 
     // 현재 플랫폼의 Music_Sheets 경로와 파일명을 결합
     // 맥OS에서는 '/' 사용, Windows에서는 '\' 사용
@@ -103,6 +92,7 @@ const convertFilePathToCurrentPlatform = async (originalFilePath) => {
     return null;
   }
 };
+
 
 // PDF 저장 경로 생성
 const getPdfSavePath = async (date) => {
@@ -118,11 +108,11 @@ const getPdfSavePath = async (date) => {
 
   // 요일별 파일명 설정
   const serviceType = dayOfWeek === 5 ? '금요기도회' : '주일예배';
-  const fileName = `${year}${month}${day} ${serviceType} 찬양 리스트.pdf`;
+  const fileName = `${year}${month}${day} ${serviceType} 찬양악보.pdf`;
 
   // OneDrive 경로 구성 (수동으로 경로 구분자 처리)
   const pathSeparator = oneDrivePath.includes('\\') ? '\\' : '/';
-  const pdfPath = `${oneDrivePath}${pathSeparator}Documents${pathSeparator}Archive${pathSeparator}한소망교회${pathSeparator}찬양 리스트${pathSeparator}찬양리스트모음${pathSeparator}${fileName}`;
+  const pdfPath = `${oneDrivePath}${pathSeparator}Documents${pathSeparator}Archive${pathSeparator}한소망교회${pathSeparator}찬양악보${pathSeparator}찬양악보모음${pathSeparator}${fileName}`;
   
   return pdfPath;
 };
@@ -130,6 +120,9 @@ const getPdfSavePath = async (date) => {
 // Electron을 통해 이미지 파일을 읽어서 Blob으로 변환
 const imageFileToBlob = async (filePath) => {
   try {
+    console.log('=== imageFileToBlob 시작 ===');
+    console.log('원본 파일 경로:', filePath);
+    
     // Electron API 사용 가능 여부 확인
     if (!window.electronAPI || !window.electronAPI.readFile) {
       throw new Error('Electron API를 사용할 수 없습니다.');
@@ -140,15 +133,23 @@ const imageFileToBlob = async (filePath) => {
     
     // macOS 경로가 포함되어 있으면 Windows 경로로 변환
     if (filePath.includes('/Users/') || filePath.includes('OneDrive-Personal')) {
+      console.log('경로 변환 시도 중...');
       const convertedFilePath = await convertFilePathToCurrentPlatform(filePath);
       if (convertedFilePath) {
         finalFilePath = convertedFilePath;
+        console.log('변환된 파일 경로:', finalFilePath);
+      } else {
+        console.log('경로 변환 실패, 원본 경로 사용');
       }
     }
+
+    console.log('최종 파일 경로:', finalFilePath);
+    console.log('readFile API 호출 중...');
 
     // 파일 존재 여부 확인을 위해 먼저 읽기 시도
     try {
       const fileData = await window.electronAPI.readFile(finalFilePath);
+      console.log('readFile 결과:', fileData ? `데이터 크기: ${fileData.length}` : 'null');
       
       if (!fileData) {
         throw new Error('파일을 읽을 수 없습니다.');
@@ -216,7 +217,7 @@ const convertPDFToImage = async (pdfData) => {
     
     // 첫 번째 페이지만 변환 (악보는 보통 첫 페이지만 필요)
     const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 2.0 }); // 고해상도로 변환
+    const viewport = page.getViewport({ scale: 3.0 }); // 최고 해상도로 변환
     
     // Canvas 생성
     const canvas = document.createElement('canvas');
@@ -240,7 +241,7 @@ const convertPDFToImage = async (pdfData) => {
         } else {
           resolve(null);
         }
-      }, 'image/jpeg', 0.95);
+      }, 'image/jpeg', 1.0);
     });
   } catch (error) {
     return null;
@@ -250,12 +251,17 @@ const convertPDFToImage = async (pdfData) => {
 // PDF 생성 함수
 export const generateWorshipListPDF = async (songs, date) => {
   try {
+    console.log('=== PDF 생성 시작 ===');
+    console.log('찬양 개수:', songs.length);
+    console.log('날짜:', date);
     
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'in',
       format: 'letter'
     });
+    
+    console.log('jsPDF 인스턴스 생성 완료');
 
     // 레터 사이즈: 8.5 x 11 인치
     const pageWidth = 8.5;
@@ -277,6 +283,7 @@ export const generateWorshipListPDF = async (songs, date) => {
 
     for (let i = 0; i < songs.length; i++) {
       const song = songs[i];
+      console.log(`처리 중인 곡 ${i + 1}/${songs.length}: ${song.title}`);
       
       // 각 곡마다 새 페이지 시작 (첫 번째 곡이 아닌 경우)
       if (!isFirstPage) {
@@ -370,6 +377,8 @@ export const generateWorshipListPDF = async (songs, date) => {
           throw new Error('파일 경로가 설정되지 않았습니다.');
         }
         
+        console.log(`이미지 파일 로드 시도: ${filePath}`);
+        
         // Electron을 통해 이미지 파일을 Blob으로 로드 (재시도 로직 포함)
         let blob = null;
         let retryCount = 0;
@@ -377,6 +386,7 @@ export const generateWorshipListPDF = async (songs, date) => {
         
         while (!blob && retryCount <= maxRetries) {
           if (retryCount > 0) {
+            console.log(`이미지 로드 재시도 ${retryCount}/${maxRetries}`);
             // 재시도 전 잠시 대기
             await new Promise(resolve => setTimeout(resolve, 500));
           }
@@ -386,14 +396,10 @@ export const generateWorshipListPDF = async (songs, date) => {
         }
         
         if (!blob) {
-          failCount++;
-          failedSongs.push({
-            title: song.title,
-            fileName: song.fileName,
-            error: '이미지 파일을 로드할 수 없습니다.'
-          });
-          continue;
+          throw new Error('이미지 파일을 로드할 수 없습니다.');
         }
+        
+        console.log(`이미지 로드 성공, Blob 크기: ${blob.size}`);
 
         // Blob을 Base64로 변환
         const base64 = await blobToBase64(blob);
@@ -426,8 +432,10 @@ export const generateWorshipListPDF = async (songs, date) => {
         const y = margin + (contentHeight - imgHeight) / 2;
         
         // 이미지를 PDF에 추가
+        console.log(`PDF에 이미지 추가: ${song.title}`);
         pdf.addImage(base64, 'JPEG', x, y, imgWidth, imgHeight);
         successCount++;
+        console.log(`곡 처리 완료: ${song.title} (성공: ${successCount}개)`);
 
       } catch (error) {
         failCount++;
@@ -444,49 +452,62 @@ export const generateWorshipListPDF = async (songs, date) => {
     if (successCount === 0) {
       // 빈 PDF에 최소한의 텍스트라도 추가
       pdf.setFontSize(16);
-      pdf.text('찬양 리스트', 4.25, 5.5, { align: 'center' });
+      pdf.text('찬양악보', 4.25, 5.5, { align: 'center' });
       pdf.setFontSize(12);
       pdf.text(`날짜: ${date}`, 4.25, 6, { align: 'center' });
       pdf.text('악보 파일을 찾을 수 없습니다.', 4.25, 6.5, { align: 'center' });
     }
 
     // PDF 저장
+    console.log('PDF 저장 경로 생성 중...');
     const pdfPath = await getPdfSavePath(date);
+    console.log('PDF 저장 경로:', pdfPath);
+    
+    // 파일 존재 여부 확인 및 덮어쓰기는 Electron main process에서 처리
+    
+    console.log('PDF ArrayBuffer 생성 중...');
     const pdfArrayBuffer = pdf.output('arraybuffer');
     const pdfUint8Array = new Uint8Array(pdfArrayBuffer);
+    console.log('PDF ArrayBuffer 크기:', pdfUint8Array.length);
     
     // Electron을 통해 파일 저장
     if (!window.electronAPI || !window.electronAPI.savePdf) {
       throw new Error('Electron API를 사용할 수 없습니다.');
     }
 
+    console.log('Electron savePdf API 호출 중...');
     const result = await window.electronAPI.savePdf({
       pdfData: pdfUint8Array,
       filePath: pdfPath
     });
+    console.log('savePdf 결과:', result);
     
     if (result.success) {
-      let message = `PDF가 성공적으로 생성되었습니다!\n저장 위치: ${pdfPath}\n\n`;
-      message += `📊 처리 결과:\n`;
-      message += `• 성공: ${successCount}곡\n`;
-      message += `• 실패: ${failCount}곡\n`;
-      message += `• 총 곡 수: ${songs.length}곡`;
+      let message = `PDF 변환이 완료되었습니다!\n\n`;
+      message += `📄 악보 페이지 수: ${successCount}페이지`;
 
-      if (failedSongs.length > 0) {
-        message += `\n\n❌ 실패한 곡들:\n`;
-        failedSongs.forEach((song, index) => {
-          message += `${index + 1}. ${song.title} (${song.fileName})\n`;
-        });
-      }
-
-      // PDF 파일 자동으로 열기
+      // PDF 파일 자동으로 열기 (파일 저장 완료 후 약간의 지연)
       try {
         if (window.electronAPI && window.electronAPI.openFile) {
-          await window.electronAPI.openFile(pdfPath);
-          message += `\n\n📂 PDF 파일이 자동으로 열렸습니다.`;
+          // 파일 저장이 완전히 완료될 때까지 잠시 대기
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          console.log('PDF 파일 자동 열기 시도:', pdfPath);
+          const openResult = await window.electronAPI.openFile(pdfPath);
+          console.log('PDF 파일 열기 결과:', openResult);
+          
+          if (openResult && openResult.success) {
+            message += `\n\n📂 PDF 파일이 자동으로 열렸습니다.`;
+          } else {
+            console.error('PDF 파일 열기 실패:', openResult);
+            message += `\n\n📂 PDF 파일을 수동으로 열어주세요: ${pdfPath}`;
+          }
+        } else {
+          console.error('Electron API가 없습니다.');
+          message += `\n\n📂 PDF 파일을 수동으로 열어주세요: ${pdfPath}`;
         }
       } catch (openError) {
-        console.warn('PDF 파일 열기 실패:', openError);
+        console.error('PDF 파일 열기 중 오류:', openError);
         message += `\n\n📂 PDF 파일을 수동으로 열어주세요: ${pdfPath}`;
       }
 
@@ -506,7 +527,6 @@ export const generateWorshipListPDF = async (songs, date) => {
     }
 
   } catch (error) {
-    console.error('PDF 생성 실패:', error);
     return {
       success: false,
       error: error.message

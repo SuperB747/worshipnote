@@ -418,6 +418,13 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
           type: 'success',
           message: result.message
         });
+      } else if (result.cancelled) {
+        // 사용자가 덮어쓰기를 취소한 경우
+        setDialog({
+          isVisible: true,
+          type: 'info',
+          message: result.message
+        });
       } else {
         setDialog({
           isVisible: true,

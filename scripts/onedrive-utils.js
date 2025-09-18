@@ -188,7 +188,7 @@ class OneDrivePathFinder {
       return null;
     }
 
-    const pdfPath = path.join(oneDrivePath, 'Documents', 'Archive', '한소망교회', '찬양 리스트', '찬양리스트모음');
+    const pdfPath = path.join(oneDrivePath, 'Documents', 'Archive', '한소망교회', '찬양악보', '찬양악보모음');
     
     // 폴더가 없으면 생성
     if (!(await this.pathExists(pdfPath))) {

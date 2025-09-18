@@ -62,7 +62,7 @@ class WorshipNotePdfExport {
     const dayOfWeek = dateObj.getDay();
     
     const serviceType = dayOfWeek === 5 ? '금요기도회' : '주일예배';
-    return `${year}${month}${day} ${serviceType} 찬양 리스트.pdf`;
+    return `${year}${month}${day} ${serviceType} 찬양악보.pdf`;
   }
 
   /**

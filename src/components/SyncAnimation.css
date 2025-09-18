@@ -1,0 +1,162 @@
+.sync-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+}
+
+.sync-container {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  border-radius: 20px;
+  padding: 40px 50px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-width: 300px;
+  animation: syncContainerAppear 0.3s ease-out;
+}
+
+@keyframes syncContainerAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.sync-icon {
+  margin-bottom: 20px;
+}
+
+.sync-circle {
+  width: 80px;
+  height: 80px;
+  border: 3px solid rgba(52, 152, 219, 0.3);
+  border-radius: 50%;
+  position: relative;
+  margin: 0 auto;
+  animation: syncRotate 2s linear infinite;
+}
+
+@keyframes syncRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sync-arrow {
+  position: absolute;
+  font-size: 24px;
+  color: #3498db;
+  font-weight: bold;
+  animation: syncArrowPulse 1.5s ease-in-out infinite;
+}
+
+.sync-arrow-1 {
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation-delay: 0s;
+}
+
+.sync-arrow-2 {
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation-delay: 0.75s;
+}
+
+@keyframes syncArrowPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translateX(-50%) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.2);
+  }
+}
+
+.sync-message {
+  color: #ecf0f1;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 15px;
+  line-height: 1.4;
+}
+
+.sync-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background: #3498db;
+  border-radius: 50%;
+  animation: syncDotBounce 1.4s ease-in-out infinite both;
+}
+
+.dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes syncDotBounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .sync-container {
+    padding: 30px 40px;
+    min-width: 280px;
+  }
+  
+  .sync-circle {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .sync-arrow {
+    font-size: 20px;
+  }
+  
+  .sync-message {
+    font-size: 14px;
+  }
+  
+  .dot {
+    width: 6px;
+    height: 6px;
+  }
+}

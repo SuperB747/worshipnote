@@ -24,6 +24,9 @@ export const saveToStorage = (key, data) => {
       currentData.worshipLists = data;
     }
     
+    // 마지막 저장 시간 추가
+    currentData.lastSaved = new Date().toISOString();
+    
     // JSON 파일로 저장 (실제로는 localStorage에 저장)
     localStorage.setItem('worshipnote_data', JSON.stringify(currentData));
     return true;
@@ -106,6 +109,11 @@ export const saveSongs = async (songs) => {
           const jsonData = JSON.stringify(songsData, null, 2);
           
           await window.electronAPI.writeFile(filePath, jsonData);
+          
+          // OneDrive 업로드 성공 시 시간 저장
+          const currentData = loadFromStorage('songs', { songs: [], worshipLists: {} });
+          currentData.lastOneDriveSync = new Date().toISOString();
+          localStorage.setItem('worshipnote_data', JSON.stringify(currentData));
         }
       } catch (oneDriveError) {
         console.error('OneDrive 저장 실패:', oneDriveError);
@@ -243,6 +251,11 @@ export const saveWorshipLists = async (worshipLists) => {
           const jsonData = JSON.stringify(worshipListsData, null, 2);
           
           await window.electronAPI.writeFile(filePath, jsonData);
+          
+          // OneDrive 업로드 성공 시 시간 저장
+          const currentData = loadFromStorage('songs', { songs: [], worshipLists: {} });
+          currentData.lastOneDriveSync = new Date().toISOString();
+          localStorage.setItem('worshipnote_data', JSON.stringify(currentData));
         }
       } catch (oneDriveError) {
         console.error('OneDrive 저장 실패:', oneDriveError);
@@ -641,11 +654,226 @@ export const restoreWorshipListsFromBackup = async (backupFilePath) => {
   }
 };
 
-// 데이터베이스 마지막 업데이트 날짜 가져오기
+// OneDrive와 로컬 데이터베이스의 최신 버전 비교
+export const compareDatabaseVersions = async () => {
+  try {
+    let localLastSaved = null;
+    let oneDriveLastUpdated = null;
+    
+    // 로컬 데이터베이스의 마지막 저장 시간 확인
+    try {
+      const localData = localStorage.getItem('worshipnote_data');
+      if (localData) {
+        const parsedData = JSON.parse(localData);
+        if (parsedData.lastSaved) {
+          localLastSaved = new Date(parsedData.lastSaved);
+        }
+      }
+    } catch (error) {
+      console.warn('로컬 데이터베이스 시간 확인 실패:', error);
+    }
+    
+    // OneDrive 데이터베이스의 마지막 업데이트 시간 확인
+    if (window.electronAPI && window.electronAPI.readFile) {
+      try {
+        const oneDrivePath = await window.electronAPI.getOneDrivePath();
+        if (oneDrivePath) {
+          const songsFilePath = `${oneDrivePath}/WorshipNote_Data/Database/songs.json`;
+          const worshipListsFilePath = `${oneDrivePath}/WorshipNote_Data/Database/worship_lists.json`;
+          
+          let latestOneDriveUpdate = null;
+          
+          // songs.json 확인
+          try {
+            const songsData = await window.electronAPI.readFile(songsFilePath);
+            if (songsData) {
+              const songsJson = JSON.parse(songsData);
+              if (songsJson.lastUpdated) {
+                latestOneDriveUpdate = new Date(songsJson.lastUpdated);
+              }
+            }
+          } catch (error) {
+            // 파일이 없거나 읽기 실패 시 무시
+          }
+          
+          // worship_lists.json 확인
+          try {
+            const worshipListsData = await window.electronAPI.readFile(worshipListsFilePath);
+            if (worshipListsData) {
+              const worshipListsJson = JSON.parse(worshipListsData);
+              if (worshipListsJson.lastUpdated) {
+                const worshipListsUpdate = new Date(worshipListsJson.lastUpdated);
+                if (!latestOneDriveUpdate || worshipListsUpdate > latestOneDriveUpdate) {
+                  latestOneDriveUpdate = worshipListsUpdate;
+                }
+              }
+            }
+          } catch (error) {
+            // 파일이 없거나 읽기 실패 시 무시
+          }
+          
+          oneDriveLastUpdated = latestOneDriveUpdate;
+        }
+      } catch (oneDriveError) {
+        console.warn('OneDrive 데이터베이스 시간 확인 실패:', oneDriveError);
+      }
+    }
+    
+    // 비교 결과 반환
+    if (!localLastSaved && !oneDriveLastUpdated) {
+      return {
+        success: true,
+        needsSync: false,
+        reason: 'both_empty',
+        localTime: null,
+        oneDriveTime: null
+      };
+    }
+    
+    if (!localLastSaved && oneDriveLastUpdated) {
+      return {
+        success: true,
+        needsSync: true,
+        reason: 'local_empty',
+        localTime: null,
+        oneDriveTime: oneDriveLastUpdated
+      };
+    }
+    
+    if (localLastSaved && !oneDriveLastUpdated) {
+      return {
+        success: true,
+        needsSync: false,
+        reason: 'onedrive_empty',
+        localTime: localLastSaved,
+        oneDriveTime: null
+      };
+    }
+    
+    // 둘 다 존재하는 경우 시간 비교
+    if (oneDriveLastUpdated > localLastSaved) {
+      return {
+        success: true,
+        needsSync: true,
+        reason: 'onedrive_newer',
+        localTime: localLastSaved,
+        oneDriveTime: oneDriveLastUpdated
+      };
+    } else {
+      return {
+        success: true,
+        needsSync: false,
+        reason: 'local_newer_or_same',
+        localTime: localLastSaved,
+        oneDriveTime: oneDriveLastUpdated
+      };
+    }
+  } catch (error) {
+    console.error('데이터베이스 버전 비교 실패:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// OneDrive에서 로컬로 데이터 동기화
+export const syncFromOneDrive = async () => {
+  try {
+    if (!window.electronAPI || !window.electronAPI.readFile) {
+      return { success: false, error: 'OneDrive API가 사용할 수 없습니다.' };
+    }
+    
+    const oneDrivePath = await window.electronAPI.getOneDrivePath();
+    if (!oneDrivePath) {
+      return { success: false, error: 'OneDrive 경로를 찾을 수 없습니다.' };
+    }
+    
+    const songsFilePath = `${oneDrivePath}/WorshipNote_Data/Database/songs.json`;
+    const worshipListsFilePath = `${oneDrivePath}/WorshipNote_Data/Database/worship_lists.json`;
+    
+    let songs = [];
+    let worshipLists = {};
+    let syncTime = new Date();
+    
+    // songs.json 로드
+    try {
+      const songsData = await window.electronAPI.readFile(songsFilePath);
+      if (songsData) {
+        const songsJson = JSON.parse(songsData);
+        songs = songsJson.songs || [];
+        if (songsJson.lastUpdated) {
+          syncTime = new Date(songsJson.lastUpdated);
+        }
+      }
+    } catch (error) {
+      console.warn('songs.json 로드 실패:', error);
+    }
+    
+    // worship_lists.json 로드
+    try {
+      const worshipListsData = await window.electronAPI.readFile(worshipListsFilePath);
+      if (worshipListsData) {
+        const worshipListsJson = JSON.parse(worshipListsData);
+        worshipLists = worshipListsJson.worshipLists || {};
+        if (worshipListsJson.lastUpdated && new Date(worshipListsJson.lastUpdated) > syncTime) {
+          syncTime = new Date(worshipListsJson.lastUpdated);
+        }
+      }
+    } catch (error) {
+      console.warn('worship_lists.json 로드 실패:', error);
+    }
+    
+    // 로컬에 저장
+    const syncData = {
+      songs,
+      worshipLists,
+      lastSaved: syncTime.toISOString(),
+      lastOneDriveSync: syncTime.toISOString()
+    };
+    
+    localStorage.setItem('worshipnote_data', JSON.stringify(syncData));
+    
+    return {
+      success: true,
+      songs,
+      worshipLists,
+      syncTime,
+      message: `OneDrive에서 데이터를 동기화했습니다.\n\n📊 동기화된 데이터:\n• 찬양: ${songs.length}개\n• 찬양 리스트: ${Object.keys(worshipLists).length}개\n• 동기화 시간: ${syncTime.toLocaleString('ko-KR')}`
+    };
+  } catch (error) {
+    console.error('OneDrive 동기화 실패:', error);
+    return {
+      success: false,
+      error: `동기화 중 오류가 발생했습니다: ${error.message}`
+    };
+  }
+};
+
+// 데이터베이스 마지막 저장 날짜와 OneDrive 동기화 시간 가져오기
 export const getDatabaseLastUpdated = async () => {
   try {
-    // 먼저 OneDrive에서 확인
-    if (window.electronAPI && window.electronAPI.readFile) {
+    let lastSaved = null;
+    let lastOneDriveSync = null;
+    
+    // localStorage에서 lastSaved와 lastOneDriveSync 확인
+    try {
+      const localData = localStorage.getItem('worshipnote_data');
+      if (localData) {
+        const parsedData = JSON.parse(localData);
+        if (parsedData.lastSaved) {
+          lastSaved = new Date(parsedData.lastSaved);
+        }
+        if (parsedData.lastOneDriveSync) {
+          lastOneDriveSync = new Date(parsedData.lastOneDriveSync);
+        }
+      }
+    } catch (error) {
+      console.warn('localStorage에서 데이터를 가져올 수 없습니다:', error);
+    }
+    
+    // OneDrive에서 동기화 시간이 없으면 OneDrive 파일의 lastUpdated 확인
+    if (!lastOneDriveSync && window.electronAPI && window.electronAPI.readFile) {
       try {
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
         if (oneDrivePath) {
@@ -684,40 +912,26 @@ export const getDatabaseLastUpdated = async () => {
           }
           
           if (latestUpdate) {
-            return {
-              success: true,
-              lastUpdated: latestUpdate,
-              source: 'OneDrive'
-            };
+            lastOneDriveSync = latestUpdate;
           }
         }
       } catch (oneDriveError) {
-        console.warn('OneDrive에서 마지막 업데이트 날짜를 가져올 수 없습니다:', oneDriveError);
+        console.warn('OneDrive에서 마지막 저장 날짜를 가져올 수 없습니다:', oneDriveError);
       }
     }
     
-    // OneDrive에서 가져올 수 없으면 localStorage에서 확인
-    try {
-      const localData = localStorage.getItem('worshipnote_data');
-      if (localData) {
-        const parsedData = JSON.parse(localData);
-        // localStorage에는 lastUpdated 정보가 없으므로 현재 시간 반환
-        return {
-          success: true,
-          lastUpdated: new Date(),
-          source: 'localStorage'
-        };
-      }
-    } catch (error) {
-      console.warn('localStorage에서 데이터를 가져올 수 없습니다:', error);
+    // lastSaved가 없으면 현재 시간 사용
+    if (!lastSaved) {
+      lastSaved = new Date();
     }
     
     return {
-      success: false,
-      error: '데이터베이스 마지막 업데이트 날짜를 찾을 수 없습니다.'
+      success: true,
+      lastSaved: lastSaved,
+      lastOneDriveSync: lastOneDriveSync
     };
   } catch (error) {
-    console.error('데이터베이스 마지막 업데이트 날짜 가져오기 실패:', error);
+    console.error('데이터베이스 마지막 저장 날짜 가져오기 실패:', error);
     return {
       success: false,
       error: error.message

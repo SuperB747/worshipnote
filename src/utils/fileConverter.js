@@ -31,7 +31,7 @@ const convertPDFToJPG = async (file) => {
     
     // 첫 번째 페이지만 변환 (악보는 보통 첫 페이지만 필요)
     const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 2.0 }); // 고해상도로 변환
+    const viewport = page.getViewport({ scale: 3.0 }); // 최고 해상도로 변환
     
     // Canvas 생성
     const canvas = document.createElement('canvas');
@@ -64,7 +64,7 @@ const convertPDFToJPG = async (file) => {
             error: 'PDF를 JPG로 변환하는데 실패했습니다.'
           });
         }
-      }, 'image/jpeg', 0.95);
+      }, 'image/jpeg', 1.0);
     });
   } catch (error) {
     console.error('PDF 변환 중 오류:', error);
@@ -128,7 +128,7 @@ export const convertToJPG = async (file) => {
           // Canvas에 이미지 그리기
           ctx.drawImage(img, 0, 0, width, height);
           
-          // 최고 품질로 Canvas를 JPG로 변환 (품질 0.95 = 95%)
+          // 최고 품질로 Canvas를 JPG로 변환 (품질 1.0 = 100%)
           canvas.toBlob((blob) => {
             if (blob) {
               const jpgFile = new File([blob], `${fileName}.jpg`, { type: 'image/jpeg' });
@@ -144,7 +144,7 @@ export const convertToJPG = async (file) => {
                 error: 'JPG 변환에 실패했습니다.'
               });
             }
-          }, 'image/jpeg', 0.95);
+          }, 'image/jpeg', 1.0);
         };
         
         img.onerror = () => {

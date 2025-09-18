@@ -45,6 +45,7 @@ const openFile = async (filePath) => {
   return await ipcRenderer.invoke('open-file', filePath);
 };
 
+
 // API를 렌더러 프로세스에 노출
 contextBridge.exposeInMainWorld('electronAPI', {
   saveFile: (fileData) => saveFile(fileData),
