@@ -51,15 +51,15 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit }) => {
         <GripVertical className="grip-icon" />
       </div>
       
-      <div className="song-content">
+      <div 
+        className="song-content"
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect && onSelect(song);
+        }}
+      >
         <div className="song-number">{index + 1}</div>
-        <div 
-          className="song-details"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect && onSelect(song);
-          }}
-        >
+        <div className="song-details">
           <h5 className="song-title">{song.title}</h5>
         </div>
         <button 

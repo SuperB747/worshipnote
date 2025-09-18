@@ -724,6 +724,14 @@
   align-items: center;
   gap: 12px;
   min-width: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.song-content:hover {
+  background: rgba(74, 124, 89, 0.05);
 }
 
 .song-number {
@@ -743,7 +751,6 @@
 .song-details {
   flex: 1;
   min-width: 0;
-  cursor: pointer;
 }
 
 .song-title {
