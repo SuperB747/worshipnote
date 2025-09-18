@@ -55,8 +55,18 @@ function App() {
           
           if (versionComparison.success && versionComparison.needsSync) {
             console.log('OneDrive 데이터베이스가 더 최신입니다. 동기화를 시작합니다...');
+            console.log('동기화 상세 정보:', versionComparison.details);
             setIsSyncing(true);
-            setSyncMessage('OneDrive에서 최신 데이터를 동기화하는 중...');
+            
+            let syncMessage = 'OneDrive에서 최신 데이터를 동기화하는 중...';
+            if (versionComparison.reason === 'onedrive_songs_newer') {
+              syncMessage = 'OneDrive의 찬양 데이터가 더 최신입니다. 동기화 중...';
+            } else if (versionComparison.reason === 'onedrive_worship_lists_newer') {
+              syncMessage = 'OneDrive의 찬양 리스트가 더 최신입니다. 동기화 중...';
+            } else if (versionComparison.reason === 'onedrive_both_newer') {
+              syncMessage = 'OneDrive의 모든 데이터가 더 최신입니다. 동기화 중...';
+            }
+            setSyncMessage(syncMessage);
             
             const syncResult = await syncFromOneDrive();
             

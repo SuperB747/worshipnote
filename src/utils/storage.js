@@ -654,11 +654,13 @@ export const restoreWorshipListsFromBackup = async (backupFilePath) => {
   }
 };
 
-// OneDrive와 로컬 데이터베이스의 최신 버전 비교
+// OneDrive와 로컬 데이터베이스의 최신 버전 비교 (개선된 버전)
 export const compareDatabaseVersions = async () => {
   try {
-    let localLastSaved = null;
-    let oneDriveLastUpdated = null;
+    let localSongsTime = null;
+    let localWorshipListsTime = null;
+    let oneDriveSongsTime = null;
+    let oneDriveWorshipListsTime = null;
     
     // 로컬 데이터베이스의 마지막 저장 시간 확인
     try {
@@ -666,7 +668,17 @@ export const compareDatabaseVersions = async () => {
       if (localData) {
         const parsedData = JSON.parse(localData);
         if (parsedData.lastSaved) {
-          localLastSaved = new Date(parsedData.lastSaved);
+          localSongsTime = new Date(parsedData.lastSaved);
+          localWorshipListsTime = new Date(parsedData.lastSaved);
+        }
+        if (parsedData.lastOneDriveSync) {
+          const syncTime = new Date(parsedData.lastOneDriveSync);
+          if (!localSongsTime || syncTime > localSongsTime) {
+            localSongsTime = syncTime;
+          }
+          if (!localWorshipListsTime || syncTime > localWorshipListsTime) {
+            localWorshipListsTime = syncTime;
+          }
         }
       }
     } catch (error) {
@@ -681,15 +693,13 @@ export const compareDatabaseVersions = async () => {
           const songsFilePath = `${oneDrivePath}/WorshipNote_Data/Database/songs.json`;
           const worshipListsFilePath = `${oneDrivePath}/WorshipNote_Data/Database/worship_lists.json`;
           
-          let latestOneDriveUpdate = null;
-          
           // songs.json 확인
           try {
             const songsData = await window.electronAPI.readFile(songsFilePath);
             if (songsData) {
               const songsJson = JSON.parse(songsData);
               if (songsJson.lastUpdated) {
-                latestOneDriveUpdate = new Date(songsJson.lastUpdated);
+                oneDriveSongsTime = new Date(songsJson.lastUpdated);
               }
             }
           } catch (error) {
@@ -702,72 +712,64 @@ export const compareDatabaseVersions = async () => {
             if (worshipListsData) {
               const worshipListsJson = JSON.parse(worshipListsData);
               if (worshipListsJson.lastUpdated) {
-                const worshipListsUpdate = new Date(worshipListsJson.lastUpdated);
-                if (!latestOneDriveUpdate || worshipListsUpdate > latestOneDriveUpdate) {
-                  latestOneDriveUpdate = worshipListsUpdate;
-                }
+                oneDriveWorshipListsTime = new Date(worshipListsJson.lastUpdated);
               }
             }
           } catch (error) {
             // 파일이 없거나 읽기 실패 시 무시
           }
-          
-          oneDriveLastUpdated = latestOneDriveUpdate;
         }
       } catch (oneDriveError) {
         console.warn('OneDrive 데이터베이스 시간 확인 실패:', oneDriveError);
       }
     }
     
-    // 비교 결과 반환
-    if (!localLastSaved && !oneDriveLastUpdated) {
-      return {
-        success: true,
-        needsSync: false,
-        reason: 'both_empty',
-        localTime: null,
-        oneDriveTime: null
-      };
+    // 파일별로 동기화 필요 여부 확인
+    const needsSongsSync = oneDriveSongsTime && (!localSongsTime || oneDriveSongsTime > localSongsTime);
+    const needsWorshipListsSync = oneDriveWorshipListsTime && (!localWorshipListsTime || oneDriveWorshipListsTime > localWorshipListsTime);
+    
+    const needsSync = needsSongsSync || needsWorshipListsSync;
+    
+    // 가장 최근 시간 계산
+    const latestLocalTime = localSongsTime && localWorshipListsTime 
+      ? (localSongsTime > localWorshipListsTime ? localSongsTime : localWorshipListsTime)
+      : (localSongsTime || localWorshipListsTime);
+      
+    const latestOneDriveTime = oneDriveSongsTime && oneDriveWorshipListsTime
+      ? (oneDriveSongsTime > oneDriveWorshipListsTime ? oneDriveSongsTime : oneDriveWorshipListsTime)
+      : (oneDriveSongsTime || oneDriveWorshipListsTime);
+    
+    // 동기화 이유 결정
+    let reason = 'no_sync_needed';
+    if (needsSongsSync && needsWorshipListsSync) {
+      reason = 'onedrive_both_newer';
+    } else if (needsSongsSync) {
+      reason = 'onedrive_songs_newer';
+    } else if (needsWorshipListsSync) {
+      reason = 'onedrive_worship_lists_newer';
+    } else if (!latestLocalTime && !latestOneDriveTime) {
+      reason = 'both_empty';
+    } else if (!latestLocalTime && latestOneDriveTime) {
+      reason = 'local_empty';
+    } else if (latestLocalTime && !latestOneDriveTime) {
+      reason = 'onedrive_empty';
     }
     
-    if (!localLastSaved && oneDriveLastUpdated) {
-      return {
-        success: true,
-        needsSync: true,
-        reason: 'local_empty',
-        localTime: null,
-        oneDriveTime: oneDriveLastUpdated
-      };
-    }
-    
-    if (localLastSaved && !oneDriveLastUpdated) {
-      return {
-        success: true,
-        needsSync: false,
-        reason: 'onedrive_empty',
-        localTime: localLastSaved,
-        oneDriveTime: null
-      };
-    }
-    
-    // 둘 다 존재하는 경우 시간 비교
-    if (oneDriveLastUpdated > localLastSaved) {
-      return {
-        success: true,
-        needsSync: true,
-        reason: 'onedrive_newer',
-        localTime: localLastSaved,
-        oneDriveTime: oneDriveLastUpdated
-      };
-    } else {
-      return {
-        success: true,
-        needsSync: false,
-        reason: 'local_newer_or_same',
-        localTime: localLastSaved,
-        oneDriveTime: oneDriveLastUpdated
-      };
-    }
+    return {
+      success: true,
+      needsSync,
+      reason,
+      localTime: latestLocalTime,
+      oneDriveTime: latestOneDriveTime,
+      details: {
+        localSongsTime,
+        localWorshipListsTime,
+        oneDriveSongsTime,
+        oneDriveWorshipListsTime,
+        needsSongsSync,
+        needsWorshipListsSync
+      }
+    };
   } catch (error) {
     console.error('데이터베이스 버전 비교 실패:', error);
     return {

@@ -98,6 +98,37 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
 
+  // 찬양 리스트의 모든 곡들을 원본 데이터베이스의 최신 정보로 업데이트
+  const refreshWorshipListSongs = () => {
+    setWorshipLists(prev => {
+      const updatedLists = {};
+      let hasChanges = false;
+
+      Object.keys(prev).forEach(dateKey => {
+        updatedLists[dateKey] = prev[dateKey].map(song => {
+          const latestSong = songs.find(s => s.id === song.id);
+          if (latestSong && latestSong.title !== song.title) {
+            console.log(`찬양 리스트 곡 업데이트: ${song.title} -> ${latestSong.title}`);
+            hasChanges = true;
+            return latestSong;
+          }
+          return song;
+        });
+      });
+
+      if (hasChanges) {
+        showSnackbar('찬양 리스트가 최신 정보로 업데이트되었습니다.', 'success');
+      }
+      return hasChanges ? updatedLists : prev;
+    });
+  };
+
+  // 컴포넌트 마운트 시 찬양 리스트 새로고침
+  React.useEffect(() => {
+    if (songs.length > 0 && Object.keys(worshipLists).length > 0) {
+      refreshWorshipListSongs();
+    }
+  }, [songs]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -202,10 +233,13 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const handleAddSelectedSongs = () => {
     if (selectedSongs.length === 0) return;
 
-    // 체크 순서대로 필터링하여 중복 제거
-    const newSongs = selectionOrder.filter(song => 
-      !currentWorshipList.some(existingSong => existingSong.id === song.id)
-    );
+    // 체크 순서대로 필터링하여 중복 제거하고, 원본 데이터베이스에서 최신 정보 가져오기
+    const newSongs = selectionOrder
+      .filter(song => !currentWorshipList.some(existingSong => existingSong.id === song.id))
+      .map(song => {
+        // 원본 데이터베이스에서 최신 정보를 가져와서 사용
+        return songs.find(latestSong => latestSong.id === song.id) || song;
+      });
 
     if (newSongs.length > 0) {
       const newList = [...currentWorshipList, ...newSongs];
@@ -247,8 +281,15 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
 
   const handleAddSong = () => {
     if (previewSong) {
-      // 원본 곡의 고유 ID를 그대로 사용 (새로운 ID 생성하지 않음)
-      const newList = [...currentWorshipList, previewSong];
+      // 원본 데이터베이스에서 최신 정보를 가져와서 사용
+      const latestSong = songs.find(song => song.id === previewSong.id) || previewSong;
+      
+      console.log('=== 찬양 리스트에 곡 추가 ===');
+      console.log('미리보기 곡:', previewSong);
+      console.log('원본 데이터베이스에서 찾은 최신 곡:', latestSong);
+      console.log('제목이 다른가?', previewSong.title !== latestSong.title);
+      
+      const newList = [...currentWorshipList, latestSong];
       setWorshipLists(prev => ({
         ...prev,
         [currentDateKey]: newList
@@ -311,8 +352,13 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         song.id === editingSong.id ? updatedSong : song
       );
       
-      // 원본 songs 배열 업데이트
-      setSongs(updatedSongs);
+      // 모든 찬양 리스트에서 해당 곡 업데이트 (ID로 매칭)
+      const updatedWorshipLists = {};
+      Object.keys(worshipLists).forEach(dateKey => {
+        updatedWorshipLists[dateKey] = worshipLists[dateKey].map(song => 
+          song.id === editingSong.id ? updatedSong : song
+        );
+      });
       
       // 데이터베이스 파일에 저장
       const updatedData = { songs: updatedSongs };
@@ -321,16 +367,9 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         JSON.stringify(updatedData, null, 2)
       );
 
-      // 모든 찬양 리스트에서 해당 곡 업데이트 (ID로 매칭)
-      setWorshipLists(prev => {
-        const updatedLists = {};
-        Object.keys(prev).forEach(dateKey => {
-          updatedLists[dateKey] = prev[dateKey].map(song => 
-            song.id === editingSong.id ? updatedSong : song
-          );
-        });
-        return updatedLists;
-      });
+      // songs와 worshipLists를 동시에 업데이트 (OneDrive 저장이 한 번만 실행되도록)
+      setSongs(updatedSongs);
+      setWorshipLists(updatedWorshipLists);
 
       // 전체 songs 배열에서도 업데이트 (선택된 곡이 현재 곡인 경우)
       if (previewSong && previewSong.id === editingSong.id) {
