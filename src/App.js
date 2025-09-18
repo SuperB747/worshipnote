@@ -8,7 +8,7 @@ import SongPreview from './components/SongPreview';
 import Snackbar from './components/Snackbar';
 import SyncAnimation from './components/SyncAnimation';
 import { useSnackbar } from './hooks/useSnackbar';
-import { initializeData, saveSongs, saveWorshipLists, compareDatabaseVersions, syncFromOneDrive } from './utils/storage';
+import { initializeData, saveSongs, saveWorshipLists, checkFileExists } from './utils/storage';
 import './App.css';
 
 function App() {
@@ -48,144 +48,14 @@ function App() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Electron 환경에서 electronAPI가 준비될 때까지 기다림
-        if (window.electronAPI) {
-          // 먼저 OneDrive와 로컬 데이터베이스 버전 비교
-          const versionComparison = await compareDatabaseVersions();
-          
-          if (versionComparison.success && versionComparison.needsSync) {
-            console.log('OneDrive 데이터베이스가 더 최신입니다. 동기화를 시작합니다...');
-            console.log('동기화 상세 정보:', versionComparison.details);
-            setIsSyncing(true);
-            
-            let syncMessage = 'OneDrive에서 최신 데이터를 동기화하는 중...';
-            if (versionComparison.reason === 'onedrive_songs_newer') {
-              syncMessage = 'OneDrive의 찬양 데이터가 더 최신입니다. 동기화 중...';
-            } else if (versionComparison.reason === 'onedrive_worship_lists_newer') {
-              syncMessage = 'OneDrive의 찬양 리스트가 더 최신입니다. 동기화 중...';
-            } else if (versionComparison.reason === 'onedrive_both_newer') {
-              syncMessage = 'OneDrive의 모든 데이터가 더 최신입니다. 동기화 중...';
-            }
-            setSyncMessage(syncMessage);
-            
-            const syncResult = await syncFromOneDrive();
-            
-            if (syncResult.success) {
-              setSongs(syncResult.songs);
-              setWorshipLists(syncResult.worshipLists);
-              // 마지막 저장된 데이터로 설정 (초기 저장 방지)
-              setLastSavedSongs(JSON.parse(JSON.stringify(syncResult.songs)));
-              setLastSavedWorshipLists(JSON.parse(JSON.stringify(syncResult.worshipLists)));
-              
-              // 동기화 완료 애니메이션을 잠시 보여준 후 숨김
-              setSyncMessage('동기화가 완료되었습니다!');
-              setTimeout(() => {
-                setIsSyncing(false);
-                showSuccess(syncResult.message);
-              }, 1500);
-            } else {
-              console.warn('OneDrive 동기화 실패, 로컬 데이터를 사용합니다:', syncResult.error);
-              setSyncMessage('동기화에 실패했습니다. 로컬 데이터를 사용합니다.');
-              setTimeout(() => {
-                setIsSyncing(false);
-                showError(`OneDrive 동기화 실패: ${syncResult.error}`);
-              }, 1500);
-              
-              // 동기화 실패 시 로컬 데이터 로드
-              const { songs, worshipLists } = await initializeData();
-              setSongs(songs);
-              setWorshipLists(worshipLists);
-              setLastSavedSongs(JSON.parse(JSON.stringify(songs)));
-              setLastSavedWorshipLists(JSON.parse(JSON.stringify(worshipLists)));
-            }
-          } else {
-            // 동기화가 필요하지 않은 경우 기존 방식으로 로드
-            const { songs, worshipLists } = await initializeData();
-            
-            setSongs(songs);
-            setWorshipLists(worshipLists);
-            // 마지막 저장된 데이터로 설정 (초기 저장 방지)
-            setLastSavedSongs(JSON.parse(JSON.stringify(songs)));
-            setLastSavedWorshipLists(JSON.parse(JSON.stringify(worshipLists)));
-          }
-        } else {
-          // 웹 환경이거나 Electron API가 아직 준비되지 않은 경우
-          
-          // localStorage에서 직접 데이터 로드
-          const localData = localStorage.getItem('worshipnote_data');
-          if (localData) {
-            const parsedData = JSON.parse(localData);
-            const songs = parsedData.songs || [];
-            const worshipLists = parsedData.worshipLists || {};
-            
-            setSongs(songs);
-            setWorshipLists(worshipLists);
-            // 마지막 저장된 데이터로 설정 (초기 저장 방지)
-            setLastSavedSongs(JSON.parse(JSON.stringify(songs)));
-            setLastSavedWorshipLists(JSON.parse(JSON.stringify(worshipLists)));
-          } else {
-            // localStorage에도 데이터가 없으면 샘플 데이터 생성
-            const sampleSongs = [
-              {
-                id: 1,
-                title: '주님의 마음',
-                firstLyrics: '주님의 마음은 평화의 마음',
-                key: 'C',
-                tempo: 'Medium',
-                fileName: 'sample1.pdf',
-                filePath: '/sample/path1.pdf'
-              },
-              {
-                id: 2,
-                title: '예수님은 우리의 친구',
-                firstLyrics: '예수님은 우리의 친구',
-                key: 'D',
-                tempo: 'Fast',
-                fileName: 'sample2.pdf',
-                filePath: '/sample/path2.pdf'
-              },
-              {
-                id: 3,
-                title: '주님을 사랑하는 이들아',
-                firstLyrics: '주님을 사랑하는 이들아',
-                key: 'E',
-                tempo: 'Slow',
-                fileName: 'sample3.pdf',
-                filePath: '/sample/path3.pdf'
-              },
-              {
-                id: 4,
-                title: '하나님의 사랑',
-                firstLyrics: '하나님의 사랑은 넓고 깊어',
-                key: 'F',
-                tempo: 'Medium',
-                fileName: 'sample4.pdf',
-                filePath: '/sample/path4.pdf'
-              },
-              {
-                id: 5,
-                title: '예수님을 믿으니',
-                firstLyrics: '예수님을 믿으니 평안해져',
-                key: 'G',
-                tempo: 'Fast',
-                fileName: 'sample5.pdf',
-                filePath: '/sample/path5.pdf'
-              }
-            ];
-            
-            // 샘플 데이터를 localStorage에 저장
-            localStorage.setItem('worshipnote_data', JSON.stringify({
-              songs: sampleSongs,
-              worshipLists: {}
-            }));
-            
-            setSongs(sampleSongs);
-            setWorshipLists({});
-            // 마지막 저장된 데이터로 설정 (초기 저장 방지)
-            setLastSavedSongs(JSON.parse(JSON.stringify(sampleSongs)));
-            setLastSavedWorshipLists(JSON.parse(JSON.stringify({})));
-          }
-        }
+        // OneDrive에서 최신 데이터 로드 (동기화 로직 제거)
+        const { songs, worshipLists } = await initializeData();
+        
+        setSongs(songs);
+        setWorshipLists(worshipLists);
+        // 마지막 저장된 데이터로 설정 (초기 저장 방지)
+        setLastSavedSongs(JSON.parse(JSON.stringify(songs)));
+        setLastSavedWorshipLists(JSON.parse(JSON.stringify(worshipLists)));
         
         setIsLoaded(true);
       } catch (error) {

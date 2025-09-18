@@ -213,8 +213,34 @@ export const saveToOneDrive = async (arrayBuffer, fileName) => {
   }
 };
 
+// 파일명에서 안전하지 않은 문자를 제거하는 함수
+const sanitizeFileName = (fileName) => {
+  // Windows와 Mac에서 파일명에 사용할 수 없는 문자들을 안전한 문자로 변환
+  return fileName
+    .replace(/[<>:"/\\|?*]/g, '-')  // 특수문자를 하이픈으로 변환
+    .replace(/\s+/g, '_')           // 공백을 언더스코어로 변환
+    .trim()                         // 앞뒤 공백 제거
+    .substring(0, 200);             // 파일명 길이 제한 (Windows 제한 고려)
+};
+
+// 찬양 정보를 기반으로 파일명을 생성하는 함수
+const generateSongFileName = (songTitle, songKey, songId) => {
+  if (!songId) {
+    return null; // ID가 없으면 null 반환
+  }
+  
+  // 제목과 코드를 안전한 파일명으로 변환
+  const safeTitle = sanitizeFileName(songTitle);
+  const safeKey = sanitizeFileName(songKey);
+  
+  // 파일명 형식: "제목_코드_(ID).jpg"
+  const fileName = `${safeTitle}_${safeKey}_(${songId}).jpg`;
+  
+  return fileName;
+};
+
 // 파일 업로드 및 변환 전체 프로세스
-export const processFileUpload = async (file) => {
+export const processFileUpload = async (file, songId = null, songTitle = null, songKey = null) => {
   try {
     // 1. 파일을 JPG로 변환
     const conversionResult = await convertToJPG(file);
@@ -223,13 +249,26 @@ export const processFileUpload = async (file) => {
       return conversionResult;
     }
     
-    // 2. File 객체를 ArrayBuffer로 변환
+    // 2. 찬양 정보 기반 파일명 생성
+    let finalFileName;
+    if (songId && songTitle && songKey) {
+      // 찬양 정보가 모두 있으면 상세한 파일명 생성
+      finalFileName = generateSongFileName(songTitle, songKey, songId);
+    } else if (songId) {
+      // ID만 있으면 ID 기반 파일명 생성
+      finalFileName = `${songId}.jpg`;
+    } else {
+      // ID가 없으면 원본 파일명 사용
+      finalFileName = conversionResult.fileName;
+    }
+    
+    // 3. File 객체를 ArrayBuffer로 변환
     const arrayBuffer = await conversionResult.file.arrayBuffer();
     
-    // 3. OneDrive에 저장
+    // 4. OneDrive에 저장
     const saveResult = await saveToOneDrive(
       arrayBuffer, 
-      conversionResult.fileName // 이미 .jpg 확장자가 포함되어 있음
+      finalFileName
     );
     
     if (!saveResult.success) {
@@ -238,7 +277,7 @@ export const processFileUpload = async (file) => {
     
     return {
       success: true,
-      fileName: conversionResult.fileName,
+      fileName: finalFileName,
       filePath: saveResult.filePath,
       message: saveResult.message,
       skipped: saveResult.skipped || false

@@ -852,30 +852,28 @@ export const syncFromOneDrive = async () => {
   }
 };
 
+// 파일 존재 여부 확인 함수
+export const checkFileExists = async (filePath) => {
+  try {
+    if (!window.electronAPI || !window.electronAPI.readFile) {
+      return false;
+    }
+    
+    const fileData = await window.electronAPI.readFile(filePath);
+    const exists = fileData !== null && fileData !== undefined;
+    return exists;
+  } catch (error) {
+    return false;
+  }
+};
+
 // 데이터베이스 마지막 저장 날짜와 OneDrive 동기화 시간 가져오기
 export const getDatabaseLastUpdated = async () => {
   try {
-    let lastSaved = null;
-    let lastOneDriveSync = null;
+    let lastUpdated = null;
     
-    // localStorage에서 lastSaved와 lastOneDriveSync 확인
-    try {
-      const localData = localStorage.getItem('worshipnote_data');
-      if (localData) {
-        const parsedData = JSON.parse(localData);
-        if (parsedData.lastSaved) {
-          lastSaved = new Date(parsedData.lastSaved);
-        }
-        if (parsedData.lastOneDriveSync) {
-          lastOneDriveSync = new Date(parsedData.lastOneDriveSync);
-        }
-      }
-    } catch (error) {
-      console.warn('localStorage에서 데이터를 가져올 수 없습니다:', error);
-    }
-    
-    // OneDrive에서 동기화 시간이 없으면 OneDrive 파일의 lastUpdated 확인
-    if (!lastOneDriveSync && window.electronAPI && window.electronAPI.readFile) {
+    // OneDrive에서 최신 업데이트 시간 확인
+    if (window.electronAPI && window.electronAPI.readFile) {
       try {
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
         if (oneDrivePath) {
@@ -913,27 +911,34 @@ export const getDatabaseLastUpdated = async () => {
             // 파일이 없거나 읽기 실패 시 무시
           }
           
-          if (latestUpdate) {
-            lastOneDriveSync = latestUpdate;
-          }
+          lastUpdated = latestUpdate;
         }
       } catch (oneDriveError) {
-        console.warn('OneDrive에서 마지막 저장 날짜를 가져올 수 없습니다:', oneDriveError);
+        console.warn('OneDrive에서 데이터를 가져올 수 없습니다:', oneDriveError);
       }
     }
     
-    // lastSaved가 없으면 현재 시간 사용
-    if (!lastSaved) {
-      lastSaved = new Date();
+    // OneDrive에서 가져올 수 없으면 localStorage에서 확인
+    if (!lastUpdated) {
+      try {
+        const localData = localStorage.getItem('worshipnote_data');
+        if (localData) {
+          const parsedData = JSON.parse(localData);
+          if (parsedData.lastSaved) {
+            lastUpdated = new Date(parsedData.lastSaved);
+          }
+        }
+      } catch (error) {
+        console.warn('localStorage에서 데이터를 가져올 수 없습니다:', error);
+      }
     }
     
     return {
       success: true,
-      lastSaved: lastSaved,
-      lastOneDriveSync: lastOneDriveSync
+      lastUpdated
     };
   } catch (error) {
-    console.error('데이터베이스 마지막 저장 날짜 가져오기 실패:', error);
+    console.error('데이터베이스 마지막 업데이트 시간 가져오기 실패:', error);
     return {
       success: false,
       error: error.message

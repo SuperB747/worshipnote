@@ -211,7 +211,12 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     });
 
     try {
-      const result = await processFileUpload(file);
+      const result = await processFileUpload(
+        file, 
+        editingSong?.id, 
+        editFormData.title, 
+        editFormData.key
+      );
       
       if (result.success) {
         setEditFormData(prev => ({

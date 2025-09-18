@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import * as pdfjsLib from 'pdfjs-dist';
+import { checkFileExists } from './storage';
 
 // OneDrive 경로 찾기 함수
 const findOneDrivePath = async () => {
@@ -27,20 +28,7 @@ const findMusicSheetsPath = async () => {
   }
 };
 
-// 파일 존재 여부 확인 함수
-const checkFileExists = async (filePath) => {
-  try {
-    if (!window.electronAPI || !window.electronAPI.readFile) {
-      return false;
-    }
-    
-    const fileData = await window.electronAPI.readFile(filePath);
-    const exists = fileData !== null && fileData !== undefined;
-    return exists;
-  } catch (error) {
-    return false;
-  }
-};
+// checkFileExists 함수는 storage.js에서 import
 
 // Music_Sheets 디렉토리의 파일 목록 확인 함수
 const listMusicSheetsFiles = async () => {

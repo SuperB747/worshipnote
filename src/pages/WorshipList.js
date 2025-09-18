@@ -18,11 +18,12 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3, Download } from 'lucide-react';
+import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3, Download, FileText, Upload } from 'lucide-react';
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { saveWorshipLists } from '../utils/storage';
+import { saveWorshipLists, saveSongs } from '../utils/storage';
 import { generateWorshipListPDF } from '../utils/pdfExporter';
+import { processFileUpload } from '../utils/fileConverter';
 import GhibliDialog from '../components/GhibliDialog';
 import './WorshipList.css';
 
@@ -94,12 +95,29 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const [selectedSongs, setSelectedSongs] = useState([]);
   const [selectionOrder, setSelectionOrder] = useState([]);
   const [editingSong, setEditingSong] = useState(null);
-  const [editForm, setEditForm] = useState({ title: '', key: '', tempo: '', firstLyrics: '' });
+  const [editForm, setEditForm] = useState({ 
+    title: '', 
+    key: '', 
+    tempo: '', 
+    firstLyrics: '', 
+    fileName: '', 
+    filePath: '' 
+  });
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState({
+    isUploading: false,
+    success: false,
+    error: null,
+    message: ''
+  });
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
 
   // 찬양 리스트의 모든 곡들을 원본 데이터베이스의 최신 정보로 업데이트
   const refreshWorshipListSongs = () => {
+    // 업데이트 중일 때는 새로고침하지 않음
+    if (isUpdating) return;
+    
     setWorshipLists(prev => {
       const updatedLists = {};
       let hasChanges = false;
@@ -328,9 +346,11 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     setEditingSong(song);
     setEditForm({
       title: song.title,
-      key: song.key || '',
+      key: song.key || song.code || '', // code 필드도 확인
       tempo: song.tempo || '',
-      firstLyrics: song.firstLyrics || ''
+      firstLyrics: song.firstLyrics || '',
+      fileName: song.fileName || '',
+      filePath: song.filePath || ''
     });
   };
 
@@ -341,12 +361,17 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       ...editingSong,
       title: editForm.title.trim(),
       key: editForm.key.trim(),
+      code: editForm.key.trim(), // code 필드도 업데이트
       tempo: editForm.tempo.trim(),
       firstLyrics: editForm.firstLyrics.trim(),
+      fileName: editForm.fileName,
+      filePath: editForm.filePath,
       updatedAt: new Date().toISOString()
     };
 
     try {
+      setIsUpdating(true); // 업데이트 시작
+      
       // 원본 데이터베이스에서 해당 곡 찾아서 업데이트
       const updatedSongs = songs.map(song => 
         song.id === editingSong.id ? updatedSong : song
@@ -360,12 +385,8 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         );
       });
       
-      // 데이터베이스 파일에 저장
-      const updatedData = { songs: updatedSongs };
-      await window.electronAPI.writeFile(
-        'public/data.json',
-        JSON.stringify(updatedData, null, 2)
-      );
+      // OneDrive에 저장 (storage.js의 saveSongs 함수 사용)
+      await saveSongs(updatedSongs);
 
       // songs와 worshipLists를 동시에 업데이트 (OneDrive 저장이 한 번만 실행되도록)
       setSongs(updatedSongs);
@@ -382,6 +403,8 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     } catch (error) {
       console.error('찬양 정보 업데이트 실패:', error);
       showSnackbar('찬양 정보 업데이트에 실패했습니다.', 'error');
+    } finally {
+      setIsUpdating(false); // 업데이트 완료
     }
 
     setEditingSong(null);
@@ -390,7 +413,8 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
 
   const handleCancelEdit = () => {
     setEditingSong(null);
-    setEditForm({ title: '', key: '', tempo: '', firstLyrics: '' });
+    setEditForm({ title: '', key: '', tempo: '', firstLyrics: '', fileName: '', filePath: '' });
+    setUploadStatus({ isUploading: false, success: false, error: null, message: '' });
   };
 
   // 수정 모달 입력 필드 클릭 핸들러 - 간단한 버전
@@ -411,6 +435,53 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   // 수정 모달 마우스 다운 핸들러 - 간단한 버전
   const handleEditInputMouseDown = (e) => {
     e.stopPropagation();
+  };
+
+  // 파일 업로드 핸들러
+  const handleEditFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setUploadStatus({ isUploading: true, success: false, error: null, message: '파일 처리 중...' });
+
+    try {
+      const result = await processFileUpload(
+        file, 
+        editingSong.id, 
+        editForm.title, 
+        editForm.key
+      );
+      
+      if (result.success) {
+        setEditForm(prev => ({
+          ...prev,
+          fileName: result.fileName,
+          filePath: result.filePath
+        }));
+        
+        setUploadStatus({ 
+          isUploading: false, 
+          success: true, 
+          error: null, 
+          message: '파일이 성공적으로 업로드되었습니다.' 
+        });
+      } else {
+        setUploadStatus({ 
+          isUploading: false, 
+          success: false, 
+          error: result.error, 
+          message: `파일 업로드 실패: ${result.error}` 
+        });
+      }
+    } catch (error) {
+      console.error('파일 업로드 오류:', error);
+      setUploadStatus({ 
+        isUploading: false, 
+        success: false, 
+        error: error.message, 
+        message: `파일 업로드 중 오류가 발생했습니다: ${error.message}` 
+      });
+    }
   };
 
   // 요일에 따른 찬양 리스트 제목 생성 함수
@@ -739,87 +810,145 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
               </button>
             </div>
             
-            <div className="edit-form">
-              <div className="form-group">
-                <label>제목</label>
-                <input
-                  type="text"
-                  value={editForm.title}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                  onClick={handleEditInputClick}
-                  onFocus={handleEditInputFocus}
-                  onMouseDown={handleEditInputMouseDown}
-                  placeholder="찬양 제목을 입력하세요"
-                  className="form-input"
-                  autoComplete="off"
-                  tabIndex={1}
-                />
+            <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} className="edit-form">
+              <div className="form-row compact-row">
+                <div className="form-group compact-group">
+                  <label className="form-label compact-label">
+                    <Music className="label-icon" />
+                    찬양 이름 *
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={editForm.title}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                    onClick={handleEditInputClick}
+                    onFocus={handleEditInputFocus}
+                    onMouseDown={handleEditInputMouseDown}
+                    className="form-input compact-input"
+                    placeholder="찬양 이름을 입력하세요"
+                    required
+                    autoComplete="off"
+                    tabIndex={1}
+                  />
+                </div>
+
+                <div className="form-group compact-group">
+                  <label className="form-label compact-label">코드</label>
+                  <select
+                    name="key"
+                    value={editForm.key}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, key: e.target.value }))}
+                    className="form-select compact-select"
+                    tabIndex={2}
+                  >
+                    {['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Em', 'Eb', 'F', 'G'].map(key => (
+                      <option key={key} value={key}>{key}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group compact-group">
+                  <label className="form-label compact-label">빠르기</label>
+                  <select
+                    name="tempo"
+                    value={editForm.tempo}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, tempo: e.target.value }))}
+                    className="form-select compact-select"
+                    tabIndex={3}
+                  >
+                    {['Fast', 'Medium', 'Slow'].map(tempo => (
+                      <option key={tempo} value={tempo}>{tempo}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row compact-row">
+                <div className="form-group compact-group full-width">
+                  <label className="form-label compact-label">첫 가사</label>
+                  <input
+                    type="text"
+                    name="firstLyrics"
+                    value={editForm.firstLyrics}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, firstLyrics: e.target.value }))}
+                    onClick={handleEditInputClick}
+                    onFocus={handleEditInputFocus}
+                    onMouseDown={handleEditInputMouseDown}
+                    className="form-input compact-input"
+                    placeholder="첫 번째 가사를 입력하세요"
+                    autoComplete="off"
+                    tabIndex={4}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group file-upload-group">
+                  <label className="form-label">
+                    <FileText className="label-icon" />
+                    악보 파일 (JPG, PNG, PDF)
+                  </label>
+                  <div className="file-upload-area">
+                    <input
+                      type="file"
+                      id="edit-file-upload"
+                      onChange={handleEditFileUpload}
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="file-input"
+                      disabled={uploadStatus.isUploading}
+                    />
+                    <label 
+                      htmlFor="edit-file-upload" 
+                      className={`file-upload-label ${uploadStatus.isUploading ? 'uploading' : ''}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {uploadStatus.isUploading ? (
+                        <>
+                          <div className="upload-spinner"></div>
+                          <span>처리 중...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="upload-icon" />
+                          <span>파일 선택</span>
+                        </>
+                      )}
+                    </label>
+                  </div>
+                  
+                  {editForm.fileName && (
+                    <div className="current-file">
+                      <FileText className="file-icon" />
+                      <span>현재 파일: {editForm.fileName}</span>
+                    </div>
+                  )}
+                  
+                  {uploadStatus.message && (
+                    <div className={`upload-message ${uploadStatus.success ? 'success' : 'error'}`}>
+                      {uploadStatus.message}
+                    </div>
+                  )}
+                </div>
               </div>
               
-              <div className="form-group">
-                <label>키</label>
-                <input
-                  type="text"
-                  value={editForm.key}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, key: e.target.value }))}
-                  onClick={handleEditInputClick}
-                  onFocus={handleEditInputFocus}
-                  onMouseDown={handleEditInputMouseDown}
-                  placeholder="예: C, D, E..."
-                  className="form-input"
-                  autoComplete="off"
-                  tabIndex={2}
-                />
+              <div className="edit-modal-actions">
+                <button 
+                  type="button"
+                  className="btn-cancel"
+                  onClick={handleCancelEdit}
+                >
+                  취소
+                </button>
+                <button 
+                  type="submit"
+                  className="btn-save"
+                  disabled={!editForm.title.trim() || uploadStatus.isUploading}
+                >
+                  {uploadStatus.isUploading ? '처리 중...' : '저장'}
+                </button>
               </div>
-              
-              <div className="form-group">
-                <label>빠르기</label>
-                <input
-                  type="text"
-                  value={editForm.tempo}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, tempo: e.target.value }))}
-                  onClick={handleEditInputClick}
-                  onFocus={handleEditInputFocus}
-                  onMouseDown={handleEditInputMouseDown}
-                  placeholder="예: 120, 140..."
-                  className="form-input"
-                  autoComplete="off"
-                  tabIndex={3}
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>첫 가사</label>
-                <textarea
-                  value={editForm.firstLyrics}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, firstLyrics: e.target.value }))}
-                  onClick={handleEditInputClick}
-                  onFocus={handleEditInputFocus}
-                  onMouseDown={handleEditInputMouseDown}
-                  placeholder="찬양의 첫 가사를 입력하세요"
-                  className="form-textarea"
-                  rows="3"
-                  autoComplete="off"
-                  tabIndex={4}
-                />
-              </div>
-            </div>
-            
-            <div className="edit-modal-actions">
-              <button 
-                className="btn-cancel"
-                onClick={handleCancelEdit}
-              >
-                취소
-              </button>
-              <button 
-                className="btn-save"
-                onClick={handleSaveEdit}
-                disabled={!editForm.title.trim()}
-              >
-                저장
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}

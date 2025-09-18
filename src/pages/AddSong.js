@@ -101,7 +101,12 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     });
 
     try {
-      const result = await processFileUpload(file);
+      const result = await processFileUpload(
+        file, 
+        null, // 새 찬양이므로 ID는 null
+        formData.title, 
+        formData.key
+      );
       
       if (result.success) {
         setFormData(prev => ({
