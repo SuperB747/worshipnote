@@ -532,6 +532,93 @@ ipcMain.handle('open-file', async (event, filePath) => {
   }
 });
 
+// PDF를 JPG로 변환하는 IPC 핸들러
+ipcMain.handle('convert-pdf-to-jpg', async (event, uint8Array, fileName) => {
+  try {
+    console.log('PDF 변환 요청:', fileName);
+    console.log('Uint8Array 타입:', typeof uint8Array, '길이:', uint8Array.length);
+    
+    // Uint8Array를 Buffer로 변환
+    const buffer = Buffer.from(uint8Array);
+    console.log('Buffer 변환 완료, 길이:', buffer.length);
+    
+    // 임시 PDF 파일 생성
+    const tempDir = os.tmpdir();
+    const tempPdfPath = path.join(tempDir, `temp_${Date.now()}.pdf`);
+    
+    // PDF 파일 저장
+    await fsPromises.writeFile(tempPdfPath, buffer);
+    console.log('임시 PDF 파일 생성:', tempPdfPath);
+    
+    // pdf-poppler를 사용하여 PDF를 JPG로 변환 (고해상도)
+    const pdfPoppler = require('pdf-poppler');
+    
+    const options = {
+      format: 'jpeg',
+      out_dir: tempDir,
+      out_prefix: 'converted',
+      page: 1, // 첫 번째 페이지만 변환
+      // 고해상도 설정
+      scale: 2.0, // 2배 해상도
+      // 품질 설정
+      quality: 100
+    };
+    
+    console.log('PDF 변환 시작...');
+    const result = await pdfPoppler.convert(tempPdfPath, options);
+    console.log('PDF 변환 결과:', result);
+    
+    // 변환된 파일 찾기
+    const files = await fsPromises.readdir(tempDir);
+    const jpgFile = files.find(file => file.startsWith('converted') && file.endsWith('.jpg'));
+    
+    if (!jpgFile) {
+      throw new Error('PDF 변환된 JPG 파일을 찾을 수 없습니다.');
+    }
+    
+    const convertedJpgPath = path.join(tempDir, jpgFile);
+    
+    // Sharp를 사용하여 레터 사이즈에 맞게 리사이즈 및 품질 향상
+    const sharp = require('sharp');
+    
+    console.log('Sharp를 사용하여 이미지 최적화 시작...');
+    const optimizedJpgBuffer = await sharp(convertedJpgPath)
+      .resize(2550, 3300, { // 레터 사이즈 (8.5 x 11 인치 @ 300 DPI)
+        fit: 'contain', // 비율 유지하면서 컨테이너에 맞춤
+        background: { r: 255, g: 255, b: 255, alpha: 1 }, // 흰색 배경
+        position: 'center' // 중앙 정렬
+      })
+      .jpeg({ 
+        quality: 95, // 고품질
+        progressive: true, // 프로그레시브 JPEG
+        mozjpeg: true // mozjpeg 엔진 사용 (더 나은 압축)
+      })
+      .toBuffer();
+    
+    console.log('이미지 최적화 완료, 최종 크기:', optimizedJpgBuffer.length, 'bytes');
+    
+    // 임시 파일들 정리
+    await fsPromises.unlink(tempPdfPath);
+    await fsPromises.unlink(convertedJpgPath);
+    
+    console.log('PDF 변환 성공:', fileName, '크기:', optimizedJpgBuffer.length, 'bytes');
+    
+    return {
+      success: true,
+      file: optimizedJpgBuffer,
+      fileName: fileName,
+      fileSize: optimizedJpgBuffer.length
+    };
+    
+  } catch (error) {
+    console.error('PDF 변환 실패:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+});
+
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {

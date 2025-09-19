@@ -597,27 +597,24 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       console.log('editingSong.title:', editingSong.title, '-> updatedSong.title:', updatedSong.title);
       console.log('editingSong.chord:', editingSong.chord, '-> updatedSong.chord:', updatedSong.chord);
       
-      if (editingSong.fileName && editingSong.fileName.trim() !== '') {
-        try {
-          console.log('파일명 업데이트 함수 호출...');
-          const fileNameUpdateResult = await updateFileNameForSong(editingSong, updatedSong);
-          console.log('파일명 업데이트 결과:', fileNameUpdateResult);
-          
-          if (fileNameUpdateResult.success && fileNameUpdateResult.newFileName) {
-            finalUpdatedSong = {
-              ...updatedSong,
-              fileName: fileNameUpdateResult.newFileName
-            };
-            console.log('파일명 업데이트 완료:', fileNameUpdateResult.message);
-            console.log('최종 업데이트된 찬양:', finalUpdatedSong);
-          } else if (!fileNameUpdateResult.success) {
-            console.warn('파일명 업데이트 실패:', fileNameUpdateResult.error);
-          }
-        } catch (error) {
-          console.error('파일명 업데이트 중 오류:', error);
+      // 파일명 업데이트 (찬양 이름이나 코드가 변경된 경우)
+      try {
+        console.log('파일명 업데이트 함수 호출...');
+        const fileNameUpdateResult = await updateFileNameForSong(editingSong, updatedSong);
+        console.log('파일명 업데이트 결과:', fileNameUpdateResult);
+        
+        if (fileNameUpdateResult.success && fileNameUpdateResult.newFileName) {
+          finalUpdatedSong = {
+            ...updatedSong,
+            fileName: fileNameUpdateResult.newFileName
+          };
+          console.log('파일명 업데이트 완료:', fileNameUpdateResult.message);
+          console.log('최종 업데이트된 찬양:', finalUpdatedSong);
+        } else if (!fileNameUpdateResult.success) {
+          console.warn('파일명 업데이트 실패:', fileNameUpdateResult.error);
         }
-      } else {
-        console.log('기존 파일명이 없어서 파일명 업데이트를 스킵합니다.');
+      } catch (error) {
+        console.error('파일명 업데이트 중 오류:', error);
       }
       
       // 원본 데이터베이스에서 해당 곡 찾아서 업데이트
@@ -780,9 +777,17 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     setUploadStatus({ isUploading: true, success: false, error: null, message: '파일 처리 중...' });
 
     try {
+      console.log('=== WorshipList 파일 업로드 ===');
+      console.log('editingSong:', editingSong);
+      console.log('editForm:', editForm);
+      
+      // editingSong.id가 없으면 새 ID 생성
+      const songId = editingSong?.id || Date.now().toString();
+      console.log('사용할 songId:', songId);
+      
       const result = await processFileUpload(
         file, 
-        editingSong.id, 
+        songId, 
         editForm.title, 
         editForm.chord
       );

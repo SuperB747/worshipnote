@@ -50,6 +50,11 @@ const openFile = async (filePath) => {
   return await ipcRenderer.invoke('open-file', filePath);
 };
 
+// PDF를 JPG로 변환하는 함수 (IPC로 메인 프로세스에 위임)
+const convertPDFToJPG = async (uint8Array, fileName) => {
+  return await ipcRenderer.invoke('convert-pdf-to-jpg', uint8Array, fileName);
+};
+
 
 // API를 렌더러 프로세스에 노출
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -62,5 +67,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createDirectory: (dirPath) => createDirectory(dirPath),
   writeFile: (filePath, data) => writeFile(filePath, data),
   savePdf: (pdfData) => savePdf(pdfData),
-  openFile: (filePath) => openFile(filePath)
+  openFile: (filePath) => openFile(filePath),
+  convertPDFToJPG: (file, fileName) => convertPDFToJPG(file, fileName)
 });

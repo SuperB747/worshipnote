@@ -1,20 +1,23 @@
 // OneDrive 경로 설정
 const ONEDRIVE_PATH = 'WorshipNote_Data/Music_Sheets';
 
-// PDF.js 라이브러리 동적 로드
+// PDF.js 라이브러리 동적 로드 (Worker 없이)
 const loadPDFJS = async () => {
   if (window.pdfjsLib) {
+    console.log('PDF.js 라이브러리 이미 로드됨');
     return window.pdfjsLib;
   }
   
-  // PDF.js 라이브러리 동적 로드
+  // PDF.js 라이브러리 동적 로드 (Worker 없이)
   const script = document.createElement('script');
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js';
   script.async = true;
   
   return new Promise((resolve, reject) => {
     script.onload = () => {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      console.log('PDF.js 라이브러리 로드 완료');
+      // Worker 완전 비활성화
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = null;
       resolve(window.pdfjsLib);
     };
     script.onerror = reject;
@@ -22,50 +25,76 @@ const loadPDFJS = async () => {
   });
 };
 
-// PDF를 JPG로 변환하는 함수
-const convertPDFToJPG = async (file) => {
+// PDF를 JPG로 변환하는 함수 (서버 사이드 처리)
+const convertPDFToJPG = async (file, songTitle = null, songKey = null, songId = null) => {
   try {
-    const pdfjsLib = await loadPDFJS();
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    console.log('PDF 변환 시작:', file.name);
+    console.log('찬양 정보:', { songTitle, songKey, songId });
     
-    // 첫 번째 페이지만 변환 (악보는 보통 첫 페이지만 필요)
-    const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 3.0 }); // 최고 해상도로 변환
+    // 찬양 정보가 있으면 올바른 파일명 생성
+    let fileName;
+    if (songId && songTitle && songKey) {
+      fileName = generateSongFileName(songTitle, songKey, songId);
+      console.log('찬양 정보 기반 파일명 생성:', fileName);
+    } else if (songId) {
+      fileName = `${songId}.jpg`;
+      console.log('ID 기반 파일명 생성:', fileName);
+    } else {
+      fileName = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
+      console.log('원본 파일명 기반 생성:', fileName);
+    }
     
-    // Canvas 생성
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
-    
-    // PDF 페이지를 Canvas에 렌더링
-    const renderContext = {
-      canvasContext: context,
-      viewport: viewport
-    };
-    
-    await page.render(renderContext).promise;
-    
-    // Canvas를 JPG Blob으로 변환
-    return new Promise((resolve) => {
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const fileName = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
-          const jpgFile = new File([blob], fileName, { type: 'image/jpeg' });
-          resolve({
+    // Electron 환경에서는 서버 사이드에서 PDF 처리
+    if (window.electronAPI) {
+      try {
+        console.log('Electron 환경에서 PDF 변환 요청');
+        
+        // ArrayBuffer를 Uint8Array로 변환 (브라우저 호환)
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        
+        const result = await window.electronAPI.convertPDFToJPG(uint8Array, fileName);
+        
+        if (result.success) {
+          console.log('PDF 변환 성공 (서버):', fileName, '크기:', result.fileSize, 'bytes');
+          
+          // Uint8Array를 File 객체로 변환
+          const jpgFile = new File([result.file], fileName, { type: 'image/jpeg' });
+          
+          return {
             success: true,
             file: jpgFile,
             fileName: fileName
-          });
+          };
         } else {
-          resolve({
+          console.error('서버 PDF 변환 실패:', result.error);
+          return {
             success: false,
-            error: 'PDF를 JPG로 변환하는데 실패했습니다.'
-          });
+            error: `PDF 변환 실패: ${result.error}`
+          };
         }
-      }, 'image/jpeg', 1.0);
-    });
+      } catch (error) {
+        console.error('서버 PDF 변환 오류:', error);
+        return {
+          success: false,
+          error: `PDF 변환 실패: ${error.message}`
+        };
+      }
+    }
+    
+    // 웹 환경에서는 임시로 PDF를 그대로 사용 (실제 변환은 서버에서)
+    console.log('웹 환경: PDF 파일을 그대로 사용 (서버 변환 필요)');
+    
+    // PDF 파일을 그대로 반환 (실제 변환은 서버에서 처리)
+    const pdfFile = new File([file], fileName, { type: 'application/pdf' });
+    
+    return {
+      success: true,
+      file: pdfFile,
+      fileName: fileName,
+      needsServerConversion: true
+    };
+    
   } catch (error) {
     console.error('PDF 변환 중 오류:', error);
     return {
@@ -76,7 +105,7 @@ const convertPDFToJPG = async (file) => {
 };
 
 // 파일을 JPG로 변환하는 함수
-export const convertToJPG = async (file) => {
+export const convertToJPG = async (file, songTitle = null, songKey = null, songId = null) => {
   try {
     const fileType = file.type;
     const originalFileName = file.name; // 원본 파일명 유지 (확장자 포함)
@@ -84,7 +113,8 @@ export const convertToJPG = async (file) => {
     
     if (fileType === 'application/pdf') {
       // PDF 파일을 JPG로 변환
-      return await convertPDFToJPG(file);
+      console.log('PDF 파일 감지, JPG로 변환 시작:', file.name);
+      return await convertPDFToJPG(file, songTitle, songKey, songId);
     } else if (fileType.startsWith('image/')) {
       // 이미지 파일인 경우 JPG로 변환
       const arrayBuffer = await file.arrayBuffer();
@@ -247,25 +277,19 @@ const generateSongFileName = (songTitle, songKey, songId) => {
 // 파일 업로드 및 변환 전체 프로세스
 export const processFileUpload = async (file, songId = null, songTitle = null, songKey = null) => {
   try {
-    // 1. 파일을 JPG로 변환
-    const conversionResult = await convertToJPG(file);
+    console.log('=== processFileUpload 시작 ===');
+    console.log('파일:', file.name);
+    console.log('찬양 정보:', { songId, songTitle, songKey });
+    
+    // 1. 파일을 JPG로 변환 (찬양 정보 전달)
+    const conversionResult = await convertToJPG(file, songTitle, songKey, songId);
     
     if (!conversionResult.success) {
       return conversionResult;
     }
     
-    // 2. 찬양 정보 기반 파일명 생성
-    let finalFileName;
-    if (songId && songTitle && songKey) {
-      // 찬양 정보가 모두 있으면 상세한 파일명 생성
-      finalFileName = generateSongFileName(songTitle, songKey, songId);
-    } else if (songId) {
-      // ID만 있으면 ID 기반 파일명 생성
-      finalFileName = `${songId}.jpg`;
-    } else {
-      // ID가 없으면 원본 파일명 사용
-      finalFileName = conversionResult.fileName;
-    }
+    // 2. 변환 결과에서 파일명 사용 (이미 올바른 파일명이 생성됨)
+    const finalFileName = conversionResult.fileName;
     
     // 3. File 객체를 ArrayBuffer로 변환
     const arrayBuffer = await conversionResult.file.arrayBuffer();
