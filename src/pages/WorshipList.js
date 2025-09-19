@@ -388,12 +388,29 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     }
   };
 
-  const handleRemoveSong = (songId) => {
+  const handleRemoveSong = async (songId) => {
     const newList = currentWorshipList.filter(song => song.id !== songId);
-    setWorshipLists(prev => ({
-      ...prev,
+    
+    // 상태 업데이트
+    const updatedWorshipLists = {
+      ...worshipLists,
       [currentDateKey]: newList
-    }));
+    };
+    
+    setWorshipLists(updatedWorshipLists);
+    
+    // 데이터베이스에 저장
+    try {
+      const success = await saveWorshipLists(updatedWorshipLists);
+      if (success) {
+        showSnackbar('찬양이 리스트에서 제거되었습니다.', 'success');
+      } else {
+        showSnackbar('찬양 제거에 실패했습니다.', 'error');
+      }
+    } catch (error) {
+      console.error('찬양 제거 실패:', error);
+      showSnackbar('찬양 제거 중 오류가 발생했습니다.', 'error');
+    }
   };
 
   const handleDragEnd = async (event) => {

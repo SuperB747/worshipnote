@@ -192,7 +192,21 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
         }
         
         // UI에서 곡 제거
-        setSongs(prev => prev.filter(song => song.id !== songId));
+        const updatedSongs = songs.filter(song => song.id !== songId);
+        setSongs(updatedSongs);
+        
+        // 데이터베이스에 저장
+        try {
+          const success = await saveSongs(updatedSongs);
+          if (success) {
+            showSnackbar('찬양이 삭제되었습니다.', 'success');
+          } else {
+            showSnackbar('찬양 삭제에 실패했습니다.', 'error');
+          }
+        } catch (error) {
+          console.error('찬양 삭제 실패:', error);
+          showSnackbar('찬양 삭제 중 오류가 발생했습니다.', 'error');
+        }
         
         // 삭제된 곡이 현재 선택된 곡이면 선택 해제
         if (setSelectedSong) {
