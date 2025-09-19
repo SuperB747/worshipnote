@@ -454,10 +454,12 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   };
 
   // 선택된 곡들을 리스트에 추가 (체크 순서대로)
+  // 동일한 제목, 빠르기, 코드를 가진 찬양도 다른 ID로 공존 가능
   const handleAddSelectedSongs = async () => {
     if (selectedSongs.length === 0) return;
 
     // 체크 순서대로 원본 데이터베이스에서 최신 정보 가져오기
+    // 중복 체크 없이 모든 선택된 곡을 추가 (다른 버전의 악보 허용)
     const newSongs = selectionOrder.map(song => {
       // 원본 데이터베이스에서 최신 정보를 가져와서 사용
       return songs.find(latestSong => latestSong.id === song.id) || song;

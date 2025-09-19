@@ -168,8 +168,9 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
       return;
     }
 
+    // 항상 새로운 고유 ID 생성 (중복 허용)
     const newSong = {
-      id: formData.id || Date.now(), // 이미 생성된 ID 사용 또는 새로 생성
+      id: formData.id || Date.now() + Math.random(), // 고유 ID 보장
       ...formData,
       createdAt: new Date().toISOString()
     };
