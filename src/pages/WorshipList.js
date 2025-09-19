@@ -361,19 +361,61 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   }, [selectedDate]);
 
-  const handleDateClick = (date) => {
+  const handleDateClick = async (date) => {
+    // 변경사항이 있으면 먼저 저장
+    if (hasUnsavedChanges && !isSaving) {
+      try {
+        if (validateWorshipListData(worshipLists)) {
+          await saveWorshipLists(worshipLists);
+          setHasUnsavedChanges(false);
+          showSnackbar('success', '변경사항이 저장되었습니다.');
+        }
+      } catch (error) {
+        console.error('날짜 변경 시 저장 실패:', error);
+        showSnackbar('error', '변경사항 저장에 실패했습니다.');
+      }
+    }
+    
     setSelectedDate(date);
     setSelectedWorshipListDate(date);
     setShowSongSearch(false);
   };
 
-  const handlePrevMonth = () => {
+  const handlePrevMonth = async () => {
+    // 변경사항이 있으면 먼저 저장
+    if (hasUnsavedChanges && !isSaving) {
+      try {
+        if (validateWorshipListData(worshipLists)) {
+          await saveWorshipLists(worshipLists);
+          setHasUnsavedChanges(false);
+          showSnackbar('success', '변경사항이 저장되었습니다.');
+        }
+      } catch (error) {
+        console.error('월 변경 시 저장 실패:', error);
+        showSnackbar('error', '변경사항 저장에 실패했습니다.');
+      }
+    }
+    
     const newDate = subDays(startOfMonth(selectedDate), 1);
     setSelectedDate(newDate);
     setSelectedWorshipListDate(newDate);
   };
 
-  const handleNextMonth = () => {
+  const handleNextMonth = async () => {
+    // 변경사항이 있으면 먼저 저장
+    if (hasUnsavedChanges && !isSaving) {
+      try {
+        if (validateWorshipListData(worshipLists)) {
+          await saveWorshipLists(worshipLists);
+          setHasUnsavedChanges(false);
+          showSnackbar('success', '변경사항이 저장되었습니다.');
+        }
+      } catch (error) {
+        console.error('월 변경 시 저장 실패:', error);
+        showSnackbar('error', '변경사항 저장에 실패했습니다.');
+      }
+    }
+    
     const newDate = addDays(endOfMonth(selectedDate), 1);
     setSelectedDate(newDate);
     setSelectedWorshipListDate(newDate);
@@ -415,13 +457,11 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const handleAddSelectedSongs = async () => {
     if (selectedSongs.length === 0) return;
 
-    // 체크 순서대로 필터링하여 중복 제거하고, 원본 데이터베이스에서 최신 정보 가져오기
-    const newSongs = selectionOrder
-      .filter(song => !currentWorshipList.some(existingSong => existingSong.id === song.id))
-      .map(song => {
-        // 원본 데이터베이스에서 최신 정보를 가져와서 사용
-        return songs.find(latestSong => latestSong.id === song.id) || song;
-      });
+    // 체크 순서대로 원본 데이터베이스에서 최신 정보 가져오기
+    const newSongs = selectionOrder.map(song => {
+      // 원본 데이터베이스에서 최신 정보를 가져와서 사용
+      return songs.find(latestSong => latestSong.id === song.id) || song;
+    });
 
     if (newSongs.length > 0) {
       const newList = [...currentWorshipList, ...newSongs];
