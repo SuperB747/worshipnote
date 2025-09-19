@@ -130,7 +130,7 @@ export const saveSongs = async (songs) => {
 
 export const loadSongs = async () => {
   try {
-    // 먼저 OneDrive에서 로드 시도
+    // 먼저 OneDrive에서 로드 시도 (Electron 환경)
     if (window.electronAPI && window.electronAPI.readFile) {
       try {
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
@@ -145,14 +145,32 @@ export const loadSongs = async () => {
             saveToStorage('songs', songsData.songs);
             
             return songsData.songs || [];
-          } else {
           }
         }
       } catch (oneDriveError) {
+        console.warn('OneDrive에서 데이터 로드 실패:', oneDriveError);
       }
     }
     
-    // OneDrive에서 로드 실패하면 localStorage에서 로드
+    // 웹브라우저 환경에서는 public/data.json에서 로드
+    if (!window.electronAPI) {
+      try {
+        const response = await fetch('/data.json');
+        if (response.ok) {
+          const data = await response.json();
+          const songs = data.songs || [];
+          
+          // localStorage에도 저장 (동기화)
+          saveToStorage('songs', songs);
+          
+          return songs;
+        }
+      } catch (fetchError) {
+        console.warn('public/data.json에서 데이터 로드 실패:', fetchError);
+      }
+    }
+    
+    // OneDrive/웹에서 로드 실패하면 localStorage에서 로드
     const localSongs = loadFromStorage('songs', []);
     
     // 데이터가 없으면 샘플 데이터 생성
@@ -272,7 +290,7 @@ export const saveWorshipLists = async (worshipLists) => {
 
 export const loadWorshipLists = async () => {
   try {
-    // 먼저 OneDrive에서 로드 시도
+    // 먼저 OneDrive에서 로드 시도 (Electron 환경)
     if (window.electronAPI && window.electronAPI.readFile) {
       try {
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
@@ -287,14 +305,32 @@ export const loadWorshipLists = async () => {
             saveToStorage('worshipLists', worshipListsData.worshipLists);
             
             return worshipListsData.worshipLists || {};
-          } else {
           }
         }
       } catch (oneDriveError) {
+        console.warn('OneDrive에서 찬양 리스트 로드 실패:', oneDriveError);
       }
     }
     
-    // OneDrive에서 로드 실패하면 localStorage에서 로드
+    // 웹브라우저 환경에서는 public/data.json에서 로드
+    if (!window.electronAPI) {
+      try {
+        const response = await fetch('/data.json');
+        if (response.ok) {
+          const data = await response.json();
+          const worshipLists = data.worshipLists || {};
+          
+          // localStorage에도 저장 (동기화)
+          saveToStorage('worshipLists', worshipLists);
+          
+          return worshipLists;
+        }
+      } catch (fetchError) {
+        console.warn('public/data.json에서 찬양 리스트 로드 실패:', fetchError);
+      }
+    }
+    
+    // OneDrive/웹에서 로드 실패하면 localStorage에서 로드
     const localWorshipLists = loadFromStorage('worshipLists', {});
     return localWorshipLists;
   } catch (error) {
