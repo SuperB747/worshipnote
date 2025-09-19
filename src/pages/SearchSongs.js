@@ -426,13 +426,35 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
 
   const handleDeleteFile = async () => {
     try {
+      console.log('=== SearchSongs 파일 삭제 시작 ===');
+      console.log('editFormData.filePath:', editFormData.filePath);
+      console.log('editFormData.fileName:', editFormData.fileName);
+      console.log('editingSong.id:', editingSong.id);
+      
       // OneDrive에서 실제 파일 삭제
-      if (editFormData.filePath && window.electronAPI && window.electronAPI.deleteFile) {
-        const result = await window.electronAPI.deleteFile(editFormData.filePath);
+      if (editFormData.fileName && window.electronAPI && window.electronAPI.deleteFile) {
+        // Music_Sheets 경로를 가져와서 전체 경로 구성
+        const musicSheetsPath = await window.electronAPI.getMusicSheetsPath();
+        const fullPath = `${musicSheetsPath}/${editFormData.fileName}`;
+        
+        console.log('Music_Sheets 경로:', musicSheetsPath);
+        console.log('파일명:', editFormData.fileName);
+        console.log('전체 파일 경로:', fullPath);
+        console.log('파일 삭제 API 호출:', fullPath);
+        
+        const result = await window.electronAPI.deleteFile(fullPath);
+        console.log('파일 삭제 결과:', result);
+        
         if (!result.success) {
           console.error('OneDrive 파일 삭제 실패:', result.error);
           // 파일 삭제 실패해도 UI에서는 제거 (사용자에게 알림)
         }
+      } else {
+        console.warn('파일명이 없거나 Electron API가 사용할 수 없습니다');
+        console.log('editFormData.fileName:', editFormData.fileName);
+        console.log('editFormData.filePath:', editFormData.filePath);
+        console.log('window.electronAPI:', !!window.electronAPI);
+        console.log('window.electronAPI.deleteFile:', !!window.electronAPI?.deleteFile);
       }
       
       // UI에서 파일 정보 제거
@@ -441,6 +463,13 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
         fileName: '',
         filePath: ''
       }));
+      
+      // fileExistenceMap 업데이트
+      setFileExistenceMap(prev => ({
+        ...prev,
+        [editingSong.id]: false
+      }));
+      
       setShowDeleteConfirm(false);
       setUploadStatus({
         isUploading: false,
@@ -456,6 +485,13 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
         fileName: '',
         filePath: ''
       }));
+      
+      // fileExistenceMap 업데이트
+      setFileExistenceMap(prev => ({
+        ...prev,
+        [editingSong.id]: false
+      }));
+      
       setShowDeleteConfirm(false);
       setUploadStatus({
         isUploading: false,

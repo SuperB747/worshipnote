@@ -289,19 +289,25 @@ ipcMain.handle('read-file', async (event, filePath) => {
 
 ipcMain.handle('delete-file', async (event, filePath) => {
   try {
+    console.log('=== delete-file 핸들러 시작 ===');
+    console.log('삭제할 파일 경로:', filePath);
     
     // 파일 존재 여부 확인
     try {
       await fsPromises.access(filePath);
+      console.log('파일 존재 확인됨');
     } catch (accessError) {
+      console.log('파일이 이미 존재하지 않음:', accessError.message);
       return {
         success: true,
         message: '파일이 이미 존재하지 않습니다.'
       };
     }
     
-    // 파일 삭제
-    await fs.unlink(filePath);
+    // 파일 삭제 (fsPromises.unlink 사용)
+    console.log('파일 삭제 시작...');
+    await fsPromises.unlink(filePath);
+    console.log('파일 삭제 완료');
     
     return {
       success: true,
@@ -309,6 +315,8 @@ ipcMain.handle('delete-file', async (event, filePath) => {
     };
   } catch (error) {
     console.error('파일 삭제 실패:', error);
+    console.error('에러 코드:', error.code);
+    console.error('에러 메시지:', error.message);
     return {
       success: false,
       error: error.message

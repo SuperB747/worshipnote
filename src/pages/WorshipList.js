@@ -464,6 +464,60 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     setUploadStatus({ isUploading: false, success: false, error: null, message: '' });
   };
 
+  const handleDeleteFile = async () => {
+    try {
+      console.log('=== 파일 삭제 시작 ===');
+      console.log('editForm.filePath:', editForm.filePath);
+      console.log('editForm.fileName:', editForm.fileName);
+      console.log('editingSong.id:', editingSong.id);
+      
+      // OneDrive에서 실제 파일 삭제
+      if (editForm.fileName && window.electronAPI && window.electronAPI.deleteFile) {
+        // Music_Sheets 경로를 가져와서 전체 경로 구성
+        const musicSheetsPath = await window.electronAPI.getMusicSheetsPath();
+        const fullPath = `${musicSheetsPath}/${editForm.fileName}`;
+        
+        console.log('Music_Sheets 경로:', musicSheetsPath);
+        console.log('파일명:', editForm.fileName);
+        console.log('전체 파일 경로:', fullPath);
+        console.log('파일 삭제 API 호출:', fullPath);
+        
+        const result = await window.electronAPI.deleteFile(fullPath);
+        console.log('파일 삭제 결과:', result);
+        
+        if (!result.success) {
+          console.error('OneDrive 파일 삭제 실패:', result.error);
+          showSnackbar(`파일 삭제에 실패했습니다: ${result.error}`, 'error');
+          return;
+        }
+      } else {
+        console.warn('파일명이 없거나 Electron API가 사용할 수 없습니다');
+        console.log('editForm.fileName:', editForm.fileName);
+        console.log('editForm.filePath:', editForm.filePath);
+        console.log('window.electronAPI:', !!window.electronAPI);
+        console.log('window.electronAPI.deleteFile:', !!window.electronAPI?.deleteFile);
+      }
+      
+      // UI에서 파일 정보 제거
+      setEditForm(prev => ({
+        ...prev,
+        fileName: '',
+        filePath: ''
+      }));
+      
+      // fileExistenceMap 업데이트
+      setFileExistenceMap(prev => ({
+        ...prev,
+        [editingSong.id]: false
+      }));
+      
+      showSnackbar('악보 파일이 삭제되었습니다.', 'success');
+    } catch (error) {
+      console.error('파일 삭제 중 오류:', error);
+      showSnackbar('파일 삭제 중 오류가 발생했습니다.', 'error');
+    }
+  };
+
   // 수정 모달 입력 필드 클릭 핸들러 - 간단한 버전
   const handleEditInputClick = (e) => {
     e.stopPropagation();
@@ -954,7 +1008,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          setEditForm(prev => ({ ...prev, fileName: '', filePath: '' }));
+                          handleDeleteFile();
                         }}
                         title="파일 삭제"
                       >

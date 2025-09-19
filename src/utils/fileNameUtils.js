@@ -7,7 +7,7 @@ export const isCorrectFileName = (fileName) => {
   const withoutExt = fileName.replace(/\.[^/.]+$/, '');
   
   // 패턴: "찬양 제목 (코드) (ID).jpg"
-  const correctPattern = /^(.+)\s+\(([A-G][b#]?)\)\s+\(([^)]+)\)$/;
+  const correctPattern = /^(.+)\s+\(([A-G][b#]?[m]?)\)\s+\(([^)]+)\)$/;
   return correctPattern.test(withoutExt);
 };
 
@@ -39,7 +39,7 @@ export const extractSongInfoFromFileName = (fileName) => {
   const withoutExt = fileName.replace(/\.[^/.]+$/, '');
   
   // 패턴: "찬양 제목 (코드) (ID).jpg"
-  const pattern = /^(.+)\s+\(([A-G][b#]?)\)\s+\(([^)]+)\)$/;
+  const pattern = /^(.+)\s+\(([A-G][b#]?[m]?)\)\s+\(([^)]+)\)$/;
   const match = withoutExt.match(pattern);
   
   if (match) {
