@@ -1059,7 +1059,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                     disabled={selectedSongs.length === 0}
                   >
                     <Plus className="btn-icon" />
-                    {selectedSongs.length > 1 ? `${selectedSongs.length}개 곡 추가` : '리스트에 추가'}
+                    {selectedSongs.length > 0 ? `${selectedSongs.length}개곡 리스트에 추가` : '리스트에 추가'}
                   </button>
                   <button 
                     className="close-btn"
