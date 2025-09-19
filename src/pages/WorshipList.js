@@ -65,6 +65,10 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit, isFileExistence
         <div className="song-details">
           <h5 className="song-title">{song.title}</h5>
         </div>
+      </div>
+      
+      {/* 오른쪽 아이콘들을 위한 고정 컨테이너 */}
+      <div className="song-actions">
         {/* 악보 상태 아이콘과 코드 아이콘 */}
         <div className="music-sheet-status">
           {isFileExistenceLoaded ? (
@@ -98,14 +102,13 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit, isFileExistence
         >
           <Edit3 className="edit-icon" size={14} />
         </button>
+        <button 
+          className="remove-btn"
+          onClick={() => onRemove(song.id)}
+        >
+          <Trash2 size={14} />
+        </button>
       </div>
-      
-      <button 
-        className="remove-btn"
-        onClick={() => onRemove(song.id)}
-      >
-        <Trash2 size={14} />
-      </button>
     </div>
   );
 };

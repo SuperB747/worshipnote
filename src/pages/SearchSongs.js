@@ -642,8 +642,12 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                   <div className="song-info">
                     <h4>{song.title}</h4>
                   </div>
+                </div>
+                
+                {/* 오른쪽 아이콘들을 위한 고정 컨테이너 */}
+                <div className="song-actions">
+                  {/* 악보 상태 아이콘과 메타 정보 */}
                   <div className="song-meta">
-                    {/* 악보 상태 아이콘 */}
                     <div className="music-sheet-status">
                       {isFileExistenceLoaded ? (
                         hasMusicSheet(song) ? (
@@ -666,9 +670,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     <span className="song-key">{song.key}</span>
                     <span className="song-tempo">{song.tempo}</span>
                   </div>
-                </div>
-                
-                <div className="song-actions">
+                  
                   <button 
                     className="edit-btn"
                     onClick={(e) => {

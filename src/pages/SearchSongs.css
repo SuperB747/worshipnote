@@ -291,21 +291,28 @@
 .song-content {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   flex: 1;
   cursor: pointer;
+  gap: 8px;
+  min-width: 0; /* flexbox에서 축소 가능하도록 */
 }
 
 .song-info {
   flex: 1;
+  min-width: 0;
 }
 
 .song-info h4 {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-dark);
-  margin: 0 0 4px 0;
+  margin: 0;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 
 .song-status {
@@ -339,28 +346,24 @@
 }
 
 .status-icon {
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
 }
 
 .no-file-icon {
   color: #f44336;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .file-icon {
   color: var(--primary-green);
 }
 
-.no-file-icon {
-  color: #f44336;
-}
-
 .warning-icon {
   color: #ff9800;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .status-incorrect-filename {
@@ -377,17 +380,17 @@
 
 .correct-icon {
   color: var(--secondary-green);
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 
 
 .song-meta {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
-  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .music-sheet-status {
@@ -398,65 +401,92 @@
 .song-key {
   background: var(--secondary-green);
   color: white;
-  padding: 4px 8px;
+  padding: 2px 8px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
   border: 1px solid #5a7a5a;
+  white-space: nowrap;
+  min-width: 24px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 .song-tempo {
   background: var(--secondary-green);
   color: white;
-  padding: 4px 8px;
+  padding: 2px 8px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
   border: 1px solid #5a7a5a;
+  white-space: nowrap;
+  min-width: 24px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 
 .song-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0; /* 축소되지 않도록 고정 */
+  min-width: 120px; /* 최소 너비 보장 */
 }
 
-.edit-btn, .delete-btn {
+.edit-btn {
   background: none;
   border: none;
-  padding: 8px;
-  border-radius: 8px;
+  color: #666;
   cursor: pointer;
-  transition: all 0.3s ease;
+  padding: 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  min-width: 28px;
+  min-height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.edit-btn {
-  color: var(--primary-green);
-  transition: background-color 0.2s ease;
+.delete-btn {
+  background: none;
+  border: none;
+  color: #f44336;
+  cursor: pointer;
+  padding: 1px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  min-width: 16px;
+  min-height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .edit-btn:hover {
-  background: rgba(74, 124, 89, 0.1);
-}
-
-
-.delete-btn {
-  color: #f44336;
-  transition: background-color 0.2s ease;
+  background: rgba(33, 150, 243, 0.1);
+  color: #2196f3;
 }
 
 .delete-btn:hover {
   background: rgba(244, 67, 54, 0.1);
+  color: #d32f2f;
+  transform: scale(1.1);
 }
 
 
+
+
+
+
 .action-icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 /* 수정 모달 스타일 */
