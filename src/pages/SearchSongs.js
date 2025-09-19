@@ -435,7 +435,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     setOriginalSelectedSong(null);
     
     // 성공 메시지 표시
-    showSnackbar('success', '찬양이 수정되었습니다.');
+    showSnackbar('success', '찬양 정보가 성공적으로 업데이트되었습니다.');
   };
 
   const handleEditCancel = () => {
