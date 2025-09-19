@@ -396,7 +396,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     }));
   };
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = async (event) => {
     const { active, over } = event;
     
     if (active.id !== over.id) {
@@ -405,10 +405,26 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       
       const newList = arrayMove(currentWorshipList, oldIndex, newIndex);
       
-      setWorshipLists(prev => ({
-        ...prev,
+      // 상태 업데이트
+      const updatedWorshipLists = {
+        ...worshipLists,
         [currentDateKey]: newList
-      }));
+      };
+      
+      setWorshipLists(updatedWorshipLists);
+      
+      // 데이터베이스에 저장
+      try {
+        const success = await saveWorshipLists(updatedWorshipLists);
+        if (success) {
+          showSnackbar('찬양 순서가 저장되었습니다.', 'success');
+        } else {
+          showSnackbar('찬양 순서 저장에 실패했습니다.', 'error');
+        }
+      } catch (error) {
+        console.error('찬양 순서 저장 실패:', error);
+        showSnackbar('찬양 순서 저장 중 오류가 발생했습니다.', 'error');
+      }
     }
   };
 
