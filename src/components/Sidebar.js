@@ -46,7 +46,7 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
         setDialog({
           isVisible: true,
           type: 'success',
-          message: `데이터베이스 백업이 생성되었습니다!\n\n${result.message}`
+          message: result.message
         });
       } else {
         setDialog({

@@ -8,6 +8,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
   const titleInputRef = useRef(null);
   
   const [formData, setFormData] = useState({
+    id: null, // 임시 ID 저장
     title: '',
     firstLyrics: '',
     key: 'C',
@@ -93,6 +94,17 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
       return;
     }
 
+    // 찬양 이름이 입력되지 않았으면 경고
+    if (!formData.title.trim()) {
+      setUploadStatus({
+        isUploading: false,
+        success: false,
+        error: '먼저 찬양 이름을 입력해주세요.',
+        message: ''
+      });
+      return;
+    }
+
     setUploadStatus({
       isUploading: true,
       success: false,
@@ -101,9 +113,12 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     });
 
     try {
+      // 새 찬양의 ID 생성 (임시 ID) - 아직 생성되지 않았으면 생성
+      const tempId = formData.id || Date.now().toString();
+      
       const result = await processFileUpload(
         file, 
-        null, // 새 찬양이므로 ID는 null
+        tempId, // 임시 ID 사용
         formData.title, 
         formData.key
       );
@@ -111,6 +126,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
       if (result.success) {
         setFormData(prev => ({
           ...prev,
+          id: tempId, // ID 저장
           fileName: result.fileName,
           filePath: result.filePath
         }));
@@ -153,7 +169,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     }
 
     const newSong = {
-      id: Date.now(),
+      id: formData.id || Date.now(), // 이미 생성된 ID 사용 또는 새로 생성
       ...formData,
       createdAt: new Date().toISOString()
     };
@@ -163,6 +179,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     
     // 폼 초기화
     setFormData({
+      id: null,
       title: '',
       firstLyrics: '',
       key: 'C',
@@ -197,81 +214,77 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
 
       <div className="form-container">
         <form onSubmit={handleSubmit} className="song-form">
-          <div className="form-row compact-row">
-            <div className="form-group compact-group full-width">
-              <label className="form-label compact-label">
-                <Music className="label-icon" />
-                찬양 이름 *
-              </label>
-              <input
-                ref={titleInputRef}
-                type="text"
-                name="title"
-                value={formData.title}
+          <div className="form-group compact-group full-width">
+            <label className="form-label compact-label">
+              <Music className="label-icon" />
+              찬양 이름 *
+            </label>
+            <input
+              ref={titleInputRef}
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleInputChange}
+              onClick={handleInputClick}
+              onFocus={handleInputFocus}
+              onMouseDown={handleInputMouseDown}
+              className="form-input compact-input"
+              placeholder="찬양 이름을 입력하세요"
+              required
+              autoComplete="off"
+              tabIndex={1}
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group compact-group">
+              <label className="form-label compact-label">코드</label>
+              <select
+                name="key"
+                value={formData.key}
                 onChange={handleInputChange}
-                onClick={handleInputClick}
-                onFocus={handleInputFocus}
-                onMouseDown={handleInputMouseDown}
-                className="form-input compact-input"
-                placeholder="찬양 이름을 입력하세요"
-                required
-                autoComplete="off"
-                tabIndex={1}
-              />
+                className="form-select compact-select"
+                tabIndex={3}
+              >
+                <option value="">선택하세요</option>
+                {keys.map(key => (
+                  <option key={key} value={key}>{key}</option>
+                ))}
+              </select>
             </div>
 
-            <div className="form-row">
-              <div className="form-group compact-group">
-                <label className="form-label compact-label">코드</label>
-                <select
-                  name="key"
-                  value={formData.key}
-                  onChange={handleInputChange}
-                  className="form-select compact-select"
-                  tabIndex={3}
-                >
-                  <option value="">선택하세요</option>
-                  {keys.map(key => (
-                    <option key={key} value={key}>{key}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group compact-group">
-                <label className="form-label compact-label">빠르기</label>
-                <select
-                  name="tempo"
-                  value={formData.tempo}
-                  onChange={handleInputChange}
-                  className="form-select compact-select"
-                  tabIndex={4}
-                >
-                  <option value="">선택하세요</option>
-                  {tempos.map(tempo => (
-                    <option key={tempo} value={tempo}>{tempo}</option>
-                  ))}
-                </select>
-              </div>
+            <div className="form-group compact-group">
+              <label className="form-label compact-label">빠르기</label>
+              <select
+                name="tempo"
+                value={formData.tempo}
+                onChange={handleInputChange}
+                className="form-select compact-select"
+                tabIndex={4}
+              >
+                <option value="">선택하세요</option>
+                {tempos.map(tempo => (
+                  <option key={tempo} value={tempo}>{tempo}</option>
+                ))}
+              </select>
             </div>
           </div>
 
-          <div className="form-row compact-row">
-            <div className="form-group compact-group full-width">
-              <label className="form-label compact-label">첫 가사</label>
-              <input
-                type="text"
-                name="firstLyrics"
-                value={formData.firstLyrics}
-                onChange={handleInputChange}
-                onClick={handleInputClick}
-                onFocus={handleInputFocus}
-                onMouseDown={handleInputMouseDown}
-                className="form-input compact-input"
-                placeholder="첫 번째 가사를 입력하세요"
-                autoComplete="off"
-                tabIndex={2}
-              />
-            </div>
+          <div className="form-group compact-group full-width">
+            <label className="form-label compact-label">첫 가사</label>
+            <input
+              type="text"
+              name="firstLyrics"
+              value={formData.firstLyrics}
+              onChange={handleInputChange}
+              onClick={handleInputClick}
+              onFocus={handleInputFocus}
+              onMouseDown={handleInputMouseDown}
+              className="form-input compact-input"
+              placeholder="첫 번째 가사를 입력하세요"
+              autoComplete="off"
+              tabIndex={2}
+            />
           </div>
 
           <div className="form-row">

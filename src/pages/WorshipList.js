@@ -18,7 +18,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3, Download, FileText, Upload, AlertTriangle } from 'lucide-react';
+import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3, Download, FileText, Upload, AlertTriangle, Trash2, CheckCircle } from 'lucide-react';
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { saveWorshipLists, saveSongs, checkFileExists } from '../utils/storage';
@@ -29,7 +29,7 @@ import GhibliDialog from '../components/GhibliDialog';
 import './WorshipList.css';
 
 // SortableItem 컴포넌트
-const SortableItem = ({ song, index, onRemove, onSelect, onEdit }) => {
+const SortableItem = ({ song, index, onRemove, onSelect, onEdit, isFileExistenceLoaded }) => {
   const {
     attributes,
     listeners,
@@ -65,22 +65,27 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit }) => {
         <div className="song-details">
           <h5 className="song-title">{song.title}</h5>
         </div>
-        {/* 악보 상태 아이콘 */}
+        {/* 악보 상태 아이콘과 코드 아이콘 */}
         <div className="music-sheet-status">
-          {song.fileName ? (
-            isCorrectFileName(song.fileName) ? (
-              <div className="status-correct-filename" title="악보 파일 정상">
-                <FileText className="status-icon correct-icon" />
-              </div>
+          {isFileExistenceLoaded ? (
+            song.fileName ? (
+              isCorrectFileName(song.fileName) ? (
+                <div className="status-correct-filename" title="악보 파일 정상">
+                  <FileText className="status-icon correct-icon" />
+                </div>
+              ) : (
+                <div className="status-incorrect-filename" title="파일명 형식이 올바르지 않음">
+                  <AlertTriangle className="status-icon warning-icon" />
+                </div>
+              )
             ) : (
-              <div className="status-incorrect-filename" title="파일명 형식이 올바르지 않음">
-                <AlertTriangle className="status-icon warning-icon" />
+              <div className="status-no-file" title="악보 파일 없음">
+                <FileText className="status-icon no-file-icon" />
               </div>
             )
-          ) : (
-            <div className="status-no-file" title="악보 파일 없음">
-              <FileText className="status-icon no-file-icon" />
-            </div>
+          ) : null}
+          {song.key && (
+            <span className="song-key-icon">{song.key}</span>
           )}
         </div>
         <button 
@@ -91,7 +96,7 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit }) => {
           }}
           title="찬양 정보 수정"
         >
-          <Edit3 className="edit-icon" />
+          <Edit3 className="edit-icon" size={14} />
         </button>
       </div>
       
@@ -99,13 +104,13 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit }) => {
         className="remove-btn"
         onClick={() => onRemove(song.id)}
       >
-        <X />
+        <Trash2 size={14} />
       </button>
     </div>
   );
 };
 
-const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, setSongs, fileExistenceMap, setFileExistenceMap }) => {
+const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, setSongs, fileExistenceMap, setFileExistenceMap, selectedWorshipListDate, setSelectedWorshipListDate, isFileExistenceLoaded }) => {
   const { showSnackbar } = useSnackbar();
   
   // 가장 최근 찬양 리스트가 있는 날짜를 찾는 함수
@@ -130,10 +135,11 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     return new Date(year, month - 1, day); // month는 0부터 시작하므로 -1
   };
   
-  const [selectedDate, setSelectedDate] = useState(() => getLatestWorshipListDate());
+  const [selectedDate, setSelectedDate] = useState(() => selectedWorshipListDate || getLatestWorshipListDate());
   const [searchTerm, setSearchTerm] = useState('');
   const [showSongSearch, setShowSongSearch] = useState(false);
   const [previewSong, setPreviewSong] = useState(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [selectedSongs, setSelectedSongs] = useState([]);
   const [selectionOrder, setSelectionOrder] = useState([]);
   const [editingSong, setEditingSong] = useState(null);
@@ -153,7 +159,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     error: null,
     message: ''
   });
-  const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
+  const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '', filePath: null });
 
   // 찬양 리스트의 모든 곡들을 원본 데이터베이스의 최신 정보로 업데이트
   const refreshWorshipListSongs = () => {
@@ -189,11 +195,25 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     }
   }, [songs]);
 
-  // worshipLists가 변경될 때 가장 최근 날짜로 selectedDate 업데이트
+  // worshipLists가 변경될 때 가장 최근 날짜로 selectedDate 업데이트 (초기 로드시에만)
   React.useEffect(() => {
-    const latestDate = getLatestWorshipListDate();
-    setSelectedDate(latestDate);
-  }, [worshipLists]);
+    if (isInitialLoad) {
+      // selectedWorshipListDate가 이미 설정되어 있으면 그것을 사용, 아니면 최신 날짜 사용
+      const dateToUse = selectedWorshipListDate || getLatestWorshipListDate();
+      setSelectedDate(dateToUse);
+      if (!selectedWorshipListDate) {
+        setSelectedWorshipListDate(dateToUse);
+      }
+      setIsInitialLoad(false);
+    }
+  }, [worshipLists, isInitialLoad, selectedWorshipListDate]);
+
+  // selectedWorshipListDate가 변경될 때 selectedDate 동기화
+  React.useEffect(() => {
+    if (selectedWorshipListDate && !isSameDay(selectedDate, selectedWorshipListDate)) {
+      setSelectedDate(selectedWorshipListDate);
+    }
+  }, [selectedWorshipListDate]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -254,15 +274,20 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
 
   const handleDateClick = (date) => {
     setSelectedDate(date);
+    setSelectedWorshipListDate(date);
     setShowSongSearch(false);
   };
 
   const handlePrevMonth = () => {
-    setSelectedDate(prev => subDays(startOfMonth(prev), 1));
+    const newDate = subDays(startOfMonth(selectedDate), 1);
+    setSelectedDate(newDate);
+    setSelectedWorshipListDate(newDate);
   };
 
   const handleNextMonth = () => {
-    setSelectedDate(prev => addDays(endOfMonth(prev), 1));
+    const newDate = addDays(endOfMonth(selectedDate), 1);
+    setSelectedDate(newDate);
+    setSelectedWorshipListDate(newDate);
   };
 
   const handleSongClick = (song) => {
@@ -419,21 +444,32 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       
       // 파일명 업데이트 (찬양 이름이나 코드가 변경된 경우)
       let finalUpdatedSong = updatedSong;
+      console.log('=== WorshipList 파일명 업데이트 시작 ===');
+      console.log('editingSong.fileName:', editingSong.fileName);
+      console.log('editingSong.title:', editingSong.title, '-> updatedSong.title:', updatedSong.title);
+      console.log('editingSong.key:', editingSong.key, '-> updatedSong.key:', updatedSong.key);
+      
       if (editingSong.fileName && editingSong.fileName.trim() !== '') {
         try {
+          console.log('파일명 업데이트 함수 호출...');
           const fileNameUpdateResult = await updateFileNameForSong(editingSong, updatedSong);
+          console.log('파일명 업데이트 결과:', fileNameUpdateResult);
+          
           if (fileNameUpdateResult.success && fileNameUpdateResult.newFileName) {
             finalUpdatedSong = {
               ...updatedSong,
               fileName: fileNameUpdateResult.newFileName
             };
             console.log('파일명 업데이트 완료:', fileNameUpdateResult.message);
+            console.log('최종 업데이트된 찬양:', finalUpdatedSong);
           } else if (!fileNameUpdateResult.success) {
             console.warn('파일명 업데이트 실패:', fileNameUpdateResult.error);
           }
         } catch (error) {
           console.error('파일명 업데이트 중 오류:', error);
         }
+      } else {
+        console.log('기존 파일명이 없어서 파일명 업데이트를 스킵합니다.');
       }
       
       // 원본 데이터베이스에서 해당 곡 찾아서 업데이트
@@ -540,6 +576,28 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     } catch (error) {
       console.error('파일 삭제 중 오류:', error);
       showSnackbar('파일 삭제 중 오류가 발생했습니다.', 'error');
+    }
+  };
+
+  // PDF 파일 열기 함수
+  const handleOpenPdfFile = async () => {
+    if (!dialog.filePath || !window.electronAPI || !window.electronAPI.openFile) {
+      showSnackbar('파일을 열 수 없습니다.', 'error');
+      return;
+    }
+
+    try {
+      const result = await window.electronAPI.openFile(dialog.filePath);
+      if (result && result.success) {
+        showSnackbar('PDF 파일이 열렸습니다.', 'success');
+        // 다이얼로그 닫기
+        setDialog({ isVisible: false, type: 'success', message: '', filePath: null });
+      } else {
+        showSnackbar('PDF 파일 열기에 실패했습니다.', 'error');
+      }
+    } catch (error) {
+      console.error('PDF 파일 열기 중 오류:', error);
+      showSnackbar('PDF 파일 열기 중 오류가 발생했습니다.', 'error');
     }
   };
 
@@ -670,7 +728,8 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         setDialog({
           isVisible: true,
           type: 'success',
-          message: result.message
+          message: result.message,
+          filePath: result.filePath
         });
       } else if (result.cancelled) {
         // 사용자가 덮어쓰기를 취소한 경우
@@ -836,7 +895,9 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                       <div className="song-info">
                         <div className="song-title-row">
                           <h5 className="song-title">{song.title}</h5>
-                          <span className="song-key">{song.key}</span>
+                          {song.key && (
+                            <span className="song-key-icon">{song.key}</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -897,6 +958,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                         onRemove={handleRemoveSong}
                         onSelect={setSelectedSong}
                         onEdit={handleEditSong}
+                        isFileExistenceLoaded={isFileExistenceLoaded}
                       />
                     ))}
                   </div>
@@ -928,89 +990,82 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
             </div>
             
             <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} className="edit-form compact-form">
-              <div className="form-row compact-row">
-                <div className="form-group compact-group full-width">
-                  <label className="form-label compact-label">
-                    <Music className="label-icon" />
-                    찬양 이름 *
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={editForm.title}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                    onClick={handleEditInputClick}
-                    onFocus={handleEditInputFocus}
-                    onMouseDown={handleEditInputMouseDown}
-                    className="form-input compact-input full-width"
-                    placeholder="찬양 이름을 입력하세요"
-                    required
-                    autoComplete="off"
-                    tabIndex={1}
-                  />
-                </div>
-              </div>
-
-              <div className="form-row compact-row">
-                <table className="form-table">
-                  <tbody>
-                    <tr>
-                      <td className="form-cell">
-                        <label className="form-label compact-label">코드</label>
-                        <select
-                          name="key"
-                          value={editForm.key}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, key: e.target.value }))}
-                          className="form-select compact-select"
-                          tabIndex={2}
-                        >
-                          {['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Em', 'Eb', 'F', 'G'].map(key => (
-                            <option key={key} value={key}>{key}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="form-cell">
-                        <label className="form-label compact-label">빠르기</label>
-                        <select
-                          name="tempo"
-                          value={editForm.tempo}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, tempo: e.target.value }))}
-                          className="form-select compact-select"
-                          tabIndex={3}
-                        >
-                          {['Fast', 'Medium', 'Slow'].map(tempo => (
-                            <option key={tempo} value={tempo}>{tempo}</option>
-                          ))}
-                        </select>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="form-row compact-row">
-                <div className="form-group compact-group full-width">
-                  <label className="form-label compact-label">첫 가사</label>
-                  <input
-                    type="text"
-                    name="firstLyrics"
-                    value={editForm.firstLyrics}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, firstLyrics: e.target.value }))}
-                    onClick={handleEditInputClick}
-                    onFocus={handleEditInputFocus}
-                    onMouseDown={handleEditInputMouseDown}
-                    className="form-input compact-input full-width"
-                    placeholder="첫 번째 가사를 입력하세요"
-                    autoComplete="off"
-                    tabIndex={4}
-                  />
-                </div>
+              <div className="form-group compact-group full-width">
+                <label className="form-label compact-label">
+                  <Music className="label-icon" />
+                  찬양 이름 *
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                  onClick={handleEditInputClick}
+                  onFocus={handleEditInputFocus}
+                  onMouseDown={handleEditInputMouseDown}
+                  className="form-input compact-input"
+                  placeholder="찬양 이름을 입력하세요"
+                  required
+                  autoComplete="off"
+                  tabIndex={1}
+                />
               </div>
 
               <div className="form-row">
-                <div className="form-group file-upload-group">
-                  <label className="form-label">
-                    <FileText className="label-icon" />
+                <div className="form-group compact-group">
+                  <label className="form-label compact-label">코드</label>
+                  <select
+                    name="key"
+                    value={editForm.key}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, key: e.target.value }))}
+                    className="form-select compact-select"
+                    tabIndex={3}
+                  >
+                    <option value="">선택하세요</option>
+                    {['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Em', 'Eb', 'F', 'G'].map(key => (
+                      <option key={key} value={key}>{key}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group compact-group">
+                  <label className="form-label compact-label">빠르기</label>
+                  <select
+                    name="tempo"
+                    value={editForm.tempo}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, tempo: e.target.value }))}
+                    className="form-select compact-select"
+                    tabIndex={4}
+                  >
+                    <option value="">선택하세요</option>
+                    {['Fast', 'Medium', 'Slow'].map(tempo => (
+                      <option key={tempo} value={tempo}>{tempo}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group compact-group full-width">
+                <label className="form-label compact-label">첫 가사</label>
+                <input
+                  type="text"
+                  name="firstLyrics"
+                  value={editForm.firstLyrics}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, firstLyrics: e.target.value }))}
+                  onClick={handleEditInputClick}
+                  onFocus={handleEditInputFocus}
+                  onMouseDown={handleEditInputMouseDown}
+                  className="form-input compact-input"
+                  placeholder="첫 번째 가사를 입력하세요"
+                  autoComplete="off"
+                  tabIndex={2}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group file-upload-group compact">
+                  <label className="form-label compact-label">
+                    <Upload className="label-icon" />
                     악보 파일
                     {editForm.fileName && (
                       <span className="current-file-name">: {editForm.fileName}</span>
@@ -1030,18 +1085,18 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                       </button>
                     )}
                   </label>
-                  <div className="file-upload-area">
+                  <div className="file-upload-area compact">
                     <input
                       type="file"
                       id="edit-file-upload"
                       onChange={handleEditFileUpload}
-                      accept=".pdf,.jpg,.jpeg,.png"
+                      accept=".jpg,.jpeg,.png,.pdf"
                       className="file-input"
                       disabled={uploadStatus.isUploading}
                     />
                     <label 
                       htmlFor="edit-file-upload" 
-                      className={`file-upload-label compact-upload-label ${uploadStatus.isUploading ? 'uploading' : ''}`}
+                      className={`file-upload-label compact ${uploadStatus.isUploading ? 'uploading' : ''} ${uploadStatus.success ? 'success' : ''}`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       {uploadStatus.isUploading ? (
@@ -1049,27 +1104,19 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                           <div className="upload-spinner"></div>
                           <span>처리 중...</span>
                         </>
+                      ) : uploadStatus.success ? (
+                        <>
+                          <CheckCircle className="success-icon" />
+                          <span>{editForm.fileName}</span>
+                        </>
                       ) : (
                         <>
                           <Upload className="upload-icon" />
-                          <span>파일 선택</span>
+                          <span>JPG, PNG, PDF 파일을 선택하세요</span>
                         </>
                       )}
                     </label>
                   </div>
-                  
-                  
-                  {uploadStatus.success && (
-                    <div className="upload-success-text">
-                      파일이 성공적으로 업데이트되었습니다!
-                    </div>
-                  )}
-                  
-                  {uploadStatus.error && (
-                    <div className="upload-error-text">
-                      {uploadStatus.error}
-                    </div>
-                  )}
                 </div>
               </div>
               
@@ -1099,8 +1146,50 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         isVisible={dialog.isVisible}
         type={dialog.type}
         message={dialog.message}
-        onClose={() => setDialog({ isVisible: false, type: 'success', message: '' })}
-      />
+        onClose={() => setDialog({ isVisible: false, type: 'success', message: '', filePath: null })}
+      >
+        {dialog.type === 'success' && dialog.filePath && (
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <button 
+              className="ghibli-dialog-button"
+              onClick={handleOpenPdfFile}
+              style={{ 
+                background: 'linear-gradient(145deg, #4a7c59, #6b8e6b)',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '20px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              📂 PDF 파일 열기
+            </button>
+            <button 
+              className="ghibli-dialog-button"
+              onClick={() => setDialog({ isVisible: false, type: 'success', message: '', filePath: null })}
+              style={{ 
+                background: 'linear-gradient(145deg, #f5f5f5, #e0e0e0)',
+                color: '#333',
+                border: '2px solid #4a7c59',
+                padding: '10px 20px',
+                borderRadius: '20px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              닫기
+            </button>
+          </div>
+        )}
+      </GhibliDialog>
     </div>
   );
 };

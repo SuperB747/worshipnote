@@ -444,31 +444,9 @@ export const generateWorshipListPDF = async (songs, date) => {
     });
     
     if (result.success) {
-      let message = `PDF 변환이 완료되었습니다!\n\n`;
-      message += `📄 악보 페이지 수: ${successCount}페이지`;
-
-      // PDF 파일 자동으로 열기 (파일 저장 완료 후 약간의 지연)
-      try {
-        if (window.electronAPI && window.electronAPI.openFile) {
-          // 파일 저장이 완전히 완료될 때까지 잠시 대기
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          const openResult = await window.electronAPI.openFile(pdfPath);
-          
-          if (openResult && openResult.success) {
-            message += `\n\n📂 PDF 파일이 자동으로 열렸습니다.`;
-          } else {
-            console.error('PDF 파일 열기 실패:', openResult);
-            message += `\n\n📂 PDF 파일을 수동으로 열어주세요: ${pdfPath}`;
-          }
-        } else {
-          console.error('Electron API가 없습니다.');
-          message += `\n\n📂 PDF 파일을 수동으로 열어주세요: ${pdfPath}`;
-        }
-      } catch (openError) {
-        console.error('PDF 파일 열기 중 오류:', openError);
-        message += `\n\n📂 PDF 파일을 수동으로 열어주세요: ${pdfPath}`;
-      }
+      let message = `PDF 변환이 완료되었습니다!\n`;
+      message += `📄 악보 페이지 수: ${successCount}페이지\n`;
+      message += `📂 파일이름: ${pdfPath.split(/[\\/]/).pop()}`;
 
       return {
         success: true,

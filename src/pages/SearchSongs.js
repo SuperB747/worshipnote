@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Filter, Music, Hash, Clock, FileText, Edit, Trash2, Plus, FileX, AlertTriangle } from 'lucide-react';
+import { Search, Filter, Music, Hash, Clock, FileText, Edit3, Trash2, Plus, FileX, AlertTriangle, Upload, CheckCircle } from 'lucide-react';
 import { processFileUpload } from '../utils/fileConverter';
 import { saveSongs, saveWorshipLists, checkFileExists } from '../utils/storage';
 import { isCorrectFileName, updateFileNameForSong } from '../utils/fileNameUtils';
 import GhibliDialog from '../components/GhibliDialog';
 import './SearchSongs.css';
 
-const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExistenceMap, setFileExistenceMap, worshipLists, setWorshipLists }) => {
+const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExistenceMap, setFileExistenceMap, worshipLists, setWorshipLists, isFileExistenceLoaded }) => {
   const searchInputRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
@@ -313,21 +313,32 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
 
     // 파일명 업데이트 (찬양 이름이나 코드가 변경된 경우)
     let finalUpdatedSong = updatedSong;
+    console.log('=== SearchSongs 파일명 업데이트 시작 ===');
+    console.log('editingSong.fileName:', editingSong.fileName);
+    console.log('editingSong.title:', editingSong.title, '-> updatedSong.title:', updatedSong.title);
+    console.log('editingSong.key:', editingSong.key, '-> updatedSong.key:', updatedSong.key);
+    
     if (editingSong.fileName && editingSong.fileName.trim() !== '') {
       try {
+        console.log('파일명 업데이트 함수 호출...');
         const fileNameUpdateResult = await updateFileNameForSong(editingSong, updatedSong);
+        console.log('파일명 업데이트 결과:', fileNameUpdateResult);
+        
         if (fileNameUpdateResult.success && fileNameUpdateResult.newFileName) {
           finalUpdatedSong = {
             ...updatedSong,
             fileName: fileNameUpdateResult.newFileName
           };
           console.log('파일명 업데이트 완료:', fileNameUpdateResult.message);
+          console.log('최종 업데이트된 찬양:', finalUpdatedSong);
         } else if (!fileNameUpdateResult.success) {
           console.warn('파일명 업데이트 실패:', fileNameUpdateResult.error);
         }
       } catch (error) {
         console.error('파일명 업데이트 중 오류:', error);
       }
+    } else {
+      console.log('기존 파일명이 없어서 파일명 업데이트를 스킵합니다.');
     }
 
     // 상태 업데이트
@@ -405,11 +416,6 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     
     setEditingSong(null);
     setOriginalSelectedSong(null);
-    setDialog({
-      isVisible: true,
-      type: 'success',
-      message: '찬양이 성공적으로 수정되었습니다!'
-    });
   };
 
   const handleEditCancel = () => {
@@ -577,7 +583,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
               찬양 악보 리스트 ({filteredSongs.length}개)
             </h3>
           </div>
-          {(missingMusicSheetCount > 0 || filenameErrorCount > 0) && (
+          {isFileExistenceLoaded && (missingMusicSheetCount > 0 || filenameErrorCount > 0) && (
             <div className="header-right">
               {missingMusicSheetCount > 0 && (
                 <button 
@@ -625,21 +631,23 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                   <div className="song-meta">
                     {/* 악보 상태 아이콘 */}
                     <div className="music-sheet-status">
-                      {hasMusicSheet(song) ? (
-                        hasCorrectFileName(song) ? (
-                          <div className="status-correct-filename" title="악보 파일 정상">
-                            <FileText className="status-icon correct-icon" />
-                          </div>
+                      {isFileExistenceLoaded ? (
+                        hasMusicSheet(song) ? (
+                          hasCorrectFileName(song) ? (
+                            <div className="status-correct-filename" title="악보 파일 정상">
+                              <FileText className="status-icon correct-icon" />
+                            </div>
+                          ) : (
+                            <div className="status-incorrect-filename" title="파일명 형식이 올바르지 않음">
+                              <AlertTriangle className="status-icon warning-icon" />
+                            </div>
+                          )
                         ) : (
-                          <div className="status-incorrect-filename" title="파일명 형식이 올바르지 않음">
-                            <AlertTriangle className="status-icon warning-icon" />
+                          <div className="status-no-file" title="악보 파일 없음">
+                            <FileX className="status-icon no-file-icon" />
                           </div>
                         )
-                      ) : (
-                        <div className="status-no-file" title="악보 파일 없음">
-                          <FileX className="status-icon no-file-icon" />
-                        </div>
-                      )}
+                      ) : null}
                     </div>
                     <span className="song-key">{song.key}</span>
                     <span className="song-tempo">{song.tempo}</span>
@@ -655,7 +663,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     }}
                     title="수정"
                   >
-                    <Edit className="action-icon" />
+                    <Edit3 className="action-icon" size={14} />
                   </button>
                   <button 
                     className="delete-btn"
@@ -665,7 +673,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     }}
                     title="삭제"
                   >
-                    <Trash2 className="action-icon" />
+                    <Trash2 className="action-icon" size={14} />
                   </button>
                 </div>
               </div>
@@ -692,89 +700,82 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
             </div>
             
             <form onSubmit={handleEditSubmit} className="edit-form compact-form">
-              <div className="form-row compact-row">
-                <div className="form-group compact-group full-width">
-                  <label className="form-label compact-label">
-                    <Music className="label-icon" />
-                    찬양 이름 *
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={editFormData.title}
-                    onChange={handleEditInputChange}
-                    onClick={handleEditInputClick}
-                    onFocus={handleEditInputFocus}
-                    onMouseDown={handleEditInputMouseDown}
-                    className="form-input compact-input full-width"
-                    placeholder="찬양 이름을 입력하세요"
-                    required
-                    autoComplete="off"
-                    tabIndex={1}
-                  />
-                </div>
-              </div>
-
-              <div className="form-row compact-row">
-                <table className="form-table">
-                  <tbody>
-                    <tr>
-                      <td className="form-cell">
-                        <label className="form-label compact-label">코드</label>
-                        <select
-                          name="key"
-                          value={editFormData.key}
-                          onChange={handleEditInputChange}
-                          className="form-select compact-select"
-                          tabIndex={2}
-                        >
-                          {keys.map(key => (
-                            <option key={key} value={key}>{key}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="form-cell">
-                        <label className="form-label compact-label">빠르기</label>
-                        <select
-                          name="tempo"
-                          value={editFormData.tempo}
-                          onChange={handleEditInputChange}
-                          className="form-select compact-select"
-                          tabIndex={3}
-                        >
-                          {tempos.map(tempo => (
-                            <option key={tempo} value={tempo}>{tempo}</option>
-                          ))}
-                        </select>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="form-row compact-row">
-                <div className="form-group compact-group full-width">
-                  <label className="form-label compact-label">첫 가사</label>
-                  <input
-                    type="text"
-                    name="firstLyrics"
-                    value={editFormData.firstLyrics}
-                    onChange={handleEditInputChange}
-                    onClick={handleEditInputClick}
-                    onFocus={handleEditInputFocus}
-                    onMouseDown={handleEditInputMouseDown}
-                    className="form-input compact-input full-width"
-                    placeholder="첫 번째 가사를 입력하세요"
-                    autoComplete="off"
-                    tabIndex={4}
-                  />
-                </div>
+              <div className="form-group compact-group full-width">
+                <label className="form-label compact-label">
+                  <Music className="label-icon" />
+                  찬양 이름 *
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={editFormData.title}
+                  onChange={handleEditInputChange}
+                  onClick={handleEditInputClick}
+                  onFocus={handleEditInputFocus}
+                  onMouseDown={handleEditInputMouseDown}
+                  className="form-input compact-input"
+                  placeholder="찬양 이름을 입력하세요"
+                  required
+                  autoComplete="off"
+                  tabIndex={1}
+                />
               </div>
 
               <div className="form-row">
-                <div className="form-group file-upload-group">
-                  <label className="form-label">
-                    <FileText className="label-icon" />
+                <div className="form-group compact-group">
+                  <label className="form-label compact-label">코드</label>
+                  <select
+                    name="key"
+                    value={editFormData.key}
+                    onChange={handleEditInputChange}
+                    className="form-select compact-select"
+                    tabIndex={3}
+                  >
+                    <option value="">선택하세요</option>
+                    {keys.map(key => (
+                      <option key={key} value={key}>{key}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group compact-group">
+                  <label className="form-label compact-label">빠르기</label>
+                  <select
+                    name="tempo"
+                    value={editFormData.tempo}
+                    onChange={handleEditInputChange}
+                    className="form-select compact-select"
+                    tabIndex={4}
+                  >
+                    <option value="">선택하세요</option>
+                    {tempos.map(tempo => (
+                      <option key={tempo} value={tempo}>{tempo}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group compact-group full-width">
+                <label className="form-label compact-label">첫 가사</label>
+                <input
+                  type="text"
+                  name="firstLyrics"
+                  value={editFormData.firstLyrics}
+                  onChange={handleEditInputChange}
+                  onClick={handleEditInputClick}
+                  onFocus={handleEditInputFocus}
+                  onMouseDown={handleEditInputMouseDown}
+                  className="form-input compact-input"
+                  placeholder="첫 번째 가사를 입력하세요"
+                  autoComplete="off"
+                  tabIndex={2}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group file-upload-group compact">
+                  <label className="form-label compact-label">
+                    <Upload className="label-icon" />
                     악보 파일
                     {editFormData.fileName && (
                       <span className="current-file-name">: {editFormData.fileName}</span>
@@ -794,18 +795,18 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                       </button>
                     )}
                   </label>
-                  <div className="file-upload-area">
+                  <div className="file-upload-area compact">
                     <input
                       type="file"
                       id="edit-file-upload"
                       onChange={handleEditFileUpload}
-                      accept=".pdf,.jpg,.jpeg,.png"
+                      accept=".jpg,.jpeg,.png,.pdf"
                       className="file-input"
                       disabled={uploadStatus.isUploading}
                     />
                     <label 
                       htmlFor="edit-file-upload" 
-                      className={`file-upload-label compact-upload-label ${uploadStatus.isUploading ? 'uploading' : ''}`}
+                      className={`file-upload-label compact ${uploadStatus.isUploading ? 'uploading' : ''} ${uploadStatus.success ? 'success' : ''}`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       {uploadStatus.isUploading ? (
@@ -813,33 +814,25 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                           <div className="upload-spinner"></div>
                           <span>처리 중...</span>
                         </>
+                      ) : uploadStatus.success ? (
+                        <>
+                          <CheckCircle className="success-icon" />
+                          <span>{editFormData.fileName}</span>
+                        </>
                       ) : (
                         <>
-                          <FileText className="upload-icon" />
-                          <span>새 악보 파일 선택 (선택사항)</span>
+                          <Upload className="upload-icon" />
+                          <span>JPG, PNG, PDF 파일을 선택하세요</span>
                         </>
                       )}
                     </label>
-                    
-                    
-                    {uploadStatus.success && (
-                      <div className="upload-success-text">
-                        파일이 성공적으로 업데이트되었습니다!
-                      </div>
-                    )}
-                    
-                    {uploadStatus.error && (
-                      <div className="upload-error-text">
-                        {uploadStatus.error}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
 
               <div className="form-actions">
                 <button type="submit" className="btn-primary">
-                  <Edit className="btn-icon" />
+                  <Edit3 className="btn-icon" />
                   수정 완료
                 </button>
                 <button 

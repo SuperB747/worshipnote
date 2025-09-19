@@ -13,23 +13,35 @@ export const isCorrectFileName = (fileName) => {
 
 // 찬양 정보를 기반으로 올바른 파일명을 생성하는 함수
 export const generateCorrectFileName = (song) => {
-  if (!song || !song.id) return null;
+  console.log('=== 파일명 생성 시작 ===');
+  console.log('입력된 찬양 정보:', { title: song.title, key: song.key, code: song.code, id: song.id });
+  
+  if (!song || !song.id) {
+    console.log('찬양 정보가 없거나 ID가 없습니다.');
+    return null;
+  }
   
   // 찬양 제목에서 1/2, 2/2 같은 패턴을 처리
   const processedTitle = song.title.replace(/\s+\d+\/\d+$/, (match) => {
     const number = match.trim().split('/')[0];
     return ` ${number}`;
   });
+  console.log('처리된 제목:', processedTitle);
   
   // 파일명에서 안전하지 않은 문자를 제거
   const safeTitle = processedTitle
     .replace(/[<>:"/\\|?*]/g, '-')  // 특수문자를 하이픈으로 변환
     .trim()                         // 앞뒤 공백 제거
     .substring(0, 200);             // 파일명 길이 제한
+  console.log('안전한 제목:', safeTitle);
   
   const safeKey = (song.key || song.code || '').replace(/[<>:"/\\|?*]/g, '-');
+  console.log('안전한 키:', safeKey);
   
-  return `${safeTitle} (${safeKey}) (${song.id}).jpg`;
+  const fileName = `${safeTitle} (${safeKey}) (${song.id}).jpg`;
+  console.log('생성된 파일명:', fileName);
+  
+  return fileName;
 };
 
 // 파일명에서 찬양 정보를 추출하는 함수
@@ -62,30 +74,40 @@ export const extractSongInfoFromFileName = (fileName) => {
 // 찬양 정보가 변경되었을 때 파일명을 업데이트하는 함수
 export const updateFileNameForSong = async (oldSong, newSong) => {
   try {
+    console.log('=== 파일명 업데이트 시작 ===');
+    console.log('기존 찬양:', { title: oldSong.title, key: oldSong.key, code: oldSong.code, fileName: oldSong.fileName });
+    console.log('새 찬양:', { title: newSong.title, key: newSong.key, code: newSong.code, fileName: newSong.fileName });
+    
     // Electron API 사용 가능 여부 확인
     if (!window.electronAPI || !window.electronAPI.renameFile) {
       console.warn('Electron API를 사용할 수 없습니다.');
       return { success: false, error: 'Electron API를 사용할 수 없습니다.' };
     }
 
-    // 파일명이 변경되지 않았으면 스킵
-    if (oldSong.title === newSong.title && oldSong.key === newSong.key) {
+    // 파일명이 변경되지 않았으면 스킵 (key와 code 모두 확인)
+    const oldKey = oldSong.key || oldSong.code || '';
+    const newKey = newSong.key || newSong.code || '';
+    if (oldSong.title === newSong.title && oldKey === newKey) {
+      console.log('파일명 변경이 필요하지 않습니다.');
       return { success: true, message: '파일명 변경이 필요하지 않습니다.' };
     }
 
     // 기존 파일명이 없으면 스킵
     if (!oldSong.fileName || oldSong.fileName.trim() === '') {
+      console.log('기존 파일이 없습니다.');
       return { success: true, message: '기존 파일이 없습니다.' };
     }
 
     // 새로운 파일명 생성
     const newFileName = generateCorrectFileName(newSong);
+    console.log('생성된 새 파일명:', newFileName);
     if (!newFileName) {
       return { success: false, error: '새로운 파일명을 생성할 수 없습니다.' };
     }
 
     // 파일명이 동일하면 스킵
     if (oldSong.fileName === newFileName) {
+      console.log('파일명이 동일합니다.');
       return { success: true, message: '파일명이 동일합니다.' };
     }
 

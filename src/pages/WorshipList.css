@@ -445,25 +445,63 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid var(--soft-brown);
+  margin-bottom: 15px;
+  padding: 12px 16px;
+  background: var(--warm-beige);
+  border-radius: 8px;
+  border: 1px solid var(--soft-brown);
 }
 
 .modal-header h4 {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--text-dark);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  color: #666;
+.modal-header h4::before {
+  content: "🎵";
+  font-size: 14px;
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.selected-count {
+  background: var(--primary-green);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(74, 124, 89, 0.3);
+}
+
+.song-search-modal .close-btn {
+  background: none !important;
+  border: none !important;
+  color: #555 !important;
   cursor: pointer;
-  padding: 5px;
-  border-radius: 50%;
-  transition: all 0.3s ease;
+  padding: 6px;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.song-search-modal .close-btn:hover {
+  background: rgba(0, 0, 0, 0.1) !important;
+  color: #333 !important;
 }
 
 
@@ -636,7 +674,7 @@
 }
 
 .song-info .song-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-dark);
   margin: 0;
@@ -655,6 +693,21 @@
   border-radius: 12px;
   font-size: 11px;
   font-weight: 600;
+  flex-shrink: 0;
+  border: 1px solid #5a7a5a;
+}
+
+.song-key-icon {
+  background: var(--secondary-green);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 24px;
+  text-align: center;
+  margin-left: 6px;
   flex-shrink: 0;
   border: 1px solid #5a7a5a;
 }
@@ -710,10 +763,10 @@
 .list-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
   background: var(--warm-beige);
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: 6px;
+  padding: 6px 10px;
   border: 1px solid var(--soft-brown);
   transition: background-color 0.2s ease;
   margin-bottom: 2px;
@@ -756,54 +809,43 @@
 }
 
 .song-content {
-  flex: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 0;
+  justify-content: space-between;
+  flex: 1;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  border-radius: 8px;
-  padding: 4px;
+  gap: 8px;
 }
 
-.song-content:hover {
-  background: rgba(74, 124, 89, 0.05);
-}
 
 .song-number {
   background: var(--primary-green);
   color: white;
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 10px;
   flex-shrink: 0;
 }
 
 .song-details {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .music-sheet-status {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-left: auto;
-  margin-right: 8px;
+  gap: 6px;
 }
 
 .status-icon {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
 
 .file-icon {
@@ -840,8 +882,9 @@
   height: 16px;
 }
 
+
 .song-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-dark);
   margin: 0;
@@ -857,14 +900,14 @@
 .remove-btn {
   background: none;
   border: none;
-  color: #999;
+  color: #f44336;
   cursor: pointer;
-  padding: 6px;
+  padding: 1px;
   border-radius: 50%;
   flex-shrink: 0;
-  transition: background-color 0.2s ease;
-  min-width: 28px;
-  min-height: 28px;
+  transition: all 0.2s ease;
+  min-width: 16px;
+  min-height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -872,7 +915,8 @@
 
 .remove-btn:hover {
   background: rgba(244, 67, 54, 0.1);
-  color: #f44336;
+  color: #d32f2f;
+  transform: scale(1.1);
 }
 
 .edit-btn {
@@ -1488,6 +1532,10 @@
   margin-bottom: 0;
 }
 
+.compact-form .file-upload-group.compact {
+  margin-top: 10px;
+}
+
 .compact-form .file-upload-group .form-label {
   font-size: 12px;
   margin-bottom: 4px;
@@ -1559,37 +1607,85 @@
 }
 
 .compact-form .file-upload-area {
-  border: 2px dashed #ddd;
-  border-radius: 6px;
-  padding: 12px;
-  text-align: center;
-  background: #fafafa;
-  transition: all 0.2s ease;
-  min-height: 60px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  position: relative;
 }
 
-.compact-form .file-upload-area:hover {
-  border-color: var(--primary-green);
-  background: #f8fff8;
+.compact-form .file-upload-area.compact {
+  width: 100%;
+  margin: 0;
 }
 
 .compact-form .file-upload-label {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  padding: 40px 20px;
+  border: 2px dashed var(--soft-brown);
+  border-radius: 15px;
+  background: var(--warm-beige);
   cursor: pointer;
-  font-size: 12px;
-  color: #666;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.compact-form .file-upload-label.compact {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border: 2px solid var(--soft-brown);
+  border-radius: 8px;
+  background: white;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.compact-form .file-upload-label.compact:hover {
+  border-color: var(--primary-green);
+  background: rgba(74, 124, 89, 0.05);
+}
+
+.compact-form .file-upload-label.compact.success {
+  border-color: var(--primary-green);
+  background: rgba(74, 124, 89, 0.1);
+  color: var(--primary-green);
+}
+
+.compact-form .file-upload-label.compact.uploading {
+  border-color: var(--primary-green);
+  background: rgba(74, 124, 89, 0.1);
+  cursor: not-allowed;
 }
 
 .compact-form .upload-icon {
-  width: 16px;
-  height: 16px;
+  width: 32px;
+  height: 32px;
+  color: var(--primary-green);
+  margin-bottom: 10px;
+}
+
+.compact-form .file-upload-label.compact .upload-icon {
+  width: 20px;
+  height: 20px;
+  margin-bottom: 0;
+}
+
+.compact-form .file-upload-label span {
+  font-size: 16px;
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.compact-form .file-upload-label.compact span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.compact-form .file-upload-label.compact.success span {
+  color: var(--primary-green);
+  font-weight: 600;
 }
 
 .compact-form .current-file {

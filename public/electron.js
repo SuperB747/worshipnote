@@ -209,28 +209,69 @@ ipcMain.handle('save-file', async (event, fileData) => {
     // 폴더가 없으면 생성
     await ensureDirectoryExists(musicSheetsPath);
     
-    // 파일이 이미 존재하는지 확인
+    // 파일 저장 (기존 파일이 있으면 덮어쓰기)
+    const buffer = Buffer.from(arrayBuffer);
+    
+    // 파일이 사용 중이어도 덮어쓰기 가능하도록 여러 방법 시도
+    let writeSuccess = false;
+    let lastError = null;
+    
+    // 방법 1: 일반적인 덮어쓰기 시도
     try {
-      await fsPromises.access(fullPath);
-      // 파일이 이미 존재하면 건너뛰고 기존 파일과 연동
-      return {
-        success: true,
-        filePath: fullPath,
-        message: `기존 파일과 연동되었습니다: ${fileName}`,
-        skipped: true
-      };
-    } catch (accessError) {
-      // 파일이 존재하지 않으면 새로 저장
-      const buffer = Buffer.from(arrayBuffer);
-      await fsPromises.writeFile(fullPath, buffer);
-      
-      return {
-        success: true,
-        filePath: fullPath,
-        message: `파일이 저장되었습니다: ${fileName}`,
-        skipped: false
-      };
+      await fsPromises.writeFile(fullPath, buffer, { flag: 'w' });
+      writeSuccess = true;
+    } catch (writeError) {
+      lastError = writeError;
+      console.log('첫 번째 시도 실패:', writeError.code);
     }
+    
+    // 방법 2: 파일이 사용 중이면 잠시 대기 후 재시도
+    if (!writeSuccess && (lastError.code === 'EBUSY' || lastError.code === 'EPERM')) {
+      try {
+        console.log('파일이 사용 중입니다. 잠시 대기 후 재시도합니다...');
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+        await fsPromises.writeFile(fullPath, buffer, { flag: 'w' });
+        writeSuccess = true;
+      } catch (retryError) {
+        lastError = retryError;
+        console.log('재시도 실패:', retryError.code);
+      }
+    }
+    
+    // 방법 3: 임시 파일로 저장 후 이름 변경
+    if (!writeSuccess) {
+      try {
+        console.log('임시 파일로 저장 후 이름 변경을 시도합니다...');
+        const tempPath = fullPath + '.tmp';
+        await fsPromises.writeFile(tempPath, buffer);
+        
+        // 기존 파일 삭제 시도
+        try {
+          await fsPromises.unlink(fullPath);
+        } catch (unlinkError) {
+          console.log('기존 파일 삭제 실패, 강제 덮어쓰기 시도:', unlinkError.code);
+        }
+        
+        // 임시 파일을 원래 이름으로 변경
+        await fsPromises.rename(tempPath, fullPath);
+        writeSuccess = true;
+      } catch (tempError) {
+        lastError = tempError;
+        console.log('임시 파일 방식 실패:', tempError.code);
+      }
+    }
+    
+    // 모든 방법이 실패한 경우
+    if (!writeSuccess) {
+      throw lastError;
+    }
+    
+    return {
+      success: true,
+      filePath: fullPath,
+      message: `파일이 저장되었습니다: ${fileName}`,
+      skipped: false
+    };
   } catch (error) {
     console.error('파일 저장 실패:', error);
     return {
@@ -325,7 +366,8 @@ ipcMain.handle('delete-file', async (event, filePath) => {
 });
 
 // 파일명 변경 핸들러
-ipcMain.handle('rename-file', async (event, oldFilePath, newFilePath) => {
+ipcMain.handle('rename-file', async (event, ...args) => {
+  const [oldFilePath, newFilePath] = args;
   try {
     console.log('=== rename-file 핸들러 시작 ===');
     console.log('기존 파일 경로:', oldFilePath);

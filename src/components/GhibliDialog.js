@@ -78,7 +78,7 @@ const GhibliDialog = ({
           </div>
           
           <div className="ghibli-dialog-content">
-            <p className="ghibli-dialog-message">{message}</p>
+            <p className="ghibli-dialog-message" style={{ whiteSpace: 'pre-line' }}>{message}</p>
           </div>
           
           <div className="ghibli-dialog-footer">

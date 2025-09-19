@@ -21,8 +21,11 @@ function App() {
   const [lastSavedSongs, setLastSavedSongs] = useState(null);
   const [lastSavedWorshipLists, setLastSavedWorshipLists] = useState(null);
   const [fileExistenceMap, setFileExistenceMap] = useState({});
+  const [isFileExistenceLoaded, setIsFileExistenceLoaded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
+  const [selectedWorshipListDate, setSelectedWorshipListDate] = useState(null);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   // 실제 파일 존재 여부를 확인하는 함수
   const checkFileExists = async (fileName) => {
@@ -57,6 +60,34 @@ function App() {
         setLastSavedSongs(JSON.parse(JSON.stringify(songs)));
         setLastSavedWorshipLists(JSON.parse(JSON.stringify(worshipLists)));
         
+        // 앱 시작 시 최신 찬양 리스트 날짜 설정
+        if (isFirstLoad) {
+          const getLatestWorshipListDate = () => {
+            const dates = Object.keys(worshipLists).filter(date => 
+              date !== 'lastUpdated' && worshipLists[date] && worshipLists[date].length > 0
+            );
+            
+            if (dates.length === 0) {
+              return new Date(); // 찬양 리스트가 없으면 오늘 날짜 반환
+            }
+            
+            // 날짜를 정렬하여 가장 최근 날짜 반환 (시차 문제 해결)
+            const sortedDates = dates.sort((a, b) => {
+              // YYYY-MM-DD 형식의 문자열을 직접 비교하여 시차 문제 방지
+              return b.localeCompare(a);
+            });
+            
+            // 가장 최근 날짜를 Date 객체로 변환 (로컬 시간대 사용)
+            const latestDateString = sortedDates[0];
+            const [year, month, day] = latestDateString.split('-').map(Number);
+            return new Date(year, month - 1, day); // month는 0부터 시작하므로 -1
+          };
+          
+          const latestDate = getLatestWorshipListDate();
+          setSelectedWorshipListDate(latestDate);
+          setIsFirstLoad(false);
+        }
+        
         setIsLoaded(true);
       } catch (error) {
         console.error('데이터 로드 실패:', error);
@@ -79,6 +110,7 @@ function App() {
     const checkAllFiles = async () => {
       if (songs.length === 0 || !window.electronAPI) return;
       
+      setIsFileExistenceLoaded(false);
       const existenceMap = {};
       
       for (const song of songs) {
@@ -91,6 +123,7 @@ function App() {
       }
       
       setFileExistenceMap(existenceMap);
+      setIsFileExistenceLoaded(true);
     };
 
     checkAllFiles();
@@ -199,7 +232,7 @@ function App() {
             <Routes>
               <Route 
                 path="/" 
-                element={<SearchSongs songs={songs} setSongs={setSongs} selectedSong={selectedSong} setSelectedSong={setSelectedSong} fileExistenceMap={fileExistenceMap} setFileExistenceMap={setFileExistenceMap} worshipLists={worshipLists} setWorshipLists={setWorshipLists} />} 
+                element={<SearchSongs songs={songs} setSongs={setSongs} selectedSong={selectedSong} setSelectedSong={setSelectedSong} fileExistenceMap={fileExistenceMap} setFileExistenceMap={setFileExistenceMap} worshipLists={worshipLists} setWorshipLists={setWorshipLists} isFileExistenceLoaded={isFileExistenceLoaded} />} 
               />
               <Route 
                 path="/add" 
@@ -207,7 +240,7 @@ function App() {
               />
               <Route 
                 path="/worship-list" 
-                element={<WorshipList songs={songs} worshipLists={worshipLists} setWorshipLists={setWorshipLists} setSelectedSong={setSelectedSong} setSongs={setSongs} fileExistenceMap={fileExistenceMap} setFileExistenceMap={setFileExistenceMap} />} 
+                element={<WorshipList songs={songs} worshipLists={worshipLists} setWorshipLists={setWorshipLists} setSelectedSong={setSelectedSong} setSongs={setSongs} fileExistenceMap={fileExistenceMap} setFileExistenceMap={setFileExistenceMap} selectedWorshipListDate={selectedWorshipListDate} setSelectedWorshipListDate={setSelectedWorshipListDate} isFileExistenceLoaded={isFileExistenceLoaded} />} 
               />
             </Routes>
           </div>

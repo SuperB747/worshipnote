@@ -382,6 +382,7 @@
 }
 
 
+
 .song-meta {
   display: flex;
   gap: 8px;
@@ -583,6 +584,10 @@
   margin-bottom: 0;
 }
 
+.compact-form .file-upload-group.compact {
+  margin-top: 10px;
+}
+
 .compact-form .file-upload-group .form-label {
   font-size: 12px;
   margin-bottom: 4px;
@@ -654,37 +659,85 @@
 }
 
 .compact-form .file-upload-area {
-  border: 2px dashed #ddd;
-  border-radius: 6px;
-  padding: 12px;
-  text-align: center;
-  background: #fafafa;
-  transition: all 0.2s ease;
-  min-height: 60px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  position: relative;
 }
 
-.compact-form .file-upload-area:hover {
-  border-color: var(--primary-green);
-  background: #f8fff8;
+.compact-form .file-upload-area.compact {
+  width: 100%;
+  margin: 0;
 }
 
 .compact-form .file-upload-label {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  padding: 40px 20px;
+  border: 2px dashed var(--soft-brown);
+  border-radius: 15px;
+  background: var(--warm-beige);
   cursor: pointer;
-  font-size: 12px;
-  color: #666;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.compact-form .file-upload-label.compact {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border: 2px solid var(--soft-brown);
+  border-radius: 8px;
+  background: white;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.compact-form .file-upload-label.compact:hover {
+  border-color: var(--primary-green);
+  background: rgba(74, 124, 89, 0.05);
+}
+
+.compact-form .file-upload-label.compact.success {
+  border-color: var(--primary-green);
+  background: rgba(74, 124, 89, 0.1);
+  color: var(--primary-green);
+}
+
+.compact-form .file-upload-label.compact.uploading {
+  border-color: var(--primary-green);
+  background: rgba(74, 124, 89, 0.1);
+  cursor: not-allowed;
 }
 
 .compact-form .upload-icon {
-  width: 16px;
-  height: 16px;
+  width: 32px;
+  height: 32px;
+  color: var(--primary-green);
+  margin-bottom: 10px;
+}
+
+.compact-form .file-upload-label.compact .upload-icon {
+  width: 20px;
+  height: 20px;
+  margin-bottom: 0;
+}
+
+.compact-form .file-upload-label span {
+  font-size: 16px;
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.compact-form .file-upload-label.compact span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.compact-form .file-upload-label.compact.success span {
+  color: var(--primary-green);
+  font-weight: 600;
 }
 
 .compact-form .current-file {
