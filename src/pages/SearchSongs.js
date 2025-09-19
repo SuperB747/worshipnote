@@ -10,7 +10,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
   const searchInputRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
-    key: '',
+    chord: '',
     tempo: ''
   });
   const [activeFilter, setActiveFilter] = useState(null); // 'missing' 또는 'filename-error' 또는 null
@@ -18,7 +18,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
   const [editFormData, setEditFormData] = useState({
     title: '',
     firstLyrics: '',
-    key: 'C',
+    chord: 'C',
     tempo: 'Medium',
     fileName: '',
     filePath: ''
@@ -71,7 +71,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
         song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         song.firstLyrics.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesKey = !filters.key || song.key === filters.key;
+      const matchesChord = !filters.chord || song.chord === filters.chord;
       const matchesTempo = !filters.tempo || song.tempo === filters.tempo;
       
       // 액티브 필터 적용
@@ -83,7 +83,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
       }
       
       
-      return matchesSearch && matchesKey && matchesTempo && matchesActiveFilter;
+      return matchesSearch && matchesChord && matchesTempo && matchesActiveFilter;
     });
     
     // 정렬: 한글과 영어를 모두 고려한 알파벳/가나다 순서
@@ -148,7 +148,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
 
   const clearFilters = () => {
     setSearchTerm('');
-    setFilters({ key: '', tempo: '' });
+    setFilters({ chord: '', tempo: '' });
   };
 
   const handleEdit = (song) => {
@@ -158,7 +158,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     setEditFormData({
       title: song.title,
       firstLyrics: song.firstLyrics || '',
-      key: song.key,
+      chord: song.chord,
       tempo: song.tempo,
       fileName: song.fileName || '',
       filePath: song.filePath || ''
@@ -330,7 +330,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     console.log('=== SearchSongs 파일명 업데이트 시작 ===');
     console.log('editingSong.fileName:', editingSong.fileName);
     console.log('editingSong.title:', editingSong.title, '-> updatedSong.title:', updatedSong.title);
-    console.log('editingSong.key:', editingSong.key, '-> updatedSong.key:', updatedSong.key);
+    console.log('editingSong.chord:', editingSong.chord, '-> updatedSong.chord:', updatedSong.chord);
     
     if (editingSong.fileName && editingSong.fileName.trim() !== '') {
       try {
@@ -438,7 +438,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     setEditFormData({
       title: '',
       firstLyrics: '',
-      key: 'C',
+      chord: 'C',
       tempo: 'Medium',
       fileName: '',
       filePath: ''
@@ -562,8 +562,8 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
             <div className="filter-group">
               <label className="filter-label">코드</label>
               <select
-                value={filters.key}
-                onChange={(e) => handleFilterChange('key', e.target.value)}
+                value={filters.chord}
+                onChange={(e) => handleFilterChange('chord', e.target.value)}
                 className="filter-select"
               >
                 <option value="">모든 코드</option>
@@ -667,7 +667,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                         )
                       ) : null}
                     </div>
-                    <span className="song-key">{song.key}</span>
+                    <span className="song-key">{song.chord}</span>
                     <span className="song-tempo">{song.tempo}</span>
                   </div>
                   

@@ -11,7 +11,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     id: null, // 임시 ID 저장
     title: '',
     firstLyrics: '',
-    key: 'C',
+    chord: 'C',
     tempo: 'Medium',
     fileName: '',
     filePath: ''
@@ -120,7 +120,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
         file, 
         tempId, // 임시 ID 사용
         formData.title, 
-        formData.key
+        formData.chord
       );
       
       if (result.success) {
@@ -182,7 +182,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
       id: null,
       title: '',
       firstLyrics: '',
-      key: 'C',
+      chord: 'C',
       tempo: 'Medium',
       fileName: '',
       filePath: ''
@@ -240,8 +240,8 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
             <div className="form-group compact-group">
               <label className="form-label compact-label">코드</label>
               <select
-                name="key"
-                value={formData.key}
+                name="chord"
+                value={formData.chord}
                 onChange={handleInputChange}
                 className="form-select compact-select"
                 tabIndex={3}
@@ -349,7 +349,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                 setFormData({
                   title: '',
                   firstLyrics: '',
-                  key: 'C',
+                  chord: 'C',
                   tempo: 'Medium',
                   fileName: '',
                   filePath: ''

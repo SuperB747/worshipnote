@@ -88,8 +88,8 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit, isFileExistence
               </div>
             )
           ) : null}
-          {song.key && (
-            <span className="song-key-icon">{song.key}</span>
+          {song.chord && song.chord.trim() && (
+            <span className="song-key-icon">{song.chord}</span>
           )}
         </div>
         <button 
@@ -148,7 +148,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const [editingSong, setEditingSong] = useState(null);
   const [editForm, setEditForm] = useState({ 
     title: '', 
-    key: '', 
+    chord: '', 
     tempo: '', 
     firstLyrics: '', 
     fileName: '', 
@@ -394,7 +394,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const handleRemoveSong = async (songId) => {
     const newList = currentWorshipList.filter(song => song.id !== songId);
     
-    // 상태 업데이트
+    // 즉시 UI 상태 업데이트 (낙관적 업데이트)
     const updatedWorshipLists = {
       ...worshipLists,
       [currentDateKey]: newList
@@ -402,21 +402,22 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     
     setWorshipLists(updatedWorshipLists);
     
-    // 데이터베이스에 저장
-    try {
-      const success = await saveWorshipLists(updatedWorshipLists);
-      if (success) {
-        showSnackbar('찬양이 리스트에서 제거되었습니다.', 'success');
-      } else {
-        showSnackbar('찬양 제거에 실패했습니다.', 'error');
-      }
-    } catch (error) {
-      console.error('찬양 제거 실패:', error);
-      showSnackbar('찬양 제거 중 오류가 발생했습니다.', 'error');
-    }
+    // 백그라운드에서 데이터베이스 저장
+    saveWorshipLists(updatedWorshipLists)
+      .then(success => {
+        if (success) {
+          showSnackbar('찬양이 리스트에서 제거되었습니다.', 'success');
+        } else {
+          showSnackbar('찬양 제거에 실패했습니다.', 'error');
+        }
+      })
+      .catch(error => {
+        console.error('찬양 제거 실패:', error);
+        showSnackbar('찬양 제거 중 오류가 발생했습니다.', 'error');
+      });
   };
 
-  const handleDragEnd = async (event) => {
+  const handleDragEnd = (event) => {
     const { active, over } = event;
     
     if (active.id !== over.id) {
@@ -425,7 +426,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       
       const newList = arrayMove(currentWorshipList, oldIndex, newIndex);
       
-      // 상태 업데이트
+      // 즉시 UI 상태 업데이트 (낙관적 업데이트)
       const updatedWorshipLists = {
         ...worshipLists,
         [currentDateKey]: newList
@@ -433,18 +434,19 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       
       setWorshipLists(updatedWorshipLists);
       
-      // 데이터베이스에 저장
-      try {
-        const success = await saveWorshipLists(updatedWorshipLists);
-        if (success) {
-          showSnackbar('찬양 순서가 저장되었습니다.', 'success');
-        } else {
-          showSnackbar('찬양 순서 저장에 실패했습니다.', 'error');
-        }
-      } catch (error) {
-        console.error('찬양 순서 저장 실패:', error);
-        showSnackbar('찬양 순서 저장 중 오류가 발생했습니다.', 'error');
-      }
+      // 백그라운드에서 데이터베이스 저장
+      saveWorshipLists(updatedWorshipLists)
+        .then(success => {
+          if (success) {
+            showSnackbar('찬양 순서가 저장되었습니다.', 'success');
+          } else {
+            showSnackbar('찬양 순서 저장에 실패했습니다.', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('찬양 순서 저장 실패:', error);
+          showSnackbar('찬양 순서 저장 중 오류가 발생했습니다.', 'error');
+        });
     }
   };
 
@@ -452,7 +454,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     setEditingSong(song);
     setEditForm({
       title: song.title,
-      key: song.key || song.code || '', // code 필드도 확인
+      chord: song.chord || '',
       tempo: song.tempo || '',
       firstLyrics: song.firstLyrics || '',
       fileName: song.fileName || '',
@@ -466,8 +468,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     const updatedSong = {
       ...editingSong,
       title: editForm.title.trim(),
-      key: editForm.key.trim(),
-      code: editForm.key.trim(), // code 필드도 업데이트
+      chord: editForm.chord.trim(),
       tempo: editForm.tempo.trim(),
       firstLyrics: editForm.firstLyrics.trim(),
       fileName: editForm.fileName,
@@ -483,7 +484,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       console.log('=== WorshipList 파일명 업데이트 시작 ===');
       console.log('editingSong.fileName:', editingSong.fileName);
       console.log('editingSong.title:', editingSong.title, '-> updatedSong.title:', updatedSong.title);
-      console.log('editingSong.key:', editingSong.key, '-> updatedSong.key:', updatedSong.key);
+      console.log('editingSong.chord:', editingSong.chord, '-> updatedSong.chord:', updatedSong.chord);
       
       if (editingSong.fileName && editingSong.fileName.trim() !== '') {
         try {
@@ -569,12 +570,12 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     }
 
     setEditingSong(null);
-    setEditForm({ title: '', key: '', tempo: '', firstLyrics: '' });
+    setEditForm({ title: '', chord: '', tempo: '', firstLyrics: '' });
   };
 
   const handleCancelEdit = () => {
     setEditingSong(null);
-    setEditForm({ title: '', key: '', tempo: '', firstLyrics: '', fileName: '', filePath: '' });
+    setEditForm({ title: '', chord: '', tempo: '', firstLyrics: '', fileName: '', filePath: '' });
     setUploadStatus({ isUploading: false, success: false, error: null, message: '' });
   };
 
@@ -931,8 +932,8 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                       <div className="song-info">
                         <div className="song-title-row">
                           <h5 className="song-title">{song.title}</h5>
-                          {song.key && (
-                            <span className="song-key-icon">{song.key}</span>
+                          {song.chord && (
+                            <span className="song-key-icon">{song.chord}</span>
                           )}
                         </div>
                       </div>
@@ -1051,9 +1052,9 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                 <div className="form-group compact-group">
                   <label className="form-label compact-label">코드</label>
                   <select
-                    name="key"
-                    value={editForm.key}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, key: e.target.value }))}
+                    name="chord"
+                    value={editForm.chord}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, chord: e.target.value }))}
                     className="form-select compact-select"
                     tabIndex={3}
                   >

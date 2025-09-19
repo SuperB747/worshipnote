@@ -14,7 +14,7 @@ export const isCorrectFileName = (fileName) => {
 // 찬양 정보를 기반으로 올바른 파일명을 생성하는 함수
 export const generateCorrectFileName = (song) => {
   console.log('=== 파일명 생성 시작 ===');
-  console.log('입력된 찬양 정보:', { title: song.title, key: song.key, code: song.code, id: song.id });
+  console.log('입력된 찬양 정보:', { title: song.title, chord: song.chord, id: song.id });
   
   if (!song || !song.id) {
     console.log('찬양 정보가 없거나 ID가 없습니다.');
@@ -35,7 +35,7 @@ export const generateCorrectFileName = (song) => {
     .substring(0, 200);             // 파일명 길이 제한
   console.log('안전한 제목:', safeTitle);
   
-  const safeKey = (song.key || song.code || '').replace(/[<>:"/\\|?*]/g, '-');
+  const safeKey = (song.chord || '').replace(/[<>:"/\\|?*]/g, '-');
   console.log('안전한 키:', safeKey);
   
   const fileName = `${safeTitle} (${safeKey}) (${song.id}).jpg`;
@@ -57,7 +57,7 @@ export const extractSongInfoFromFileName = (fileName) => {
   if (match) {
     return {
       title: match[1].trim(),
-      key: match[2],
+      chord: match[2],
       id: match[3],
       isCorrect: true
     };
@@ -65,7 +65,7 @@ export const extractSongInfoFromFileName = (fileName) => {
   
   return {
     title: withoutExt,
-    key: null,
+    chord: null,
     id: null,
     isCorrect: false
   };
@@ -75,8 +75,8 @@ export const extractSongInfoFromFileName = (fileName) => {
 export const updateFileNameForSong = async (oldSong, newSong) => {
   try {
     console.log('=== 파일명 업데이트 시작 ===');
-    console.log('기존 찬양:', { title: oldSong.title, key: oldSong.key, code: oldSong.code, fileName: oldSong.fileName });
-    console.log('새 찬양:', { title: newSong.title, key: newSong.key, code: newSong.code, fileName: newSong.fileName });
+    console.log('기존 찬양:', { title: oldSong.title, chord: oldSong.chord, fileName: oldSong.fileName });
+    console.log('새 찬양:', { title: newSong.title, chord: newSong.chord, fileName: newSong.fileName });
     
     // Electron API 사용 가능 여부 확인
     if (!window.electronAPI || !window.electronAPI.renameFile) {
@@ -84,10 +84,10 @@ export const updateFileNameForSong = async (oldSong, newSong) => {
       return { success: false, error: 'Electron API를 사용할 수 없습니다.' };
     }
 
-    // 파일명이 변경되지 않았으면 스킵 (key와 code 모두 확인)
-    const oldKey = oldSong.key || oldSong.code || '';
-    const newKey = newSong.key || newSong.code || '';
-    if (oldSong.title === newSong.title && oldKey === newKey) {
+    // 파일명이 변경되지 않았으면 스킵
+    const oldChord = oldSong.chord || '';
+    const newChord = newSong.chord || '';
+    if (oldSong.title === newSong.title && oldChord === newChord) {
       console.log('파일명 변경이 필요하지 않습니다.');
       return { success: true, message: '파일명 변경이 필요하지 않습니다.' };
     }
