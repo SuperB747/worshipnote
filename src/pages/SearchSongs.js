@@ -4,9 +4,12 @@ import { processFileUpload } from '../utils/fileConverter';
 import { saveSongs, saveWorshipLists, checkFileExists } from '../utils/storage';
 import { isCorrectFileName, updateFileNameForSong } from '../utils/fileNameUtils';
 import GhibliDialog from '../components/GhibliDialog';
+import Snackbar from '../components/Snackbar';
+import { useSnackbar } from '../hooks/useSnackbar';
 import './SearchSongs.css';
 
 const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExistenceMap, setFileExistenceMap, worshipLists, setWorshipLists, isFileExistenceLoaded }) => {
+  const { snackbar, showSnackbar } = useSnackbar();
   const searchInputRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
@@ -199,13 +202,13 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
         try {
           const success = await saveSongs(updatedSongs);
           if (success) {
-            showSnackbar('찬양이 삭제되었습니다.', 'success');
+            showSnackbar('success', '찬양이 삭제되었습니다.');
           } else {
-            showSnackbar('찬양 삭제에 실패했습니다.', 'error');
+            showSnackbar('error', '찬양 삭제에 실패했습니다.');
           }
         } catch (error) {
           console.error('찬양 삭제 실패:', error);
-          showSnackbar('찬양 삭제 중 오류가 발생했습니다.', 'error');
+          showSnackbar('error', '찬양 삭제 중 오류가 발생했습니다.');
         }
         
         // 삭제된 곡이 현재 선택된 곡이면 선택 해제
@@ -274,7 +277,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
         file, 
         editingSong?.id, 
         editFormData.title, 
-        editFormData.key
+        editFormData.chord
       );
       
       if (result.success) {
@@ -430,6 +433,9 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     
     setEditingSong(null);
     setOriginalSelectedSong(null);
+    
+    // 성공 메시지 표시
+    showSnackbar('success', '찬양이 수정되었습니다.');
   };
 
   const handleEditCancel = () => {
@@ -741,8 +747,8 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                 <div className="form-group compact-group">
                   <label className="form-label compact-label">코드</label>
                   <select
-                    name="key"
-                    value={editFormData.key}
+                    name="chord"
+                    value={editFormData.chord}
                     onChange={handleEditInputChange}
                     className="form-select compact-select"
                     tabIndex={3}
@@ -929,6 +935,12 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
           </button>
         </div>
       </GhibliDialog>
+      
+      <Snackbar 
+        isVisible={snackbar.isVisible}
+        type={snackbar.type}
+        message={snackbar.message}
+      />
     </div>
   );
 };

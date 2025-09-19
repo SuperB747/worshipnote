@@ -17,9 +17,6 @@ function App() {
   const [worshipLists, setWorshipLists] = useState({});
   const [isLoaded, setIsLoaded] = useState(false);
   const { snackbar, showSuccess, showError, showLoading, hideSnackbar } = useSnackbar();
-  const [saveTimeout, setSaveTimeout] = useState(null);
-  const [lastSavedSongs, setLastSavedSongs] = useState(null);
-  const [lastSavedWorshipLists, setLastSavedWorshipLists] = useState(null);
   const [fileExistenceMap, setFileExistenceMap] = useState({});
   const [isFileExistenceLoaded, setIsFileExistenceLoaded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -56,9 +53,6 @@ function App() {
         
         setSongs(songs);
         setWorshipLists(worshipLists);
-        // 마지막 저장된 데이터로 설정 (초기 저장 방지)
-        setLastSavedSongs(JSON.parse(JSON.stringify(songs)));
-        setLastSavedWorshipLists(JSON.parse(JSON.stringify(worshipLists)));
         
         // 앱 시작 시 최신 찬양 리스트 날짜 설정
         if (isFirstLoad) {
@@ -129,38 +123,11 @@ function App() {
     checkAllFiles();
   }, [songs]);
 
-  // songs 변경 시 저장 및 선택된 곡 확인 (실제 변경 시에만 저장)
+  // 선택된 곡이 삭제되었는지 확인
   useEffect(() => {
-    if (isLoaded && lastSavedSongs !== null) {
-      // 데이터가 실제로 변경되었는지 확인
-      const hasChanged = JSON.stringify(songs) !== JSON.stringify(lastSavedSongs);
-      
-      if (hasChanged) {
-        // 기존 타이머가 있으면 취소
-        if (saveTimeout) {
-          clearTimeout(saveTimeout);
-        }
-
-        // 1초 후에 저장 실행
-        const timeout = setTimeout(async () => {
-          try {
-            showLoading('변경사항 저장 중...', 0);
-            await saveSongs(songs);
-            setLastSavedSongs(JSON.parse(JSON.stringify(songs))); // 깊은 복사
-            hideSnackbar();
-            showSuccess('변경사항이 저장되었습니다');
-          } catch (error) {
-            console.error('악보 데이터 저장 실패:', error);
-            hideSnackbar();
-            showError('변경사항 저장에 실패했습니다');
-          }
-        }, 1000);
-
-        setSaveTimeout(timeout);
-      }
-      
+    if (isLoaded && selectedSong) {
       // 선택된 곡이 삭제되었는지 확인 (songs 배열에서만 확인)
-      if (selectedSong && !songs.find(song => song.id === selectedSong.id)) {
+      if (!songs.find(song => song.id === selectedSong.id)) {
         // 찬양 리스트에서 선택한 곡인지 확인
         const isInWorshipList = Object.values(worshipLists).some(list => 
           list.some(song => song.id === selectedSong.id)
@@ -174,37 +141,6 @@ function App() {
     }
   }, [songs, isLoaded, selectedSong, worshipLists]);
 
-  // worshipLists 변경 시 저장 (실제 변경 시에만 저장)
-  useEffect(() => {
-    if (isLoaded && lastSavedWorshipLists !== null) {
-      // 데이터가 실제로 변경되었는지 확인
-      const hasChanged = JSON.stringify(worshipLists) !== JSON.stringify(lastSavedWorshipLists);
-      
-      if (hasChanged) {
-        // 기존 타이머가 있으면 취소
-        if (saveTimeout) {
-          clearTimeout(saveTimeout);
-        }
-
-        // 1초 후에 저장 실행
-        const timeout = setTimeout(async () => {
-          try {
-            showLoading('변경사항 저장 중...', 0);
-            await saveWorshipLists(worshipLists);
-            setLastSavedWorshipLists(JSON.parse(JSON.stringify(worshipLists))); // 깊은 복사
-            hideSnackbar();
-            showSuccess('변경사항이 저장되었습니다');
-          } catch (error) {
-            console.error('찬양 리스트 저장 실패:', error);
-            hideSnackbar();
-            showError('변경사항 저장에 실패했습니다');
-          }
-        }, 1000);
-
-        setSaveTimeout(timeout);
-      }
-    }
-  }, [worshipLists, isLoaded]);
 
   if (!isLoaded) {
     return (

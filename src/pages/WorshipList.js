@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSnackbar } from '../hooks/useSnackbar';
+import Snackbar from '../components/Snackbar';
 import {
   DndContext,
   closestCenter,
@@ -18,7 +19,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3, Download, FileText, Upload, AlertTriangle, Trash2, CheckCircle } from 'lucide-react';
+import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3, Download, FileText, Upload, AlertTriangle, Trash2, CheckCircle, Check, Save } from 'lucide-react';
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { saveWorshipLists, saveSongs, checkFileExists } from '../utils/storage';
@@ -114,7 +115,7 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit, isFileExistence
 };
 
 const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, setSongs, fileExistenceMap, setFileExistenceMap, selectedWorshipListDate, setSelectedWorshipListDate, isFileExistenceLoaded }) => {
-  const { showSnackbar } = useSnackbar();
+  const { snackbar, showSnackbar } = useSnackbar();
   
   // 가장 최근 찬양 리스트가 있는 날짜를 찾는 함수
   const getLatestWorshipListDate = () => {
@@ -156,6 +157,8 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   });
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [uploadStatus, setUploadStatus] = useState({
     isUploading: false,
     success: false,
@@ -163,6 +166,69 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     message: ''
   });
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '', filePath: null });
+
+  // 수동 저장 함수
+  const handleSaveWorshipList = async () => {
+    if (isSaving) return;
+    
+    setIsSaving(true);
+    
+    try {
+      // 데이터 유효성 검사
+      if (!validateWorshipListData(worshipLists)) {
+        showSnackbar('error', '저장할 데이터에 오류가 있습니다.');
+        return;
+      }
+      
+      // 찬양 리스트 저장
+      const success = await saveWorshipLists(worshipLists);
+      
+      if (success) {
+        setHasUnsavedChanges(false);
+        showSnackbar('success', '찬양 리스트가 저장되었습니다.');
+      } else {
+        showSnackbar('error', '찬양 리스트 저장에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('찬양 리스트 저장 실패:', error);
+      showSnackbar('error', '찬양 리스트 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 찬양 리스트 데이터 유효성 검사
+  const validateWorshipListData = (worshipListsData) => {
+    if (!worshipListsData || typeof worshipListsData !== 'object') {
+      console.error('찬양 리스트 데이터가 유효하지 않습니다:', worshipListsData);
+      return false;
+    }
+
+    // 각 날짜별 찬양 리스트 검사
+    Object.keys(worshipListsData).forEach(dateKey => {
+      if (dateKey === 'lastUpdated') return; // 메타데이터는 제외
+      
+      const worshipList = worshipListsData[dateKey];
+      if (!Array.isArray(worshipList)) {
+        console.error(`날짜 ${dateKey}의 찬양 리스트가 배열이 아닙니다:`, worshipList);
+        return false;
+      }
+
+      // 각 찬양 항목 검사
+      worshipList.forEach((song, index) => {
+        if (!song || typeof song !== 'object') {
+          console.error(`날짜 ${dateKey}의 ${index}번째 찬양이 유효하지 않습니다:`, song);
+          return false;
+        }
+        if (!song.id || !song.title) {
+          console.error(`날짜 ${dateKey}의 ${index}번째 찬양에 필수 필드가 없습니다:`, song);
+          return false;
+        }
+      });
+    });
+
+    return true;
+  };
 
   // 찬양 리스트의 모든 곡들을 원본 데이터베이스의 최신 정보로 업데이트
   const refreshWorshipListSongs = () => {
@@ -185,7 +251,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       });
 
       if (hasChanges) {
-        showSnackbar('찬양 리스트가 최신 정보로 업데이트되었습니다.', 'success');
+        showSnackbar('success', '찬양 리스트가 최신 정보로 업데이트되었습니다.');
       }
       return hasChanges ? updatedLists : prev;
     });
@@ -217,6 +283,21 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       setSelectedDate(selectedWorshipListDate);
     }
   }, [selectedWorshipListDate]);
+
+  // 페이지를 벗어날 때 저장되지 않은 변경사항 경고
+  React.useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '저장되지 않은 변경사항이 있습니다. 정말 페이지를 떠나시겠습니까?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -257,9 +338,14 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     return sorted;
   }, [songs, searchTerm]);
 
-  // 시차 문제를 방지하기 위해 로컬 날짜를 직접 사용
-  const currentDateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-  const currentWorshipList = worshipLists[currentDateKey] || [];
+  // 시차 문제를 방지하기 위해 로컬 날짜를 직접 사용 (메모이제이션으로 최적화)
+  const currentDateKey = useMemo(() => {
+    return `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+  }, [selectedDate]);
+  
+  const currentWorshipList = useMemo(() => {
+    return worshipLists[currentDateKey] || [];
+  }, [worshipLists, currentDateKey]);
 
 
 
@@ -326,7 +412,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   };
 
   // 선택된 곡들을 리스트에 추가 (체크 순서대로)
-  const handleAddSelectedSongs = () => {
+  const handleAddSelectedSongs = async () => {
     if (selectedSongs.length === 0) return;
 
     // 체크 순서대로 필터링하여 중복 제거하고, 원본 데이터베이스에서 최신 정보 가져오기
@@ -339,10 +425,15 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
 
     if (newSongs.length > 0) {
       const newList = [...currentWorshipList, ...newSongs];
+      
+      // 상태 업데이트 (저장하지 않음)
       setWorshipLists(prev => ({
         ...prev,
         [currentDateKey]: newList
       }));
+      
+      // 변경사항 플래그 설정
+      setHasUnsavedChanges(true);
       
       // 선택 초기화
       setSelectedSongs([]);
@@ -375,16 +466,22 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     }, 100);
   };
 
-  const handleAddSong = () => {
+  const handleAddSong = async () => {
     if (previewSong) {
       // 원본 데이터베이스에서 최신 정보를 가져와서 사용
       const latestSong = songs.find(song => song.id === previewSong.id) || previewSong;
       
       const newList = [...currentWorshipList, latestSong];
+      
+      // 상태 업데이트 (저장하지 않음)
       setWorshipLists(prev => ({
         ...prev,
         [currentDateKey]: newList
       }));
+      
+      // 변경사항 플래그 설정
+      setHasUnsavedChanges(true);
+      
       setShowSongSearch(false);
       setSearchTerm('');
       setPreviewSong(null);
@@ -394,27 +491,14 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const handleRemoveSong = async (songId) => {
     const newList = currentWorshipList.filter(song => song.id !== songId);
     
-    // 즉시 UI 상태 업데이트 (낙관적 업데이트)
-    const updatedWorshipLists = {
-      ...worshipLists,
+    // 상태 업데이트 (저장하지 않음)
+    setWorshipLists(prev => ({
+      ...prev,
       [currentDateKey]: newList
-    };
+    }));
     
-    setWorshipLists(updatedWorshipLists);
-    
-    // 백그라운드에서 데이터베이스 저장
-    saveWorshipLists(updatedWorshipLists)
-      .then(success => {
-        if (success) {
-          showSnackbar('찬양이 리스트에서 제거되었습니다.', 'success');
-        } else {
-          showSnackbar('찬양 제거에 실패했습니다.', 'error');
-        }
-      })
-      .catch(error => {
-        console.error('찬양 제거 실패:', error);
-        showSnackbar('찬양 제거 중 오류가 발생했습니다.', 'error');
-      });
+    // 변경사항 플래그 설정
+    setHasUnsavedChanges(true);
   };
 
   const handleDragEnd = (event) => {
@@ -426,27 +510,14 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       
       const newList = arrayMove(currentWorshipList, oldIndex, newIndex);
       
-      // 즉시 UI 상태 업데이트 (낙관적 업데이트)
-      const updatedWorshipLists = {
-        ...worshipLists,
+      // 상태 업데이트 (저장하지 않음)
+      setWorshipLists(prev => ({
+        ...prev,
         [currentDateKey]: newList
-      };
+      }));
       
-      setWorshipLists(updatedWorshipLists);
-      
-      // 백그라운드에서 데이터베이스 저장
-      saveWorshipLists(updatedWorshipLists)
-        .then(success => {
-          if (success) {
-            showSnackbar('찬양 순서가 저장되었습니다.', 'success');
-          } else {
-            showSnackbar('찬양 순서 저장에 실패했습니다.', 'error');
-          }
-        })
-        .catch(error => {
-          console.error('찬양 순서 저장 실패:', error);
-          showSnackbar('찬양 순서 저장 중 오류가 발생했습니다.', 'error');
-        });
+      // 변경사항 플래그 설정
+      setHasUnsavedChanges(true);
     }
   };
 
@@ -528,6 +599,9 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       // songs와 worshipLists를 동시에 업데이트 (OneDrive 저장이 한 번만 실행되도록)
       setSongs(updatedSongs);
       setWorshipLists(updatedWorshipLists);
+      
+      // 찬양 리스트 변경사항 플래그 설정
+      setHasUnsavedChanges(true);
 
       // 파일 존재 여부 확인 및 fileExistenceMap 업데이트
       if (updatedSong.fileName && updatedSong.fileName.trim() !== '') {
@@ -560,11 +634,11 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       }
 
       // 성공 메시지 표시
-      showSnackbar('찬양 정보가 성공적으로 업데이트되었습니다.', 'success');
+      showSnackbar('success', '찬양 정보가 성공적으로 업데이트되었습니다.');
 
     } catch (error) {
       console.error('찬양 정보 업데이트 실패:', error);
-      showSnackbar('찬양 정보 업데이트에 실패했습니다.', 'error');
+      showSnackbar('error', '찬양 정보 업데이트에 실패했습니다.');
     } finally {
       setIsUpdating(false); // 업데이트 완료
     }
@@ -591,7 +665,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         
         if (!result.success) {
           console.error('OneDrive 파일 삭제 실패:', result.error);
-          showSnackbar(`파일 삭제에 실패했습니다: ${result.error}`, 'error');
+          showSnackbar('error', `파일 삭제에 실패했습니다: ${result.error}`);
           return;
         }
       }
@@ -609,32 +683,32 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         [editingSong.id]: false
       }));
       
-      showSnackbar('악보 파일이 삭제되었습니다.', 'success');
+      showSnackbar('success', '악보 파일이 삭제되었습니다.');
     } catch (error) {
       console.error('파일 삭제 중 오류:', error);
-      showSnackbar('파일 삭제 중 오류가 발생했습니다.', 'error');
+      showSnackbar('error', '파일 삭제 중 오류가 발생했습니다.');
     }
   };
 
   // PDF 파일 열기 함수
   const handleOpenPdfFile = async () => {
     if (!dialog.filePath || !window.electronAPI || !window.electronAPI.openFile) {
-      showSnackbar('파일을 열 수 없습니다.', 'error');
+      showSnackbar('error', '파일을 열 수 없습니다.');
       return;
     }
 
     try {
       const result = await window.electronAPI.openFile(dialog.filePath);
       if (result && result.success) {
-        showSnackbar('PDF 파일이 열렸습니다.', 'success');
+        showSnackbar('success', 'PDF 파일이 열렸습니다.');
         // 다이얼로그 닫기
         setDialog({ isVisible: false, type: 'success', message: '', filePath: null });
       } else {
-        showSnackbar('PDF 파일 열기에 실패했습니다.', 'error');
+        showSnackbar('error', 'PDF 파일 열기에 실패했습니다.');
       }
     } catch (error) {
       console.error('PDF 파일 열기 중 오류:', error);
-      showSnackbar('PDF 파일 열기 중 오류가 발생했습니다.', 'error');
+      showSnackbar('error', 'PDF 파일 열기 중 오류가 발생했습니다.');
     }
   };
 
@@ -670,7 +744,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         file, 
         editingSong.id, 
         editForm.title, 
-        editForm.key
+        editForm.chord
       );
       
       if (result.success) {
@@ -729,6 +803,46 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         message: 'Electron API를 사용할 수 없습니다. 앱을 다시 시작해주세요.'
       });
       return;
+    }
+
+    // 저장되지 않은 변경사항이 있으면 먼저 저장
+    if (hasUnsavedChanges) {
+      try {
+        // 데이터 유효성 검사
+        if (!validateWorshipListData(worshipLists)) {
+          setDialog({
+            isVisible: true,
+            type: 'error',
+            message: '저장할 데이터에 오류가 있습니다. PDF 내보내기를 중단합니다.'
+          });
+          return;
+        }
+        
+        // 찬양 리스트 저장
+        const saveSuccess = await saveWorshipLists(worshipLists);
+        
+        if (!saveSuccess) {
+          setDialog({
+            isVisible: true,
+            type: 'error',
+            message: '찬양 리스트 저장에 실패했습니다. PDF 내보내기를 중단합니다.'
+          });
+          return;
+        }
+        
+        // 저장 완료 후 변경사항 플래그 초기화
+        setHasUnsavedChanges(false);
+        showSnackbar('success', '찬양 리스트가 저장되었습니다. PDF 내보내기를 시작합니다.');
+        
+      } catch (error) {
+        console.error('찬양 리스트 저장 실패:', error);
+        setDialog({
+          isVisible: true,
+          type: 'error',
+          message: '찬양 리스트 저장 중 오류가 발생했습니다. PDF 내보내기를 중단합니다.'
+        });
+        return;
+      }
     }
 
     // 시차 문제를 방지하기 위해 로컬 날짜를 직접 사용
@@ -855,7 +969,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
           
         </div>
 
-        <div className="list-section">
+        <div className={`list-section ${currentWorshipList.length > 0 ? 'has-save-button' : ''}`}>
           <div className="list-header">
             <div className="list-header-left">
               <h3>
@@ -863,11 +977,23 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
               </h3>
             </div>
             <div className="list-actions">
+              <button 
+                className={`save-btn ${hasUnsavedChanges ? 'has-changes' : ''}`}
+                onClick={handleSaveWorshipList}
+                disabled={isSaving || !hasUnsavedChanges}
+                title={hasUnsavedChanges ? "찬양 리스트 저장하기" : "저장됨"}
+              >
+                {isSaving ? (
+                  <div className="save-spinner"></div>
+                ) : (
+                  <Save className="save-icon" />
+                )}
+              </button>
               <button
                 className="export-pdf-btn"
                 onClick={handleExportPdf}
                 disabled={isExportingPdf}
-                title="선택된 날짜의 찬양 리스트를 PDF로 내보내기"
+                title={hasUnsavedChanges ? "저장되지 않은 변경사항이 있습니다. PDF 내보내기 시 자동으로 저장됩니다." : "선택된 날짜의 찬양 리스트를 PDF로 내보내기"}
               >
                 <Download className="btn-icon" />
                 {isExportingPdf ? '생성 중...' : 'PDF'}
@@ -875,9 +1001,9 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
               <button 
                 className="add-song-btn"
                 onClick={handleOpenSongSearch}
+                title="찬양 추가하기"
               >
                 <Plus className="btn-icon" />
-                곡 추가
               </button>
             </div>
           </div>
@@ -887,11 +1013,14 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
               <div className="modal-header">
                 <h4>곡 검색</h4>
                 <div className="modal-actions">
-                  {selectedSongs.length > 0 && (
-                    <span className="selected-count">
-                      {selectedSongs.length}개 선택됨
-                    </span>
-                  )}
+                  <button 
+                    className={`add-to-list-btn ${selectedSongs.length === 0 ? 'disabled' : ''}`}
+                    onClick={selectedSongs.length > 0 ? handleAddSelectedSongs : undefined}
+                    disabled={selectedSongs.length === 0}
+                  >
+                    <Plus className="btn-icon" />
+                    {selectedSongs.length > 1 ? `${selectedSongs.length}개 곡 추가` : '리스트에 추가'}
+                  </button>
                   <button 
                     className="close-btn"
                     onClick={handleCloseSearchModal}
@@ -943,23 +1072,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
               </div>
               
               <div className="preview-actions">
-                {selectedSongs.length > 0 ? (
-                  <button 
-                    className="add-selected-btn"
-                    onClick={handleAddSelectedSongs}
-                  >
-                    <Plus className="btn-icon" />
-                    선택한 {selectedSongs.length}개 곡 추가
-                  </button>
-                ) : previewSong ? (
-                  <button 
-                    className="add-to-list-btn"
-                    onClick={handleAddSong}
-                  >
-                    <Plus className="btn-icon" />
-                    리스트에 추가
-                  </button>
-                ) : null}
               </div>
             </div>
           )}
@@ -1003,6 +1115,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
               </DndContext>
             )}
           </div>
+          
         </div>
       </div>
 
@@ -1227,6 +1340,12 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
           </div>
         )}
       </GhibliDialog>
+      
+      <Snackbar 
+        isVisible={snackbar.isVisible}
+        type={snackbar.type}
+        message={snackbar.message}
+      />
     </div>
   );
 };
