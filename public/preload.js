@@ -25,6 +25,11 @@ const deleteFile = async (filePath) => {
   return await ipcRenderer.invoke('delete-file', filePath);
 };
 
+// 파일명 변경 함수 (IPC로 메인 프로세스에 위임)
+const renameFile = async (oldFilePath, newFilePath) => {
+  return await ipcRenderer.invoke('rename-file', oldFilePath, newFilePath);
+};
+
 // 디렉토리 생성 함수 (IPC로 메인 프로세스에 위임)
 const createDirectory = async (dirPath) => {
   return await ipcRenderer.invoke('create-directory', dirPath);
@@ -53,6 +58,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMusicSheetsPath: () => findMusicSheetsPath(),
   readFile: (filePath) => readFile(filePath),
   deleteFile: (filePath) => deleteFile(filePath),
+  renameFile: (oldFilePath, newFilePath) => renameFile(oldFilePath, newFilePath),
   createDirectory: (dirPath) => createDirectory(dirPath),
   writeFile: (filePath, data) => writeFile(filePath, data),
   savePdf: (pdfData) => savePdf(pdfData),

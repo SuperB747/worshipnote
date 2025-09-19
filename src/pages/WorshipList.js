@@ -24,7 +24,7 @@ import { ko } from 'date-fns/locale';
 import { saveWorshipLists, saveSongs, checkFileExists } from '../utils/storage';
 import { generateWorshipListPDF } from '../utils/pdfExporter';
 import { processFileUpload } from '../utils/fileConverter';
-import { isCorrectFileName } from '../utils/fileNameUtils';
+import { isCorrectFileName, updateFileNameForSong } from '../utils/fileNameUtils';
 import GhibliDialog from '../components/GhibliDialog';
 import './WorshipList.css';
 
@@ -107,7 +107,30 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit }) => {
 
 const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, setSongs, fileExistenceMap, setFileExistenceMap }) => {
   const { showSnackbar } = useSnackbar();
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  
+  // 가장 최근 찬양 리스트가 있는 날짜를 찾는 함수
+  const getLatestWorshipListDate = () => {
+    const dates = Object.keys(worshipLists).filter(date => 
+      date !== 'lastUpdated' && worshipLists[date] && worshipLists[date].length > 0
+    );
+    
+    if (dates.length === 0) {
+      return new Date(); // 찬양 리스트가 없으면 오늘 날짜 반환
+    }
+    
+    // 날짜를 정렬하여 가장 최근 날짜 반환 (시차 문제 해결)
+    const sortedDates = dates.sort((a, b) => {
+      // YYYY-MM-DD 형식의 문자열을 직접 비교하여 시차 문제 방지
+      return b.localeCompare(a);
+    });
+    
+    // 가장 최근 날짜를 Date 객체로 변환 (로컬 시간대 사용)
+    const latestDateString = sortedDates[0];
+    const [year, month, day] = latestDateString.split('-').map(Number);
+    return new Date(year, month - 1, day); // month는 0부터 시작하므로 -1
+  };
+  
+  const [selectedDate, setSelectedDate] = useState(() => getLatestWorshipListDate());
   const [searchTerm, setSearchTerm] = useState('');
   const [showSongSearch, setShowSongSearch] = useState(false);
   const [previewSong, setPreviewSong] = useState(null);
@@ -145,7 +168,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         updatedLists[dateKey] = prev[dateKey].map(song => {
           const latestSong = songs.find(s => s.id === song.id);
           if (latestSong && latestSong.title !== song.title) {
-            console.log(`찬양 리스트 곡 업데이트: ${song.title} -> ${latestSong.title}`);
             hasChanges = true;
             return latestSong;
           }
@@ -166,6 +188,12 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       refreshWorshipListSongs();
     }
   }, [songs]);
+
+  // worshipLists가 변경될 때 가장 최근 날짜로 selectedDate 업데이트
+  React.useEffect(() => {
+    const latestDate = getLatestWorshipListDate();
+    setSelectedDate(latestDate);
+  }, [worshipLists]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -324,11 +352,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       // 원본 데이터베이스에서 최신 정보를 가져와서 사용
       const latestSong = songs.find(song => song.id === previewSong.id) || previewSong;
       
-      console.log('=== 찬양 리스트에 곡 추가 ===');
-      console.log('미리보기 곡:', previewSong);
-      console.log('원본 데이터베이스에서 찾은 최신 곡:', latestSong);
-      console.log('제목이 다른가?', previewSong.title !== latestSong.title);
-      
       const newList = [...currentWorshipList, latestSong];
       setWorshipLists(prev => ({
         ...prev,
@@ -394,16 +417,35 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     try {
       setIsUpdating(true); // 업데이트 시작
       
+      // 파일명 업데이트 (찬양 이름이나 코드가 변경된 경우)
+      let finalUpdatedSong = updatedSong;
+      if (editingSong.fileName && editingSong.fileName.trim() !== '') {
+        try {
+          const fileNameUpdateResult = await updateFileNameForSong(editingSong, updatedSong);
+          if (fileNameUpdateResult.success && fileNameUpdateResult.newFileName) {
+            finalUpdatedSong = {
+              ...updatedSong,
+              fileName: fileNameUpdateResult.newFileName
+            };
+            console.log('파일명 업데이트 완료:', fileNameUpdateResult.message);
+          } else if (!fileNameUpdateResult.success) {
+            console.warn('파일명 업데이트 실패:', fileNameUpdateResult.error);
+          }
+        } catch (error) {
+          console.error('파일명 업데이트 중 오류:', error);
+        }
+      }
+      
       // 원본 데이터베이스에서 해당 곡 찾아서 업데이트
       const updatedSongs = songs.map(song => 
-        song.id === editingSong.id ? updatedSong : song
+        song.id === editingSong.id ? finalUpdatedSong : song
       );
       
       // 모든 찬양 리스트에서 해당 곡 업데이트 (ID로 매칭)
       const updatedWorshipLists = {};
       Object.keys(worshipLists).forEach(dateKey => {
         updatedWorshipLists[dateKey] = worshipLists[dateKey].map(song => 
-          song.id === editingSong.id ? updatedSong : song
+          song.id === editingSong.id ? finalUpdatedSong : song
         );
       });
       
@@ -466,36 +508,19 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
 
   const handleDeleteFile = async () => {
     try {
-      console.log('=== 파일 삭제 시작 ===');
-      console.log('editForm.filePath:', editForm.filePath);
-      console.log('editForm.fileName:', editForm.fileName);
-      console.log('editingSong.id:', editingSong.id);
-      
       // OneDrive에서 실제 파일 삭제
       if (editForm.fileName && window.electronAPI && window.electronAPI.deleteFile) {
         // Music_Sheets 경로를 가져와서 전체 경로 구성
         const musicSheetsPath = await window.electronAPI.getMusicSheetsPath();
         const fullPath = `${musicSheetsPath}/${editForm.fileName}`;
         
-        console.log('Music_Sheets 경로:', musicSheetsPath);
-        console.log('파일명:', editForm.fileName);
-        console.log('전체 파일 경로:', fullPath);
-        console.log('파일 삭제 API 호출:', fullPath);
-        
         const result = await window.electronAPI.deleteFile(fullPath);
-        console.log('파일 삭제 결과:', result);
         
         if (!result.success) {
           console.error('OneDrive 파일 삭제 실패:', result.error);
           showSnackbar(`파일 삭제에 실패했습니다: ${result.error}`, 'error');
           return;
         }
-      } else {
-        console.warn('파일명이 없거나 Electron API가 사용할 수 없습니다');
-        console.log('editForm.fileName:', editForm.fileName);
-        console.log('editForm.filePath:', editForm.filePath);
-        console.log('window.electronAPI:', !!window.electronAPI);
-        console.log('window.electronAPI.deleteFile:', !!window.electronAPI?.deleteFile);
       }
       
       // UI에서 파일 정보 제거
@@ -614,17 +639,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     // 시차 문제를 방지하기 위해 로컬 날짜를 직접 사용
     const currentDateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
     const currentSongs = worshipLists[currentDateKey] || [];
-    
-    // 디버깅: 앱에서 실제로 로드된 찬양 리스트 확인
-    console.log('=== 앱에서 로드된 찬양 리스트 ===');
-    console.log('선택된 날짜:', currentDateKey);
-    console.log('찬양 개수:', currentSongs.length);
-    console.log('찬양 리스트 상세:', currentSongs.map(song => ({
-      title: song.title,
-      fileName: song.fileName,
-      hasFilePath: !!song.filePath,
-      filePath: song.filePath
-    })));
     
     if (currentSongs.length === 0) {
       setDialog({

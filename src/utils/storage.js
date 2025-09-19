@@ -566,21 +566,13 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
     const songs = backupData.songs || [];
     const worshipLists = backupData.worshipLists || {};
     
-    console.log('복원할 데이터:', {
-      songsCount: songs.length,
-      worshipListsCount: Object.keys(worshipLists).length,
-      worshipListsKeys: Object.keys(worshipLists).slice(0, 5) // 처음 5개 키만 표시
-    });
-    
     // localStorage에 저장
     saveToStorage('songs', songs);
     saveToStorage('worshipLists', worshipLists);
     
     // OneDrive에도 저장
-    console.log('OneDrive에 저장 시작...');
     const songsResult = await saveSongs(songs);
     const worshipListsResult = await saveWorshipLists(worshipLists);
-    console.log('OneDrive 저장 결과:', { songsResult, worshipListsResult });
     
     // React 상태 업데이트
     if (setSongs) setSongs(songs);

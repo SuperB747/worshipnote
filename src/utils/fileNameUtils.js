@@ -58,3 +58,70 @@ export const extractSongInfoFromFileName = (fileName) => {
     isCorrect: false
   };
 };
+
+// 찬양 정보가 변경되었을 때 파일명을 업데이트하는 함수
+export const updateFileNameForSong = async (oldSong, newSong) => {
+  try {
+    // Electron API 사용 가능 여부 확인
+    if (!window.electronAPI || !window.electronAPI.renameFile) {
+      console.warn('Electron API를 사용할 수 없습니다.');
+      return { success: false, error: 'Electron API를 사용할 수 없습니다.' };
+    }
+
+    // 파일명이 변경되지 않았으면 스킵
+    if (oldSong.title === newSong.title && oldSong.key === newSong.key) {
+      return { success: true, message: '파일명 변경이 필요하지 않습니다.' };
+    }
+
+    // 기존 파일명이 없으면 스킵
+    if (!oldSong.fileName || oldSong.fileName.trim() === '') {
+      return { success: true, message: '기존 파일이 없습니다.' };
+    }
+
+    // 새로운 파일명 생성
+    const newFileName = generateCorrectFileName(newSong);
+    if (!newFileName) {
+      return { success: false, error: '새로운 파일명을 생성할 수 없습니다.' };
+    }
+
+    // 파일명이 동일하면 스킵
+    if (oldSong.fileName === newFileName) {
+      return { success: true, message: '파일명이 동일합니다.' };
+    }
+
+    // Music_Sheets 경로 가져오기
+    const musicSheetsPath = await window.electronAPI.getMusicSheetsPath();
+    const oldFilePath = `${musicSheetsPath}/${oldSong.fileName}`;
+    const newFilePath = `${musicSheetsPath}/${newFileName}`;
+
+    // 파일 존재 여부 확인
+    try {
+      await window.electronAPI.readFile(oldFilePath);
+    } catch (error) {
+      return { success: false, error: '기존 파일을 찾을 수 없습니다.' };
+    }
+
+    // 파일명 변경
+    const renameResult = await window.electronAPI.renameFile(oldFilePath, newFilePath);
+    
+    if (renameResult.success) {
+      return {
+        success: true,
+        message: '파일명이 성공적으로 변경되었습니다.',
+        oldFileName: oldSong.fileName,
+        newFileName: newFileName
+      };
+    } else {
+      return {
+        success: false,
+        error: `파일명 변경 실패: ${renameResult.error}`
+      };
+    }
+  } catch (error) {
+    console.error('파일명 업데이트 중 오류:', error);
+    return {
+      success: false,
+      error: `파일명 업데이트 중 오류가 발생했습니다: ${error.message}`
+    };
+  }
+};

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Filter, Music, Hash, Clock, FileText, Edit, Trash2, Plus, FileX, AlertTriangle } from 'lucide-react';
 import { processFileUpload } from '../utils/fileConverter';
 import { saveSongs, saveWorshipLists, checkFileExists } from '../utils/storage';
-import { isCorrectFileName } from '../utils/fileNameUtils';
+import { isCorrectFileName, updateFileNameForSong } from '../utils/fileNameUtils';
 import GhibliDialog from '../components/GhibliDialog';
 import './SearchSongs.css';
 
@@ -82,16 +82,6 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
         matchesActiveFilter = hasMusicSheet(song) && !hasCorrectFileName(song);
       }
       
-      // 디버깅용 로그
-      if (activeFilter && song.title === '만물의 주인') {
-        console.log('필터링 디버그:', {
-          songTitle: song.title,
-          activeFilter,
-          hasMusicSheet: hasMusicSheet(song),
-          hasCorrectFileName: hasCorrectFileName(song),
-          matchesActiveFilter
-        });
-      }
       
       return matchesSearch && matchesKey && matchesTempo && matchesActiveFilter;
     });
@@ -130,7 +120,6 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
 
   // 토글 핸들러 함수
   const handleFilterToggle = (filterType) => {
-    console.log('필터 토글:', { filterType, currentActiveFilter: activeFilter });
     if (activeFilter === filterType) {
       // 같은 필터를 클릭하면 토글 해제
       setActiveFilter(null);
@@ -322,16 +311,35 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
       updatedAt: new Date().toISOString()
     };
 
+    // 파일명 업데이트 (찬양 이름이나 코드가 변경된 경우)
+    let finalUpdatedSong = updatedSong;
+    if (editingSong.fileName && editingSong.fileName.trim() !== '') {
+      try {
+        const fileNameUpdateResult = await updateFileNameForSong(editingSong, updatedSong);
+        if (fileNameUpdateResult.success && fileNameUpdateResult.newFileName) {
+          finalUpdatedSong = {
+            ...updatedSong,
+            fileName: fileNameUpdateResult.newFileName
+          };
+          console.log('파일명 업데이트 완료:', fileNameUpdateResult.message);
+        } else if (!fileNameUpdateResult.success) {
+          console.warn('파일명 업데이트 실패:', fileNameUpdateResult.error);
+        }
+      } catch (error) {
+        console.error('파일명 업데이트 중 오류:', error);
+      }
+    }
+
     // 상태 업데이트
     const updatedSongs = songs.map(song => 
-      song.id === editingSong.id ? updatedSong : song
+      song.id === editingSong.id ? finalUpdatedSong : song
     );
     
     // 모든 찬양 리스트에서 해당 곡 업데이트 (ID로 매칭)
     const updatedWorshipLists = {};
     Object.keys(worshipLists).forEach(dateKey => {
       updatedWorshipLists[dateKey] = worshipLists[dateKey].map(song => 
-        song.id === editingSong.id ? updatedSong : song
+        song.id === editingSong.id ? finalUpdatedSong : song
       );
     });
     
@@ -426,35 +434,18 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
 
   const handleDeleteFile = async () => {
     try {
-      console.log('=== SearchSongs 파일 삭제 시작 ===');
-      console.log('editFormData.filePath:', editFormData.filePath);
-      console.log('editFormData.fileName:', editFormData.fileName);
-      console.log('editingSong.id:', editingSong.id);
-      
       // OneDrive에서 실제 파일 삭제
       if (editFormData.fileName && window.electronAPI && window.electronAPI.deleteFile) {
         // Music_Sheets 경로를 가져와서 전체 경로 구성
         const musicSheetsPath = await window.electronAPI.getMusicSheetsPath();
         const fullPath = `${musicSheetsPath}/${editFormData.fileName}`;
         
-        console.log('Music_Sheets 경로:', musicSheetsPath);
-        console.log('파일명:', editFormData.fileName);
-        console.log('전체 파일 경로:', fullPath);
-        console.log('파일 삭제 API 호출:', fullPath);
-        
         const result = await window.electronAPI.deleteFile(fullPath);
-        console.log('파일 삭제 결과:', result);
         
         if (!result.success) {
           console.error('OneDrive 파일 삭제 실패:', result.error);
           // 파일 삭제 실패해도 UI에서는 제거 (사용자에게 알림)
         }
-      } else {
-        console.warn('파일명이 없거나 Electron API가 사용할 수 없습니다');
-        console.log('editFormData.fileName:', editFormData.fileName);
-        console.log('editFormData.filePath:', editFormData.filePath);
-        console.log('window.electronAPI:', !!window.electronAPI);
-        console.log('window.electronAPI.deleteFile:', !!window.electronAPI?.deleteFile);
       }
       
       // UI에서 파일 정보 제거

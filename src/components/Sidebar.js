@@ -152,7 +152,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
               await window.electronAPI.writeFile(`${databaseDirPath}/songs.json`, JSON.stringify(songsData, null, 2));
               await window.electronAPI.writeFile(`${databaseDirPath}/worship_lists.json`, JSON.stringify(worshipListsData, null, 2));
               
-              console.log('복원 완료: Database 폴더에 저장됨');
             }
           } catch (oneDriveError) {
             console.warn('OneDrive 저장 실패:', oneDriveError);

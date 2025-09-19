@@ -324,6 +324,57 @@ ipcMain.handle('delete-file', async (event, filePath) => {
   }
 });
 
+// 파일명 변경 핸들러
+ipcMain.handle('rename-file', async (event, oldFilePath, newFilePath) => {
+  try {
+    console.log('=== rename-file 핸들러 시작 ===');
+    console.log('기존 파일 경로:', oldFilePath);
+    console.log('새 파일 경로:', newFilePath);
+    
+    // 기존 파일 존재 여부 확인
+    try {
+      await fsPromises.access(oldFilePath);
+      console.log('기존 파일 존재 확인됨');
+    } catch (accessError) {
+      console.log('기존 파일이 존재하지 않음:', accessError.message);
+      return {
+        success: false,
+        error: '기존 파일을 찾을 수 없습니다.'
+      };
+    }
+    
+    // 새 파일이 이미 존재하는지 확인
+    try {
+      await fsPromises.access(newFilePath);
+      console.log('새 파일이 이미 존재함');
+      return {
+        success: false,
+        error: '새로운 파일명이 이미 존재합니다.'
+      };
+    } catch (accessError) {
+      console.log('새 파일명 사용 가능');
+    }
+    
+    // 파일명 변경
+    console.log('파일명 변경 시작...');
+    await fsPromises.rename(oldFilePath, newFilePath);
+    console.log('파일명 변경 완료');
+    
+    return {
+      success: true,
+      message: '파일명이 성공적으로 변경되었습니다.'
+    };
+  } catch (error) {
+    console.error('파일명 변경 실패:', error);
+    console.error('에러 코드:', error.code);
+    console.error('에러 메시지:', error.message);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+});
+
 // PDF 저장 핸들러
 ipcMain.handle('save-pdf', async (event, pdfData) => {
   try {
