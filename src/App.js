@@ -199,7 +199,7 @@ function App() {
             <Routes>
               <Route 
                 path="/" 
-                element={<SearchSongs songs={songs} setSongs={setSongs} selectedSong={selectedSong} setSelectedSong={setSelectedSong} fileExistenceMap={fileExistenceMap} />} 
+                element={<SearchSongs songs={songs} setSongs={setSongs} selectedSong={selectedSong} setSelectedSong={setSelectedSong} fileExistenceMap={fileExistenceMap} setFileExistenceMap={setFileExistenceMap} worshipLists={worshipLists} setWorshipLists={setWorshipLists} />} 
               />
               <Route 
                 path="/add" 
@@ -207,7 +207,7 @@ function App() {
               />
               <Route 
                 path="/worship-list" 
-                element={<WorshipList songs={songs} worshipLists={worshipLists} setWorshipLists={setWorshipLists} setSelectedSong={setSelectedSong} setSongs={setSongs} />} 
+                element={<WorshipList songs={songs} worshipLists={worshipLists} setWorshipLists={setWorshipLists} setSelectedSong={setSelectedSong} setSongs={setSongs} fileExistenceMap={fileExistenceMap} setFileExistenceMap={setFileExistenceMap} />} 
               />
             </Routes>
           </div>

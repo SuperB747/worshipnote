@@ -2,7 +2,7 @@
 
 // 파일명이 올바른 형식인지 확인하는 함수
 export const isCorrectFileName = (fileName) => {
-  if (!fileName) return false;
+  if (!fileName || typeof fileName !== 'string') return false;
   
   const withoutExt = fileName.replace(/\.[^/.]+$/, '');
   
@@ -34,7 +34,7 @@ export const generateCorrectFileName = (song) => {
 
 // 파일명에서 찬양 정보를 추출하는 함수
 export const extractSongInfoFromFileName = (fileName) => {
-  if (!fileName) return null;
+  if (!fileName || typeof fileName !== 'string') return null;
   
   const withoutExt = fileName.replace(/\.[^/.]+$/, '');
   

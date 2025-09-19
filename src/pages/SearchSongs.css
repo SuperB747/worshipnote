@@ -203,6 +203,35 @@
   margin-left: 8px;
 }
 
+.filter-button {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #f8f9fa;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.filter-button:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.filter-button.active {
+  background: var(--primary-green);
+  color: white;
+  border-color: var(--primary-green);
+}
+
+.filter-button.active:hover {
+  background: #5a7c5f;
+  border-color: #5a7c5f;
+}
+
 .no-results {
   text-align: center;
   padding: 40px 20px;
@@ -304,14 +333,20 @@
 }
 
 .status-no-file {
-  background: rgba(244, 67, 54, 0.1);
-  color: #f44336;
-  border: 1px solid rgba(244, 67, 54, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .status-icon {
   width: 10px;
   height: 10px;
+}
+
+.no-file-icon {
+  color: #f44336;
+  width: 16px;
+  height: 16px;
 }
 
 .file-icon {
@@ -324,12 +359,26 @@
 
 .warning-icon {
   color: #ff9800;
+  width: 16px;
+  height: 16px;
 }
 
 .status-incorrect-filename {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.status-correct-filename {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.correct-icon {
+  color: var(--secondary-green);
+  width: 16px;
+  height: 16px;
 }
 
 
@@ -346,12 +395,13 @@
 }
 
 .song-key {
-  background: var(--primary-green);
+  background: var(--secondary-green);
   color: white;
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
+  border: 1px solid #5a7a5a;
 }
 
 .song-tempo {
@@ -361,6 +411,7 @@
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
+  border: 1px solid #5a7a5a;
 }
 
 

@@ -21,7 +21,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3, Download, FileText, Upload, AlertTriangle } from 'lucide-react';
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { saveWorshipLists, saveSongs } from '../utils/storage';
+import { saveWorshipLists, saveSongs, checkFileExists } from '../utils/storage';
 import { generateWorshipListPDF } from '../utils/pdfExporter';
 import { processFileUpload } from '../utils/fileConverter';
 import { isCorrectFileName } from '../utils/fileNameUtils';
@@ -64,20 +64,24 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit }) => {
         <div className="song-number">{index + 1}</div>
         <div className="song-details">
           <h5 className="song-title">{song.title}</h5>
-          {/* 악보 상태 아이콘 */}
-          <div className="music-sheet-status">
-            {song.fileName ? (
-              isCorrectFileName(song) ? null : (
-                <div className="status-incorrect-filename" title="파일명 형식이 올바르지 않음">
-                  <AlertTriangle className="status-icon warning-icon" />
-                </div>
-              )
-            ) : (
-              <div className="status-no-file" title="악보 파일 없음">
-                <FileText className="status-icon no-file-icon" />
+        </div>
+        {/* 악보 상태 아이콘 */}
+        <div className="music-sheet-status">
+          {song.fileName ? (
+            isCorrectFileName(song.fileName) ? (
+              <div className="status-correct-filename" title="악보 파일 정상">
+                <FileText className="status-icon correct-icon" />
               </div>
-            )}
-          </div>
+            ) : (
+              <div className="status-incorrect-filename" title="파일명 형식이 올바르지 않음">
+                <AlertTriangle className="status-icon warning-icon" />
+              </div>
+            )
+          ) : (
+            <div className="status-no-file" title="악보 파일 없음">
+              <FileText className="status-icon no-file-icon" />
+            </div>
+          )}
         </div>
         <button 
           className="edit-btn"
@@ -101,7 +105,7 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit }) => {
   );
 };
 
-const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, setSongs }) => {
+const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, setSongs, fileExistenceMap, setFileExistenceMap }) => {
   const { showSnackbar } = useSnackbar();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
@@ -206,10 +210,8 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const currentDateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
   const currentWorshipList = worshipLists[currentDateKey] || [];
 
-  // 파일명 에러 개수 계산
-  const filenameErrorCount = useMemo(() => {
-    return currentWorshipList.filter(song => song.fileName && !isCorrectFileName(song)).length;
-  }, [currentWorshipList]);
+
+
 
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(selectedDate);
@@ -411,6 +413,31 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       // songs와 worshipLists를 동시에 업데이트 (OneDrive 저장이 한 번만 실행되도록)
       setSongs(updatedSongs);
       setWorshipLists(updatedWorshipLists);
+
+      // 파일 존재 여부 확인 및 fileExistenceMap 업데이트
+      if (updatedSong.fileName && updatedSong.fileName.trim() !== '') {
+        try {
+          const musicSheetsPath = await window.electronAPI.getMusicSheetsPath();
+          const fullPath = `${musicSheetsPath}/${updatedSong.fileName}`;
+          const exists = await checkFileExists(fullPath);
+          
+          setFileExistenceMap(prev => ({
+            ...prev,
+            [updatedSong.id]: exists
+          }));
+        } catch (error) {
+          console.error('파일 존재 여부 확인 실패:', error);
+          setFileExistenceMap(prev => ({
+            ...prev,
+            [updatedSong.id]: false
+          }));
+        }
+      } else {
+        setFileExistenceMap(prev => ({
+          ...prev,
+          [updatedSong.id]: false
+        }));
+      }
 
       // 전체 songs 배열에서도 업데이트 (선택된 곡이 현재 곡인 경우)
       if (previewSong && previewSong.id === editingSong.id) {
@@ -670,11 +697,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
               <h3>
                 {getWorshipListTitle(selectedDate)}
               </h3>
-              {filenameErrorCount > 0 && (
-                <span className="filename-error-count">
-                  파일이름 에러 ({filenameErrorCount}개)
-                </span>
-              )}
             </div>
             <div className="list-actions">
               <button

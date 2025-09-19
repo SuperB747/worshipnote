@@ -1,18 +1,19 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Filter, Music, Hash, Clock, FileText, Edit, Trash2, Plus, FileX, AlertTriangle } from 'lucide-react';
 import { processFileUpload } from '../utils/fileConverter';
-import { saveSongs } from '../utils/storage';
+import { saveSongs, saveWorshipLists, checkFileExists } from '../utils/storage';
 import { isCorrectFileName } from '../utils/fileNameUtils';
 import GhibliDialog from '../components/GhibliDialog';
 import './SearchSongs.css';
 
-const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExistenceMap }) => {
+const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExistenceMap, setFileExistenceMap, worshipLists, setWorshipLists }) => {
   const searchInputRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     key: '',
     tempo: ''
   });
+  const [activeFilter, setActiveFilter] = useState(null); // 'missing' 또는 'filename-error' 또는 null
   const [editingSong, setEditingSong] = useState(null);
   const [editFormData, setEditFormData] = useState({
     title: '',
@@ -73,7 +74,26 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
       const matchesKey = !filters.key || song.key === filters.key;
       const matchesTempo = !filters.tempo || song.tempo === filters.tempo;
       
-      return matchesSearch && matchesKey && matchesTempo;
+      // 액티브 필터 적용
+      let matchesActiveFilter = true;
+      if (activeFilter === 'missing') {
+        matchesActiveFilter = !hasMusicSheet(song);
+      } else if (activeFilter === 'filename-error') {
+        matchesActiveFilter = hasMusicSheet(song) && !hasCorrectFileName(song);
+      }
+      
+      // 디버깅용 로그
+      if (activeFilter && song.title === '만물의 주인') {
+        console.log('필터링 디버그:', {
+          songTitle: song.title,
+          activeFilter,
+          hasMusicSheet: hasMusicSheet(song),
+          hasCorrectFileName: hasCorrectFileName(song),
+          matchesActiveFilter
+        });
+      }
+      
+      return matchesSearch && matchesKey && matchesTempo && matchesActiveFilter;
     });
     
     // 정렬: 한글과 영어를 모두 고려한 알파벳/가나다 순서
@@ -96,17 +116,39 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     });
     
     return sorted;
-  }, [songs, searchTerm, filters]);
+  }, [songs, searchTerm, filters, activeFilter, fileExistenceMap]);
 
   // 악보 누락 개수 계산
-  const missingMusicSheetCount = useMemo(() => {
-    return filteredSongs.filter(song => !hasMusicSheet(song)).length;
-  }, [filteredSongs, fileExistenceMap]);
-
   // 파일명 에러 개수 계산
   const filenameErrorCount = useMemo(() => {
-    return filteredSongs.filter(song => hasMusicSheet(song) && !hasCorrectFileName(song)).length;
-  }, [filteredSongs, fileExistenceMap]);
+    return songs.filter(song => hasMusicSheet(song) && !hasCorrectFileName(song)).length;
+  }, [songs, fileExistenceMap]);
+
+  const missingMusicSheetCount = useMemo(() => {
+    return songs.filter(song => !hasMusicSheet(song)).length;
+  }, [songs, fileExistenceMap]);
+
+  // 토글 핸들러 함수
+  const handleFilterToggle = (filterType) => {
+    console.log('필터 토글:', { filterType, currentActiveFilter: activeFilter });
+    if (activeFilter === filterType) {
+      // 같은 필터를 클릭하면 토글 해제
+      setActiveFilter(null);
+    } else {
+      // 다른 필터를 클릭하면 해당 필터로 변경
+      setActiveFilter(filterType);
+    }
+  };
+
+  // 필터가 변경될 때마다 액티브 필터 해제 (해당 항목이 없을 때)
+  useEffect(() => {
+    if (activeFilter === 'missing' && missingMusicSheetCount === 0) {
+      setActiveFilter(null);
+    }
+    if (activeFilter === 'filename-error' && filenameErrorCount === 0) {
+      setActiveFilter(null);
+    }
+  }, [activeFilter, missingMusicSheetCount, filenameErrorCount]);
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => ({
@@ -285,7 +327,41 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
       song.id === editingSong.id ? updatedSong : song
     );
     
+    // 모든 찬양 리스트에서 해당 곡 업데이트 (ID로 매칭)
+    const updatedWorshipLists = {};
+    Object.keys(worshipLists).forEach(dateKey => {
+      updatedWorshipLists[dateKey] = worshipLists[dateKey].map(song => 
+        song.id === editingSong.id ? updatedSong : song
+      );
+    });
+    
     setSongs(updatedSongs);
+    setWorshipLists(updatedWorshipLists);
+    
+    // 파일 존재 여부 확인 및 fileExistenceMap 업데이트
+    if (updatedSong.fileName && updatedSong.fileName.trim() !== '') {
+      try {
+        const musicSheetsPath = await window.electronAPI.getMusicSheetsPath();
+        const fullPath = `${musicSheetsPath}/${updatedSong.fileName}`;
+        const exists = await checkFileExists(fullPath);
+        
+        setFileExistenceMap(prev => ({
+          ...prev,
+          [updatedSong.id]: exists
+        }));
+      } catch (error) {
+        console.error('파일 존재 여부 확인 실패:', error);
+        setFileExistenceMap(prev => ({
+          ...prev,
+          [updatedSong.id]: false
+        }));
+      }
+    } else {
+      setFileExistenceMap(prev => ({
+        ...prev,
+        [updatedSong.id]: false
+      }));
+    }
     
     // OneDrive와 localStorage에 저장
     try {
@@ -299,6 +375,9 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
         });
         return;
       }
+      
+      // 찬양 리스트도 저장
+      await saveWorshipLists(updatedWorshipLists);
     } catch (error) {
       console.error('찬양 저장 중 오류:', error);
       setDialog({
@@ -474,14 +553,20 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
           {(missingMusicSheetCount > 0 || filenameErrorCount > 0) && (
             <div className="header-right">
               {missingMusicSheetCount > 0 && (
-                <span className="missing-count">
+                <button 
+                  className={`filter-button ${activeFilter === 'missing' ? 'active' : ''}`}
+                  onClick={() => handleFilterToggle('missing')}
+                >
                   악보 누락 ({missingMusicSheetCount}개)
-                </span>
+                </button>
               )}
               {filenameErrorCount > 0 && (
-                <span className="filename-error-count">
+                <button 
+                  className={`filter-button ${activeFilter === 'filename-error' ? 'active' : ''}`}
+                  onClick={() => handleFilterToggle('filename-error')}
+                >
                   파일이름 에러 ({filenameErrorCount}개)
-                </span>
+                </button>
               )}
             </div>
           )}
@@ -514,7 +599,11 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     {/* 악보 상태 아이콘 */}
                     <div className="music-sheet-status">
                       {hasMusicSheet(song) ? (
-                        hasCorrectFileName(song) ? null : (
+                        hasCorrectFileName(song) ? (
+                          <div className="status-correct-filename" title="악보 파일 정상">
+                            <FileText className="status-icon correct-icon" />
+                          </div>
+                        ) : (
                           <div className="status-incorrect-filename" title="파일명 형식이 올바르지 않음">
                             <AlertTriangle className="status-icon warning-icon" />
                           </div>
