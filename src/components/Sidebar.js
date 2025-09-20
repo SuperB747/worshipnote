@@ -17,7 +17,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
     let backupData;
     try {
       backupData = JSON.parse(fileContent);
-      console.log('JSON 파싱 성공, 백업 데이터:', backupData);
     } catch (parseError) {
       console.error('JSON 파싱 오류:', parseError);
       console.error('파일 내용 (처음 200자):', fileContent ? fileContent.substring(0, 200) : '파일 내용 없음');
@@ -39,8 +38,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
     // 데이터 복원
     const songs = backupData.songs || [];
     const worshipLists = backupData.worshipLists || {};
-    
-    console.log('복원할 데이터:', { songsCount: songs.length, worshipListsCount: Object.keys(worshipLists).length });
 
     // 상태 업데이트
     setSongs(songs);
@@ -162,11 +159,8 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
       if (!file) return;
 
       try {
-        console.log('백업 파일 복원 시작:', file.name, '크기:', file.size);
-        
         // OneDrive 파일인지 확인하고 안내
         if (file.webkitRelativePath && file.webkitRelativePath.includes('OneDrive')) {
-          console.log('OneDrive 파일 감지:', file.webkitRelativePath);
           setDialog({
             isVisible: true,
             type: 'info',
@@ -177,20 +171,16 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
         // Electron API를 사용할 수 있는 경우 더 안정적인 방법 사용
         if (window.electronAPI && window.electronAPI.readFile) {
           try {
-            console.log('Electron API를 사용하여 파일 읽기 시도');
-            
             // 파일 경로를 OneDrive 경로로 변환 시도
             let filePath = file.path || file.name;
             
             // OneDrive 경로인 경우 직접 경로 사용
             if (filePath.includes('OneDrive') || filePath.includes('CloudStorage')) {
-              console.log('OneDrive 파일 경로 사용:', filePath);
             } else {
               // 상대 경로인 경우 OneDrive 경로로 변환
               const oneDrivePath = await window.electronAPI.getOneDrivePath();
               if (oneDrivePath) {
                 filePath = `${oneDrivePath}/WorshipNote_Data/Backups/${file.name}`;
-                console.log('OneDrive 백업 경로로 변환:', filePath);
               }
             }
             
@@ -207,7 +197,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
                 throw new Error('지원하지 않는 파일 데이터 형식');
               }
               
-              console.log('Electron API로 파일 읽기 성공, 크기:', jsonString.length);
               await processBackupData(jsonString);
               return;
             }
@@ -217,8 +206,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
         }
         
         // FileReader를 사용한 파일 읽기 (fallback)
-        console.log('FileReader를 사용하여 파일 읽기 시도');
-        
         // 파일을 직접 읽어서 처리 (여러 방법 시도)
         const fileContent = await new Promise((resolve, reject) => {
           let attempts = 0;
@@ -226,14 +213,10 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
           
           const tryReadFile = (useArrayBuffer = false) => {
             attempts++;
-            console.log(`파일 읽기 시도 ${attempts}/${maxAttempts} (${useArrayBuffer ? 'ArrayBuffer' : 'Text'}):`, file.name);
-            
             const reader = new FileReader();
             
             reader.onload = (e) => {
               if (e.target.result) {
-                console.log('파일 읽기 성공, 크기:', e.target.result.length);
-                
                 if (useArrayBuffer) {
                   // ArrayBuffer를 문자열로 변환
                   try {
@@ -244,7 +227,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
                   } catch (decodeError) {
                     console.error('ArrayBuffer 디코딩 오류:', decodeError);
                     if (attempts < maxAttempts) {
-                      console.log('ArrayBuffer 디코딩 실패, 텍스트로 재시도...');
                       setTimeout(() => tryReadFile(false), 1000);
                     } else {
                       reject(new Error('파일 디코딩에 실패했습니다.'));
@@ -255,7 +237,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
                 }
               } else {
                 if (attempts < maxAttempts) {
-                  console.log('파일 읽기 결과가 비어있음, 재시도...');
                   setTimeout(() => tryReadFile(!useArrayBuffer), 1000);
                 } else {
                   reject(new Error('파일을 읽을 수 없습니다.'));
@@ -266,7 +247,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
             reader.onerror = (e) => {
               console.error(`FileReader 오류 (시도 ${attempts}):`, e);
               if (attempts < maxAttempts) {
-                console.log('파일 읽기 실패, 다른 방법으로 재시도...');
                 setTimeout(() => tryReadFile(!useArrayBuffer), 1000);
               } else {
                 reject(new Error(`파일 읽기 중 오류가 발생했습니다: ${e.target.error?.message || '알 수 없는 오류'}`));
@@ -276,7 +256,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
             reader.onabort = (e) => {
               console.error(`FileReader 중단 (시도 ${attempts}):`, e);
               if (attempts < maxAttempts) {
-                console.log('파일 읽기 중단, 다른 방법으로 재시도...');
                 setTimeout(() => tryReadFile(!useArrayBuffer), 1000);
               } else {
                 reject(new Error('파일 읽기가 중단되었습니다.'));
@@ -315,7 +294,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
           tryReadFile(false);
         });
 
-        console.log('파일 내용 읽기 완료, 크기:', fileContent.length);
         await processBackupData(fileContent);
       } catch (error) {
         console.error('데이터베이스 복원 오류:', error);

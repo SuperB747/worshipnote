@@ -33,7 +33,6 @@ async function checkOneDriveSyncStatus(filePath) {
     
     return { isOneDrive: true, isSynced };
   } catch (error) {
-    console.log('OneDrive 동기화 상태 확인 실패:', error.message);
     return { isOneDrive: true, isSynced: false };
   }
 }
@@ -243,7 +242,6 @@ app.whenReady().then(() => {
       const buffer = Buffer.from(arrayBuffer);
       await fsPromises.writeFile(fullPath, buffer);
       
-      console.log('파일 저장 완료:', fullPath);
       return { success: true, filePath: fullPath };
     } catch (error) {
       console.error('파일 저장 실패:', error);
@@ -254,7 +252,6 @@ app.whenReady().then(() => {
   // PDF 저장 핸들러
   ipcMain.handle('save-pdf', async (event, pdfData) => {
     try {
-      console.log('=== PDF 저장 핸들러 시작 ===');
       const { arrayBuffer, fileName, folderPath } = pdfData;
       const fullPath = path.join(folderPath, fileName);
       
@@ -265,7 +262,6 @@ app.whenReady().then(() => {
       const buffer = Buffer.from(arrayBuffer);
       await fsPromises.writeFile(fullPath, buffer);
       
-      console.log('PDF 저장 완료:', fullPath);
       return { success: true, filePath: fullPath };
     } catch (error) {
       console.error('PDF 저장 실패:', error);
@@ -276,14 +272,10 @@ app.whenReady().then(() => {
   // 파일 읽기 핸들러
   ipcMain.handle('read-file', async (event, filePath) => {
     try {
-      console.log('=== read-file 핸들러 시작 ===');
-      console.log('요청된 파일 경로:', filePath);
-      
       // OneDrive 동기화 상태 확인
       const syncStatus = await checkOneDriveSyncStatus(filePath);
       
       if (syncStatus.isOneDrive && !syncStatus.isSynced) {
-        console.log('OneDrive 파일이 로컬에 동기화되지 않음:', filePath);
         return { 
           success: false, 
           error: 'OneDrive 파일이 로컬에 동기화되지 않았습니다. OneDrive에서 파일을 다운로드하거나 동기화를 확인해주세요.',
@@ -297,8 +289,6 @@ app.whenReady().then(() => {
         fsPromises.readFile(filePath),
         new Promise((_, reject) => setTimeout(() => reject(new Error('ETIMEDOUT')), 15000))
       ]);
-      
-      console.log('파일 읽기 성공, 크기:', data.length, 'bytes');
       
       return { 
         success: true, 
@@ -332,20 +322,14 @@ app.whenReady().then(() => {
   // 파일 삭제 핸들러
   ipcMain.handle('delete-file', async (event, filePath) => {
     try {
-      console.log('=== delete-file 핸들러 시작 ===');
-      console.log('삭제할 파일 경로:', filePath);
-      
       // 파일 존재 여부 확인
       const exists = await fsPromises.access(filePath).then(() => true).catch(() => false);
       if (!exists) {
-        console.log('파일이 존재하지 않음:', filePath);
         return { success: false, error: '파일이 존재하지 않습니다.' };
       }
       
       // 파일 삭제
       await fsPromises.unlink(filePath);
-      console.log('파일 삭제 성공:', filePath);
-      
       return { success: true };
     } catch (error) {
       console.error('파일 삭제 실패:', error);
@@ -357,14 +341,9 @@ app.whenReady().then(() => {
   ipcMain.handle('rename-file', async (event, ...args) => {
     const [oldFilePath, newFilePath] = args;
     try {
-      console.log('=== rename-file 핸들러 시작 ===');
-      console.log('기존 파일 경로:', oldFilePath);
-      console.log('새 파일 경로:', newFilePath);
-      
       // 기존 파일 존재 여부 확인
       const exists = await fsPromises.access(oldFilePath).then(() => true).catch(() => false);
       if (!exists) {
-        console.log('기존 파일이 존재하지 않음:', oldFilePath);
         return { success: false, error: '기존 파일이 존재하지 않습니다.' };
       }
       
@@ -374,8 +353,6 @@ app.whenReady().then(() => {
       
       // 파일 이름 변경
       await fsPromises.rename(oldFilePath, newFilePath);
-      console.log('파일 이름 변경 성공:', oldFilePath, '->', newFilePath);
-      
       return { success: true, newFilePath };
     } catch (error) {
       console.error('파일 이름 변경 실패:', error);
@@ -398,8 +375,6 @@ app.whenReady().then(() => {
   // PDF를 JPG로 변환하는 핸들러
   ipcMain.handle('convert-pdf-to-jpg', async (event, uint8Array, fileName) => {
     try {
-      console.log('PDF 변환 요청:', fileName);
-      
       // PDF 변환 로직
       const pdf2pic = require('pdf2pic');
       const { fromBuffer } = pdf2pic;
@@ -414,7 +389,6 @@ app.whenReady().then(() => {
       });
       
       const results = await convert(1); // 첫 페이지만 변환
-      console.log('PDF 변환 완료:', results);
       
       if (results && results.length > 0) {
         const result = results[0];
@@ -437,7 +411,6 @@ app.whenReady().then(() => {
   // OneDrive 파일 동기화 상태 확인 핸들러
   ipcMain.handle('check-onedrive-sync', async (event, filePath) => {
     try {
-      console.log('OneDrive 동기화 상태 확인:', filePath);
       const syncStatus = await checkOneDriveSyncStatus(filePath);
       return { success: true, ...syncStatus };
     } catch (error) {
@@ -449,8 +422,6 @@ app.whenReady().then(() => {
   // OneDrive 폴더 동기화 상태 일괄 확인 핸들러
   ipcMain.handle('check-onedrive-folder-sync', async (event, folderPath) => {
     try {
-      console.log('OneDrive 폴더 동기화 상태 확인:', folderPath);
-      
       if (!folderPath.includes('OneDrive') && !folderPath.includes('CloudStorage')) {
         return { success: true, isOneDrive: false, syncedFiles: [], unsyncedFiles: [] };
       }
