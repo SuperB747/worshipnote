@@ -22,7 +22,8 @@
     "pdf": "node scripts/worshipnote-manager.js pdf",
     "pdf-all": "node scripts/worshipnote-manager.js pdf-all",
     "info": "node scripts/worshipnote-manager.js info",
-    "full": "node scripts/worshipnote-manager.js full"
+    "full": "node scripts/worshipnote-manager.js full",
+    "check-sync": "node scripts/check-onedrive-sync.js"
   },
   "build": {
     "appId": "com.worshipnote.app",
@@ -50,7 +51,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "date-fns": "^2.29.3",
-    "electron": "^24.8.8",
+    "electron": "^38.1.2",
     "electron-is-dev": "^2.0.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",
