@@ -252,7 +252,7 @@ app.whenReady().then(() => {
   // PDF 저장 핸들러
   ipcMain.handle('save-pdf', async (event, pdfData) => {
     try {
-      const { arrayBuffer, fileName, folderPath } = pdfData;
+      const { arrayBuffer, fileName, folderPath, overwrite } = pdfData;
       
       // 매개변수 유효성 검사
       if (!arrayBuffer) {
@@ -265,7 +265,26 @@ app.whenReady().then(() => {
         throw new Error('folderPath가 유효하지 않습니다.');
       }
       
-      const fullPath = path.join(folderPath, fileName);
+      const fullPath = path.normalize(path.join(folderPath, fileName));
+      
+      // 파일이 이미 존재하는지 확인
+      let fileExists = false;
+      try {
+        const stats = await fsPromises.stat(fullPath);
+        fileExists = stats.isFile();
+      } catch (error) {
+        // 파일이 존재하지 않거나 접근할 수 없음
+        fileExists = false;
+      }
+      
+      if (fileExists && overwrite !== true) {
+        return { 
+          success: false, 
+          needsConfirmation: true, 
+          filePath: fullPath,
+          message: `파일 "${fileName}"이 이미 존재합니다. 덮어쓰시겠습니까?`
+        };
+      }
       
       // 디렉토리가 존재하지 않으면 생성
       await ensureDirectoryExists(folderPath);

@@ -23,7 +23,7 @@ import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRig
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { saveWorshipLists, saveSongs, checkFileExists } from '../utils/storage';
-import { generateWorshipListPDF } from '../utils/pdfExporter';
+import { generateWorshipListPDF, confirmOverwriteAndSavePdf } from '../utils/pdfExporter';
 import { processFileUpload } from '../utils/fileConverter';
 import { isCorrectFileName, updateFileNameForSong } from '../utils/fileNameUtils';
 import GhibliDialog from '../components/GhibliDialog';
@@ -166,6 +166,11 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     message: ''
   });
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '', filePath: null });
+  const [overwriteDialog, setOverwriteDialog] = useState({ 
+    isVisible: false, 
+    message: '', 
+    pdfData: null 
+  });
 
   // 수동 저장 함수
   const handleSaveWorshipList = async () => {
@@ -939,12 +944,16 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
           message: result.message,
           filePath: result.filePath
         });
-      } else if (result.cancelled) {
-        // 사용자가 덮어쓰기를 취소한 경우
-        setDialog({
+      } else if (result.needsConfirmation) {
+        // 파일이 이미 존재하여 덮어쓰기 확인이 필요한 경우
+        setOverwriteDialog({
           isVisible: true,
-          type: 'info',
-          message: result.message
+          message: result.message,
+          pdfData: {
+            arrayBuffer: result.arrayBuffer,
+            fileName: result.fileName,
+            folderPath: result.folderPath
+          }
         });
       } else {
         setDialog({
@@ -963,6 +972,47 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     } finally {
       setIsExportingPdf(false);
     }
+  };
+
+  // PDF 덮어쓰기 확인 핸들러
+  const handleConfirmOverwrite = async () => {
+    if (!overwriteDialog.pdfData) return;
+    
+    setIsExportingPdf(true);
+    
+    try {
+      const result = await confirmOverwriteAndSavePdf(overwriteDialog.pdfData);
+      
+      if (result.success) {
+        setDialog({
+          isVisible: true,
+          type: 'success',
+          message: result.message,
+          filePath: result.filePath
+        });
+      } else {
+        setDialog({
+          isVisible: true,
+          type: 'error',
+          message: `PDF 저장 실패: ${result.error}`
+        });
+      }
+    } catch (error) {
+      console.error('PDF 덮어쓰기 저장 오류:', error);
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: `PDF 저장 중 오류가 발생했습니다: ${error.message}`
+      });
+    } finally {
+      setIsExportingPdf(false);
+      setOverwriteDialog({ isVisible: false, message: '', pdfData: null });
+    }
+  };
+
+  const handleCancelOverwrite = () => {
+    setOverwriteDialog({ isVisible: false, message: '', pdfData: null });
+    showSnackbar('info', 'PDF 내보내기가 취소되었습니다.');
   };
 
   const getDateClass = (date) => {
@@ -1396,6 +1446,58 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
             </button>
           </div>
         )}
+      </GhibliDialog>
+      
+      {/* PDF 덮어쓰기 확인 다이얼로그 */}
+      <GhibliDialog
+        isVisible={overwriteDialog.isVisible}
+        type="warning"
+        message={overwriteDialog.message}
+        onClose={handleCancelOverwrite}
+      >
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          <button 
+            className="ghibli-dialog-button"
+            onClick={handleConfirmOverwrite}
+            disabled={isExportingPdf}
+            style={{ 
+              background: 'linear-gradient(145deg, #e74c3c, #c0392b)',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '20px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: isExportingPdf ? 'not-allowed' : 'pointer',
+              opacity: isExportingPdf ? 0.6 : 1,
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            {isExportingPdf ? '저장 중...' : '덮어쓰기'}
+          </button>
+          <button 
+            className="ghibli-dialog-button"
+            onClick={handleCancelOverwrite}
+            disabled={isExportingPdf}
+            style={{ 
+              background: 'linear-gradient(145deg, #f5f5f5, #e0e0e0)',
+              color: '#333',
+              border: '2px solid #e74c3c',
+              padding: '10px 20px',
+              borderRadius: '20px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: isExportingPdf ? 'not-allowed' : 'pointer',
+              opacity: isExportingPdf ? 0.6 : 1,
+              transition: 'all 0.3s ease'
+            }}
+          >
+            취소
+          </button>
+        </div>
       </GhibliDialog>
       
       <Snackbar 

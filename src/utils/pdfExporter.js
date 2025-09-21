@@ -531,10 +531,6 @@ export const generateWorshipListPDF = async (songs, date) => {
     // pathSeparator가 빈 문자열인 경우 기본값 설정
     const actualPathSeparator = pathSeparator || '/';
     
-    console.log('분리된 경로 정보:');
-    console.log('- fileName:', fileName);
-    console.log('- folderPath:', folderPath);
-    console.log('- pathSeparator:', pathSeparator);
     
     // folderPath가 비어있으면 현재 디렉토리로 설정
     if (!folderPath) {
@@ -563,10 +559,53 @@ export const generateWorshipListPDF = async (songs, date) => {
           failedSongs: failedSongs
         }
       };
+    } else if (result.needsConfirmation) {
+      return {
+        success: false,
+        needsConfirmation: true,
+        message: result.message,
+        filePath: result.filePath,
+        fileName: fileName,
+        folderPath: folderPath,
+        arrayBuffer: pdfUint8Array
+      };
     } else {
       throw new Error(result.error);
     }
 
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// PDF 덮어쓰기 확인 후 저장 함수
+export const confirmOverwriteAndSavePdf = async (pdfData) => {
+  try {
+    const { arrayBuffer, fileName, folderPath } = pdfData;
+    
+    if (!window.electronAPI || !window.electronAPI.savePdf) {
+      throw new Error('Electron API를 사용할 수 없습니다.');
+    }
+    
+    const result = await window.electronAPI.savePdf({
+      arrayBuffer: arrayBuffer,
+      fileName: fileName,
+      folderPath: folderPath,
+      overwrite: true
+    });
+    
+    if (result.success) {
+      return {
+        success: true,
+        message: `PDF가 성공적으로 저장되었습니다!\n📂 파일이름: ${fileName}`,
+        filePath: result.filePath
+      };
+    } else {
+      throw new Error(result.error);
+    }
   } catch (error) {
     return {
       success: false,
