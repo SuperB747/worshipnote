@@ -131,8 +131,6 @@ const getPdfSavePath = async (date) => {
 // Electron을 통해 이미지 파일을 읽어서 Blob으로 변환
 const imageFileToBlob = async (filePath) => {
   try {
-    console.log('imageFileToBlob 시작, filePath:', filePath);
-    
     // Electron API 사용 가능 여부 확인
     if (!window.electronAPI || !window.electronAPI.readFile) {
       throw new Error('Electron API를 사용할 수 없습니다.');
@@ -143,49 +141,35 @@ const imageFileToBlob = async (filePath) => {
     
     // macOS 경로가 포함되어 있으면 Windows 경로로 변환
     if (filePath.includes('/Users/') || filePath.includes('OneDrive-Personal')) {
-      console.log('경로 변환 시도 중...');
       const convertedFilePath = await convertFilePathToCurrentPlatform(filePath);
       if (convertedFilePath) {
         finalFilePath = convertedFilePath;
-        console.log('경로 변환 완료:', finalFilePath);
       }
     }
 
-    console.log('최종 파일 경로:', finalFilePath);
-
     // 파일 존재 여부 확인을 위해 먼저 읽기 시도
     try {
-      console.log('파일 읽기 시도 중...');
       const fileData = await window.electronAPI.readFile(finalFilePath);
       
       if (!fileData) {
         throw new Error('파일을 읽을 수 없습니다.');
       }
       
-      console.log('파일 읽기 성공, 원본 데이터:', fileData);
-      console.log('데이터 타입:', typeof fileData);
-      console.log('데이터 constructor:', fileData.constructor.name);
-      
       // fileData가 ArrayBuffer가 아닌 경우 변환
       let actualData = fileData;
       if (fileData && typeof fileData === 'object' && fileData.success && fileData.data) {
         // electron.js에서 반환하는 형태: { success: true, data: ArrayBuffer, fileName: string }
         actualData = fileData.data;
-        console.log('데이터 추출 완료, 크기:', actualData.byteLength, 'bytes');
       } else if (fileData && fileData.byteLength !== undefined) {
         // 이미 ArrayBuffer인 경우
         actualData = fileData;
-        console.log('ArrayBuffer 직접 사용, 크기:', actualData.byteLength, 'bytes');
       } else {
-        console.error('지원하지 않는 데이터 형식:', fileData);
         throw new Error('파일 데이터 형식이 올바르지 않습니다.');
       }
 
       // 파일 확장자에 따라 MIME 타입 결정
       const extension = finalFilePath.toLowerCase().split('.').pop();
       let mimeType = 'image/jpeg'; // 기본값
-      
-      console.log('파일 확장자:', extension);
       
       switch (extension) {
         case 'jpg':
@@ -196,31 +180,23 @@ const imageFileToBlob = async (filePath) => {
           mimeType = 'image/png';
           break;
         case 'pdf':
-          console.log('PDF 파일 감지, 이미지로 변환 시도...');
           // PDF 파일은 이미지로 변환하여 처리
           try {
             const convertedBlob = await convertPDFToImage(actualData);
             if (convertedBlob) {
-              console.log('PDF를 이미지로 변환 성공');
               return convertedBlob;
             } else {
-              console.log('PDF를 이미지로 변환 실패');
               return null;
             }
           } catch (conversionError) {
-            console.error('PDF 변환 오류:', conversionError);
             return null;
           }
         default:
-          console.log('알 수 없는 확장자, JPEG로 처리');
           // 알 수 없는 파일 확장자는 JPEG로 처리
       }
 
-      console.log('MIME 타입:', mimeType);
-
       // Buffer를 Blob으로 변환
       const blob = new Blob([actualData], { type: mimeType });
-      console.log('Blob 생성 완료, 크기:', blob.size, 'bytes');
       
       return blob;
     } catch (readError) {
@@ -319,11 +295,9 @@ export const generateWorshipListPDF = async (songs, date) => {
 
     // Music_Sheets 디렉토리 파일 목록 확인
     const musicSheetsFiles = await listMusicSheetsFiles();
-    console.log('Music_Sheets 파일 목록:', musicSheetsFiles);
 
     for (let i = 0; i < songs.length; i++) {
       const song = songs[i];
-      console.log(`\n=== 곡 ${i + 1}/${songs.length} 처리 중: ${song.title} ===`);
       
       // 각 곡마다 새 페이지 시작 (첫 번째 곡이 아닌 경우)
       if (!isFirstPage) {
@@ -417,8 +391,6 @@ export const generateWorshipListPDF = async (songs, date) => {
           throw new Error('파일 경로가 설정되지 않았습니다.');
         }
         
-        console.log('파일 경로:', filePath);
-        
         // Electron을 통해 이미지 파일을 Blob으로 로드 (재시도 로직 포함)
         let blob = null;
         let retryCount = 0;
@@ -430,7 +402,6 @@ export const generateWorshipListPDF = async (songs, date) => {
             await new Promise(resolve => setTimeout(resolve, 500));
           }
           
-          console.log(`이미지 로드 시도 ${retryCount + 1}/${maxRetries + 1}`);
           blob = await imageFileToBlob(filePath);
           retryCount++;
         }
@@ -438,18 +409,14 @@ export const generateWorshipListPDF = async (songs, date) => {
         if (!blob) {
           throw new Error('이미지 파일을 로드할 수 없습니다.');
         }
-        
-        console.log('이미지 Blob 로드 성공, 크기:', blob.size, 'bytes');
 
         // Blob을 Base64로 변환
         const base64 = await blobToBase64(blob);
-        console.log('Base64 변환 완료, 길이:', base64.length);
         
         // 이미지 로드
         const img = new Image();
         await new Promise((resolve, reject) => {
           img.onload = () => {
-            console.log('이미지 로드 성공, 크기:', img.width, 'x', img.height);
             resolve();
           };
           img.onerror = (error) => {
@@ -474,17 +441,12 @@ export const generateWorshipListPDF = async (songs, date) => {
           imgWidth = contentHeight * imgAspectRatio;
         }
 
-        console.log('계산된 이미지 크기:', imgWidth, 'x', imgHeight);
-
         // 이미지를 페이지 윗쪽 중간에 배치
         const x = margin + (contentWidth - imgWidth) / 2;
         const y = margin; // 페이지 윗쪽에 배치
         
-        console.log('이미지 위치:', x, y);
-        
         // 이미지를 PDF에 추가
         pdf.addImage(base64, 'JPEG', x, y, imgWidth, imgHeight);
-        console.log('PDF에 이미지 추가 완료');
         successCount++;
 
       } catch (error) {
@@ -510,7 +472,6 @@ export const generateWorshipListPDF = async (songs, date) => {
 
     // PDF 저장
     const pdfPath = await getPdfSavePath(date);
-    console.log('PDF 저장 경로:', pdfPath);
     
     // 파일 존재 여부 확인 및 덮어쓰기는 Electron main process에서 처리
     

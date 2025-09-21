@@ -11,7 +11,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "electron": "electron .",
+    "electron": "electron . --disable-dev-shm-usage",
     "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\" --kill-others-on-fail --prefix-colors blue,green",
     "dev": "npm run electron-dev",
     "electron-only": "npx electron . --disable-gpu --no-sandbox --disable-web-security --disable-features=VizDisplayCompositor",
