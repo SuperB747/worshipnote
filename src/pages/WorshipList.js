@@ -852,6 +852,16 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       return;
     }
 
+    // selectedDate 유효성 검사
+    if (!selectedDate || !(selectedDate instanceof Date) || isNaN(selectedDate.getTime())) {
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: '선택된 날짜가 유효하지 않습니다. 날짜를 다시 선택해주세요.'
+      });
+      return;
+    }
+
     // 저장되지 않은 변경사항이 있으면 먼저 저장
     if (hasUnsavedChanges) {
       try {

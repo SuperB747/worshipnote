@@ -105,12 +105,12 @@ class WorshipNotePdfExport {
       for (let i = 0; i < songs.length; i++) {
         const song = songs[i];
         
-        // 새 페이지가 필요한지 확인
-        if (currentY > pageHeight - margin - 1) {
+        // 각 곡마다 새 페이지 시작 (첫 번째 곡이 아닌 경우)
+        if (!isFirstPage) {
           pdf.addPage();
           currentY = margin;
-          isFirstPage = false;
         }
+        isFirstPage = false;
 
         // 악보 파일이 있는 경우에만 처리
         if (song.fileName && song.filePath) {
@@ -143,28 +143,27 @@ class WorshipNotePdfExport {
             const imgWidth = imageInfo.width;
             const imgHeight = imageInfo.height;
 
-            // 이미지 비율 유지하면서 최대 크기 계산
+            // 이미지 비율 유지하면서 페이지에 꽉 차게 계산
             const imgAspectRatio = imgWidth / imgHeight;
             const contentAspectRatio = contentWidth / contentHeight;
             
             let finalImgWidth, finalImgHeight;
             if (imgAspectRatio > contentAspectRatio) {
+              // 이미지가 더 넓음 - 너비를 기준으로 페이지에 꽉 차게
               finalImgWidth = contentWidth;
               finalImgHeight = contentWidth / imgAspectRatio;
             } else {
+              // 이미지가 더 높음 - 높이를 기준으로 페이지에 꽉 차게
               finalImgHeight = contentHeight;
               finalImgWidth = contentHeight * imgAspectRatio;
             }
 
-            // 이미지를 페이지 중간 위쪽에 배치
+            // 이미지를 페이지 윗쪽 중간에 배치
             const x = margin + (contentWidth - finalImgWidth) / 2;
-            const y = currentY + (contentHeight - finalImgHeight) / 2 - 0.5;
+            const y = currentY; // 페이지 윗쪽에 배치
 
             // 이미지를 PDF에 추가
             pdf.addImage(base64, 'JPEG', x, y, finalImgWidth, finalImgHeight);
-
-            // 다음 이미지를 위해 Y 위치 업데이트
-            currentY += finalImgHeight + 0.2;
 
             console.log(`PDF에 추가됨: ${song.title} (${song.fileName})`);
 

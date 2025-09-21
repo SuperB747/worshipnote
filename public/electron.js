@@ -253,6 +253,18 @@ app.whenReady().then(() => {
   ipcMain.handle('save-pdf', async (event, pdfData) => {
     try {
       const { arrayBuffer, fileName, folderPath } = pdfData;
+      
+      // 매개변수 유효성 검사
+      if (!arrayBuffer) {
+        throw new Error('arrayBuffer가 제공되지 않았습니다.');
+      }
+      if (!fileName || typeof fileName !== 'string') {
+        throw new Error('fileName이 유효하지 않습니다.');
+      }
+      if (!folderPath || typeof folderPath !== 'string') {
+        throw new Error('folderPath가 유효하지 않습니다.');
+      }
+      
       const fullPath = path.join(folderPath, fileName);
       
       // 디렉토리가 존재하지 않으면 생성
