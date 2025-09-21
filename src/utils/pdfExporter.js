@@ -420,7 +420,6 @@ export const generateWorshipListPDF = async (songs, date) => {
             resolve();
           };
           img.onerror = (error) => {
-            console.error('이미지 로드 실패:', error);
             reject(error);
           };
           img.src = base64;

@@ -8,7 +8,6 @@ if (typeof window === 'undefined') {
   try {
     XLSX = require('xlsx');
   } catch (error) {
-    console.warn('xlsx 모듈을 로드할 수 없습니다:', error);
   }
 }
 
@@ -31,7 +30,6 @@ export const saveToStorage = (key, data) => {
     localStorage.setItem('worshipnote_data', JSON.stringify(currentData));
     return true;
   } catch (error) {
-    console.error('Failed to save data:', error);
     return false;
   }
 };
@@ -53,7 +51,6 @@ export const loadFromStorage = (key, defaultValue = null) => {
     // localStorage에 데이터가 없으면 기본값 반환
     return defaultValue;
   } catch (error) {
-    console.error('Failed to load data:', error);
     return defaultValue;
   }
 };
@@ -71,7 +68,6 @@ export const clearStorage = (key) => {
     }
     return true;
   } catch (error) {
-    console.error('Failed to clear storage:', error);
     return false;
   }
 };
@@ -96,7 +92,6 @@ export const saveSongs = async (songs) => {
           } catch (dirError) {
             // 디렉토리가 이미 존재하는 경우 무시
             if (!dirError.message.includes('already exists')) {
-              console.warn('디렉토리 생성 실패:', dirError);
             }
           }
           
@@ -116,14 +111,12 @@ export const saveSongs = async (songs) => {
           localStorage.setItem('worshipnote_data', JSON.stringify(currentData));
         }
       } catch (oneDriveError) {
-        console.error('OneDrive 저장 실패:', oneDriveError);
         // OneDrive 저장 실패해도 localStorage는 성공했으므로 계속 진행
       }
     }
     
     return success;
   } catch (error) {
-    console.error('악보 데이터 저장 실패:', error);
     return false;
   }
 };
@@ -147,7 +140,6 @@ export const loadSongs = async () => {
             } else if (typeof fileResult.data === 'string') {
               jsonString = fileResult.data;
             } else {
-              console.warn('지원하지 않는 파일 데이터 형식:', typeof fileResult.data);
               throw new Error('지원하지 않는 파일 데이터 형식');
             }
             
@@ -160,7 +152,6 @@ export const loadSongs = async () => {
           }
         }
       } catch (oneDriveError) {
-        console.warn('OneDrive에서 데이터 로드 실패:', oneDriveError);
       }
     }
     
@@ -178,7 +169,6 @@ export const loadSongs = async () => {
           return songs;
         }
       } catch (fetchError) {
-        console.warn('public/data.json에서 데이터 로드 실패:', fetchError);
       }
     }
     
@@ -243,7 +233,6 @@ export const loadSongs = async () => {
     
     return localSongs;
   } catch (error) {
-    console.error('악보 데이터 로드 실패:', error);
     return [];
   }
 };
@@ -268,7 +257,6 @@ export const saveWorshipLists = async (worshipLists) => {
           } catch (dirError) {
             // 디렉토리가 이미 존재하는 경우 무시
             if (!dirError.message.includes('already exists')) {
-              console.warn('디렉토리 생성 실패:', dirError);
             }
           }
           
@@ -288,14 +276,12 @@ export const saveWorshipLists = async (worshipLists) => {
           localStorage.setItem('worshipnote_data', JSON.stringify(currentData));
         }
       } catch (oneDriveError) {
-        console.error('OneDrive 저장 실패:', oneDriveError);
         // OneDrive 저장 실패해도 localStorage는 성공했으므로 계속 진행
       }
     }
     
     return success;
   } catch (error) {
-    console.error('찬양 리스트 저장 실패:', error);
     return false;
   }
 };
@@ -319,7 +305,6 @@ export const loadWorshipLists = async () => {
             } else if (typeof fileResult.data === 'string') {
               jsonString = fileResult.data;
             } else {
-              console.warn('지원하지 않는 파일 데이터 형식:', typeof fileResult.data);
               throw new Error('지원하지 않는 파일 데이터 형식');
             }
             
@@ -332,7 +317,6 @@ export const loadWorshipLists = async () => {
           }
         }
       } catch (oneDriveError) {
-        console.warn('OneDrive에서 찬양 리스트 로드 실패:', oneDriveError);
       }
     }
     
@@ -350,7 +334,6 @@ export const loadWorshipLists = async () => {
           return worshipLists;
         }
       } catch (fetchError) {
-        console.warn('public/data.json에서 찬양 리스트 로드 실패:', fetchError);
       }
     }
     
@@ -358,7 +341,6 @@ export const loadWorshipLists = async () => {
     const localWorshipLists = loadFromStorage('worshipLists', {});
     return localWorshipLists;
   } catch (error) {
-    console.error('찬양 리스트 로드 실패:', error);
     return {};
   }
 };
@@ -403,14 +385,12 @@ export const createWorshipListsBackup = async () => {
       if (window.electronAPI.createDirectory) {
         const result = await window.electronAPI.createDirectory(backupDirPath);
         if (!result.success) {
-          console.warn('백업 디렉토리 생성 실패:', result.error);
         }
       } else {
         // createDirectory가 없으면 빈 파일로 디렉토리 생성 시도
         await window.electronAPI.writeFile(`${backupDirPath}/.gitkeep`, '');
       }
     } catch (dirError) {
-      console.warn('백업 디렉토리 생성 시도:', dirError);
       // 디렉토리 생성 실패해도 계속 진행
     }
     
@@ -441,7 +421,6 @@ export const createWorshipListsBackup = async () => {
       message: '백업이 OneDrive에 저장되었습니다.'
     };
   } catch (error) {
-    console.error('백업 생성 실패:', error);
     return { success: false, error: `백업 생성 중 오류가 발생했습니다: ${error.message}` };
   }
 };
@@ -475,14 +454,12 @@ export const createDatabaseBackup = async (currentSongs = null, currentWorshipLi
       if (window.electronAPI.createDirectory) {
         const result = await window.electronAPI.createDirectory(backupDirPath);
         if (!result.success) {
-          console.warn('백업 디렉토리 생성 실패:', result.error);
         }
       } else {
         // createDirectory가 없으면 빈 파일로 디렉토리 생성 시도
         await window.electronAPI.writeFile(`${backupDirPath}/.gitkeep`, '');
       }
     } catch (dirError) {
-      console.warn('백업 디렉토리 생성 시도:', dirError);
       // 디렉토리 생성 실패해도 계속 진행
     }
     
@@ -536,7 +513,6 @@ export const createDatabaseBackup = async (currentSongs = null, currentWorshipLi
     try {
       jsonData = JSON.stringify(databaseData, null, 2);
     } catch (stringifyError) {
-      console.error('JSON 생성 오류:', stringifyError);
       return { success: false, error: `데이터를 JSON으로 변환할 수 없습니다: ${stringifyError.message}` };
     }
     
@@ -575,7 +551,6 @@ export const createDatabaseBackup = async (currentSongs = null, currentWorshipLi
       fileName: backupFileName
     };
   } catch (error) {
-    console.error('통합 데이터베이스 백업 생성 실패:', error);
     return { success: false, error: `백업 생성 중 오류가 발생했습니다: ${error.message}` };
   }
 };
@@ -614,8 +589,6 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
     try {
       backupData = JSON.parse(jsonString);
     } catch (parseError) {
-      console.error('JSON 파싱 오류:', parseError);
-      console.error('파일 내용 (처음 200자):', jsonString ? jsonString.substring(0, 200) : '파일 내용 없음');
       return { 
         success: false, 
         error: `백업 파일 형식이 올바르지 않습니다.\n오류: ${parseError.message}\n파일 내용: ${jsonString ? jsonString.substring(0, 100) : '파일 내용 없음'}...` 
@@ -638,7 +611,6 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
     const songs = backupData.songs || [];
     const worshipLists = backupData.worshipLists || {};
     
-    console.log('복원할 데이터:', { songsCount: songs.length, worshipListsCount: Object.keys(worshipLists).length });
     
     // localStorage에 저장
     saveToStorage('songs', songs);
@@ -670,7 +642,6 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
       }
     };
   } catch (error) {
-    console.error('통합 데이터베이스 복원 실패:', error);
     return { success: false, error: `복원 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류가 발생했습니다.'}` };
   }
 };
@@ -693,7 +664,6 @@ export const getBackupFiles = async () => {
       message: '백업 파일을 선택해주세요.'
     };
   } catch (error) {
-    console.error('백업 파일 목록 가져오기 실패:', error);
     return { success: false, error: error.message };
   }
 };
@@ -730,7 +700,6 @@ export const restoreWorshipListsFromBackup = async (backupFilePath) => {
     }
     return { success: false, error: 'OneDrive API not available' };
   } catch (error) {
-    console.error('복원 실패:', error);
     return { success: false, error: error.message };
   }
 };
@@ -763,7 +732,6 @@ export const compareDatabaseVersions = async () => {
         }
       }
     } catch (error) {
-      console.warn('로컬 데이터베이스 시간 확인 실패:', error);
     }
     
     // OneDrive 데이터베이스의 마지막 업데이트 시간 확인
@@ -821,7 +789,6 @@ export const compareDatabaseVersions = async () => {
           }
         }
       } catch (oneDriveError) {
-        console.warn('OneDrive 데이터베이스 시간 확인 실패:', oneDriveError);
       }
     }
     
@@ -872,7 +839,6 @@ export const compareDatabaseVersions = async () => {
       }
     };
   } catch (error) {
-    console.error('데이터베이스 버전 비교 실패:', error);
     return {
       success: false,
       error: error.message
@@ -920,7 +886,6 @@ export const syncFromOneDrive = async () => {
         }
       }
     } catch (error) {
-      console.warn('songs.json 로드 실패:', error);
     }
     
     // worship_lists.json 로드
@@ -944,7 +909,6 @@ export const syncFromOneDrive = async () => {
         }
       }
     } catch (error) {
-      console.warn('worship_lists.json 로드 실패:', error);
     }
     
     // 로컬에 저장
@@ -965,7 +929,6 @@ export const syncFromOneDrive = async () => {
       message: `OneDrive에서 데이터를 동기화했습니다.\n\n📊 동기화된 데이터:\n• 찬양: ${songs.length}개\n• 찬양 리스트: ${Object.keys(worshipLists).length}개\n• 동기화 시간: ${syncTime.toLocaleString('ko-KR')}`
     };
   } catch (error) {
-    console.error('OneDrive 동기화 실패:', error);
     return {
       success: false,
       error: `동기화 중 오류가 발생했습니다: ${error.message}`
@@ -1055,7 +1018,6 @@ export const getDatabaseLastUpdated = async () => {
           lastUpdated = latestUpdate;
         }
       } catch (oneDriveError) {
-        console.warn('OneDrive에서 데이터를 가져올 수 없습니다:', oneDriveError);
       }
     }
     
@@ -1070,7 +1032,6 @@ export const getDatabaseLastUpdated = async () => {
           }
         }
       } catch (error) {
-        console.warn('localStorage에서 데이터를 가져올 수 없습니다:', error);
       }
     }
     
@@ -1079,7 +1040,6 @@ export const getDatabaseLastUpdated = async () => {
       lastUpdated
     };
   } catch (error) {
-    console.error('데이터베이스 마지막 업데이트 시간 가져오기 실패:', error);
     return {
       success: false,
       error: error.message

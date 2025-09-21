@@ -18,8 +18,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
     try {
       backupData = JSON.parse(fileContent);
     } catch (parseError) {
-      console.error('JSON 파싱 오류:', parseError);
-      console.error('파일 내용 (처음 200자):', fileContent ? fileContent.substring(0, 200) : '파일 내용 없음');
       throw new Error(`백업 파일 형식이 올바르지 않습니다: ${parseError.message}`);
     }
 
@@ -63,7 +61,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
             await window.electronAPI.createDirectory(databaseDirPath);
           } catch (dirError) {
             if (!dirError.message.includes('already exists')) {
-              console.warn('디렉토리 생성 실패:', dirError);
             }
           }
 
@@ -82,7 +79,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
           
         }
       } catch (oneDriveError) {
-        console.warn('OneDrive 저장 실패:', oneDriveError);
       }
     }
 
@@ -108,10 +104,8 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
         if (result.success) {
           setLastUpdated(result.lastUpdated);
         } else {
-          console.warn('마지막 업데이트 날짜를 가져올 수 없습니다:', result.error);
         }
       } catch (error) {
-        console.error('마지막 업데이트 날짜 가져오기 실패:', error);
       } finally {
         setIsLoading(false);
       }
@@ -138,7 +132,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
         });
       }
     } catch (error) {
-      console.error('데이터베이스 백업 생성 오류:', error);
       setDialog({
         isVisible: true,
         type: 'error',
@@ -201,7 +194,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
               return;
             }
           } catch (electronError) {
-            console.warn('Electron API 파일 읽기 실패, FileReader로 대체:', electronError);
           }
         }
         
@@ -225,7 +217,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
                     const textContent = textDecoder.decode(uint8Array);
                     resolve(textContent);
                   } catch (decodeError) {
-                    console.error('ArrayBuffer 디코딩 오류:', decodeError);
                     if (attempts < maxAttempts) {
                       setTimeout(() => tryReadFile(false), 1000);
                     } else {
@@ -245,7 +236,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
             };
             
             reader.onerror = (e) => {
-              console.error(`FileReader 오류 (시도 ${attempts}):`, e);
               if (attempts < maxAttempts) {
                 setTimeout(() => tryReadFile(!useArrayBuffer), 1000);
               } else {
@@ -254,7 +244,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
             };
             
             reader.onabort = (e) => {
-              console.error(`FileReader 중단 (시도 ${attempts}):`, e);
               if (attempts < maxAttempts) {
                 setTimeout(() => tryReadFile(!useArrayBuffer), 1000);
               } else {
@@ -281,7 +270,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
                 reader.readAsText(file, 'UTF-8');
               }
             } catch (readError) {
-              console.error('FileReader 시작 오류:', readError);
               if (attempts < maxAttempts) {
                 setTimeout(() => tryReadFile(!useArrayBuffer), 1000);
               } else {
@@ -296,7 +284,6 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
 
         await processBackupData(fileContent);
       } catch (error) {
-        console.error('데이터베이스 복원 오류:', error);
         
         let errorMessage = error.message || '알 수 없는 오류가 발생했습니다.';
         

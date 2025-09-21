@@ -187,10 +187,8 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
           try {
             const result = await window.electronAPI.deleteFile(songToDelete.filePath);
             if (!result.success) {
-              console.error('OneDrive 파일 삭제 실패:', result.error);
             }
           } catch (error) {
-            console.error('파일 삭제 중 오류:', error);
           }
         }
         
@@ -207,7 +205,6 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
             showSnackbar('error', '찬양 삭제에 실패했습니다.');
           }
         } catch (error) {
-          console.error('찬양 삭제 실패:', error);
           showSnackbar('error', '찬양 삭제 중 오류가 발생했습니다.');
         }
         
@@ -273,13 +270,9 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     });
 
     try {
-      console.log('=== SearchSongs 파일 업로드 ===');
-      console.log('editingSong:', editingSong);
-      console.log('editFormData:', editFormData);
       
       // editingSong.id가 없으면 새 ID 생성
       const songId = editingSong?.id || Date.now().toString();
-      console.log('사용할 songId:', songId);
       
       const result = await processFileUpload(
         file, 
@@ -338,29 +331,19 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
 
     // 파일명 업데이트 (찬양 이름이나 코드가 변경된 경우)
     let finalUpdatedSong = updatedSong;
-    console.log('=== SearchSongs 파일명 업데이트 시작 ===');
-    console.log('editingSong.fileName:', editingSong.fileName);
-    console.log('editingSong.title:', editingSong.title, '-> updatedSong.title:', updatedSong.title);
-    console.log('editingSong.chord:', editingSong.chord, '-> updatedSong.chord:', updatedSong.chord);
     
     // 파일명 업데이트 (찬양 이름이나 코드가 변경된 경우)
     try {
-      console.log('파일명 업데이트 함수 호출...');
       const fileNameUpdateResult = await updateFileNameForSong(editingSong, updatedSong);
-      console.log('파일명 업데이트 결과:', fileNameUpdateResult);
       
       if (fileNameUpdateResult.success && fileNameUpdateResult.newFileName) {
         finalUpdatedSong = {
           ...updatedSong,
           fileName: fileNameUpdateResult.newFileName
         };
-        console.log('파일명 업데이트 완료:', fileNameUpdateResult.message);
-        console.log('최종 업데이트된 찬양:', finalUpdatedSong);
       } else if (!fileNameUpdateResult.success) {
-        console.warn('파일명 업데이트 실패:', fileNameUpdateResult.error);
       }
     } catch (error) {
-      console.error('파일명 업데이트 중 오류:', error);
     }
 
     // 상태 업데이트
@@ -391,7 +374,6 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
           [updatedSong.id]: exists
         }));
       } catch (error) {
-        console.error('파일 존재 여부 확인 실패:', error);
         setFileExistenceMap(prev => ({
           ...prev,
           [updatedSong.id]: false
@@ -408,7 +390,6 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     try {
       const saveResult = await saveSongs(updatedSongs);
       if (!saveResult) {
-        console.error('찬양 저장 실패');
         setDialog({
           isVisible: true,
           type: 'error',
@@ -420,7 +401,6 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
       // 찬양 리스트도 저장
       await saveWorshipLists(updatedWorshipLists);
     } catch (error) {
-      console.error('찬양 저장 중 오류:', error);
       setDialog({
         isVisible: true,
         type: 'error',
@@ -474,7 +454,6 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
         const result = await window.electronAPI.deleteFile(fullPath);
         
         if (!result.success) {
-          console.error('OneDrive 파일 삭제 실패:', result.error);
           // 파일 삭제 실패해도 UI에서는 제거 (사용자에게 알림)
         }
       }
@@ -500,7 +479,6 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
         message: '악보 파일이 삭제되었습니다.'
       });
     } catch (error) {
-      console.error('파일 삭제 중 오류:', error);
       // 오류가 발생해도 UI에서는 제거
       setEditFormData(prev => ({
         ...prev,

@@ -39,7 +39,6 @@ function App() {
       const fileData = await window.electronAPI.readFile(fullPath);
       return fileData !== null;
     } catch (error) {
-      console.error('File existence check failed:', error);
       return false;
     }
   };
@@ -84,7 +83,6 @@ function App() {
         
         setIsLoaded(true);
       } catch (error) {
-        console.error('데이터 로드 실패:', error);
         setSongs([]);
         setWorshipLists({});
         setIsLoaded(true);
