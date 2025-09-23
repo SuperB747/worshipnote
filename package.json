@@ -56,7 +56,7 @@
       "sign": false,
       "verifyUpdateCodeSignature": false,
       "requestedExecutionLevel": "asInvoker",
-      "artifactName": "${productName}-${version}-Setup.${ext}",
+      "artifactName": "WorshipNote-Setup.exe",
       "publisherName": "WorshipNote"
     },
     "nsis": {

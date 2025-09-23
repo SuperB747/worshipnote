@@ -68,6 +68,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
 
 
   const filteredSongs = useMemo(() => {
+    console.log('SearchSongs - filteredSongs 계산 시작, songs 개수:', songs.length);
     const filtered = songs.filter(song => {
       const matchesSearch = 
         !searchTerm.trim() || // 검색어가 비어있으면 모든 곡 표시
@@ -108,6 +109,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
       }
     });
     
+    console.log('SearchSongs - filteredSongs 계산 완료, 필터링된 개수:', sorted.length);
     return sorted;
   }, [songs, searchTerm, filters, activeFilter, fileExistenceMap]);
 

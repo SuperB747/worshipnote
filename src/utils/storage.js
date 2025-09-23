@@ -123,12 +123,16 @@ export const saveSongs = async (songs) => {
 
 export const loadSongs = async () => {
   try {
-    // 먼저 OneDrive에서 로드 시도 (Electron 환경)
+    console.log('loadSongs 시작 - Electron API:', !!window.electronAPI);
+    // 먼저 OneDrive에서 로드 시도 (Electron 환경에서 우선)
     if (window.electronAPI && window.electronAPI.readFile) {
       try {
+        console.log('OneDrive에서 로드 시도...');
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
+        console.log('OneDrive 경로:', oneDrivePath);
         if (oneDrivePath) {
           const filePath = `${oneDrivePath}/WorshipNote_Data/Database/songs.json`;
+          console.log('OneDrive 파일 경로:', filePath);
           const fileResult = await window.electronAPI.readFile(filePath);
           
           if (fileResult && fileResult.success && fileResult.data) {
@@ -144,6 +148,7 @@ export const loadSongs = async () => {
             }
             
             const songsData = JSON.parse(jsonString);
+            console.log('OneDrive에서 로드된 songs:', songsData.songs?.length || 0, '개');
             
             // localStorage에도 저장 (동기화)
             saveToStorage('songs', songsData.songs);
@@ -152,11 +157,27 @@ export const loadSongs = async () => {
           }
         }
       } catch (oneDriveError) {
+        console.log('OneDrive 로드 실패:', oneDriveError.message);
+        // OneDrive 로드 실패 시 public/data.json에서 로드
+        try {
+          console.log('public/data.json에서 로드 시도...');
+          const response = await fetch('/data.json');
+          if (response.ok) {
+            const data = await response.json();
+            const songs = data.songs || [];
+            console.log('public/data.json에서 로드된 songs:', songs.length, '개');
+            
+            // localStorage에도 저장 (동기화)
+            saveToStorage('songs', songs);
+            
+            return songs;
+          }
+        } catch (fetchError) {
+          console.log('public/data.json 로드 실패:', fetchError.message);
+        }
       }
-    }
-    
-    // 웹브라우저 환경에서는 public/data.json에서 로드
-    if (!window.electronAPI) {
+    } else {
+      // 웹 환경에서는 public/data.json에서 로드
       try {
         const response = await fetch('/data.json');
         if (response.ok) {
@@ -288,7 +309,7 @@ export const saveWorshipLists = async (worshipLists) => {
 
 export const loadWorshipLists = async () => {
   try {
-    // 먼저 OneDrive에서 로드 시도 (Electron 환경)
+    // 먼저 OneDrive에서 로드 시도 (Electron 환경에서 우선)
     if (window.electronAPI && window.electronAPI.readFile) {
       try {
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
@@ -317,11 +338,23 @@ export const loadWorshipLists = async () => {
           }
         }
       } catch (oneDriveError) {
+        // OneDrive 로드 실패 시 public/data.json에서 로드
+        try {
+          const response = await fetch('/data.json');
+          if (response.ok) {
+            const data = await response.json();
+            const worshipLists = data.worshipLists || {};
+            
+            // localStorage에도 저장 (동기화)
+            saveToStorage('worshipLists', worshipLists);
+            
+            return worshipLists;
+          }
+        } catch (fetchError) {
+        }
       }
-    }
-    
-    // 웹브라우저 환경에서는 public/data.json에서 로드
-    if (!window.electronAPI) {
+    } else {
+      // 웹 환경에서는 public/data.json에서 로드
       try {
         const response = await fetch('/data.json');
         if (response.ok) {

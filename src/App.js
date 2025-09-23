@@ -47,11 +47,17 @@ function App() {
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log('데이터 로딩 시작...');
         // OneDrive에서 최신 데이터 로드 (동기화 로직 제거)
         const { songs, worshipLists } = await initializeData();
         
+        console.log('로드된 songs:', songs.length, '개');
+        console.log('로드된 worshipLists:', Object.keys(worshipLists).length, '개');
+        
         setSongs(songs);
         setWorshipLists(worshipLists);
+        
+        console.log('데이터 설정 완료, isLoaded를 true로 설정');
         
         // 앱 시작 시 최신 찬양 리스트 날짜 설정
         if (isFirstLoad) {
@@ -81,10 +87,13 @@ function App() {
           setIsFirstLoad(false);
         }
         
+        console.log('setIsLoaded(true) 호출');
         setIsLoaded(true);
       } catch (error) {
+        console.log('데이터 로딩 에러:', error);
         setSongs([]);
         setWorshipLists({});
+        console.log('에러 후 setIsLoaded(true) 호출');
         setIsLoaded(true);
       }
     };
@@ -94,7 +103,16 @@ function App() {
       loadData();
     }, 100);
     
-    return () => clearTimeout(timer);
+    // 안전장치: 5초 후에도 로딩이 완료되지 않으면 강제로 완료 처리
+    const safetyTimer = setTimeout(() => {
+      console.log('안전장치: 5초 후 강제로 로딩 완료 처리');
+      setIsLoaded(true);
+    }, 5000);
+    
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(safetyTimer);
+    };
   }, []);
 
   // songs가 로드된 후 파일 존재 여부 확인
@@ -152,7 +170,7 @@ function App() {
   }
 
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <Router basename="/" future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <div className="app">
         <Sidebar 
           songs={songs}
