@@ -23,7 +23,7 @@ import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRig
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { saveWorshipLists, saveSongs, checkFileExists } from '../utils/storage';
-import { generateWorshipListPDF } from '../utils/pdfExporter';
+import { generateWorshipListPDF, confirmOverwriteAndSavePdf } from '../utils/pdfExporter';
 import { processFileUpload } from '../utils/fileConverter';
 import { isCorrectFileName, updateFileNameForSong } from '../utils/fileNameUtils';
 import GhibliDialog from '../components/GhibliDialog';
@@ -171,6 +171,11 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     message: ''
   });
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '', filePath: null });
+  const [overwriteDialog, setOverwriteDialog] = useState({ 
+    isVisible: false, 
+    message: '', 
+    pdfData: null 
+  });
 
   // 수동 저장 함수
   const handleSaveWorshipList = async () => {
@@ -195,7 +200,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         showSnackbar('error', '찬양 리스트 저장에 실패했습니다.');
       }
     } catch (error) {
-      console.error('찬양 리스트 저장 실패:', error);
       showSnackbar('error', '찬양 리스트 저장 중 오류가 발생했습니다.');
     } finally {
       setIsSaving(false);
@@ -380,7 +384,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
           showSnackbar('success', '변경사항이 저장되었습니다.');
         }
       } catch (error) {
-        console.error('날짜 변경 시 저장 실패:', error);
         showSnackbar('error', '변경사항 저장에 실패했습니다.');
       }
     }
@@ -400,7 +403,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
           showSnackbar('success', '변경사항이 저장되었습니다.');
         }
       } catch (error) {
-        console.error('월 변경 시 저장 실패:', error);
         showSnackbar('error', '변경사항 저장에 실패했습니다.');
       }
     }
@@ -420,7 +422,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
           showSnackbar('success', '변경사항이 저장되었습니다.');
         }
       } catch (error) {
-        console.error('월 변경 시 저장 실패:', error);
         showSnackbar('error', '변경사항 저장에 실패했습니다.');
       }
     }
@@ -619,29 +620,19 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       
       // 파일명 업데이트 (찬양 이름이나 코드가 변경된 경우)
       let finalUpdatedSong = updatedSong;
-      console.log('=== WorshipList 파일명 업데이트 시작 ===');
-      console.log('editingSong.fileName:', editingSong.fileName);
-      console.log('editingSong.title:', editingSong.title, '-> updatedSong.title:', updatedSong.title);
-      console.log('editingSong.chord:', editingSong.chord, '-> updatedSong.chord:', updatedSong.chord);
       
       // 파일명 업데이트 (찬양 이름이나 코드가 변경된 경우)
       try {
-        console.log('파일명 업데이트 함수 호출...');
         const fileNameUpdateResult = await updateFileNameForSong(editingSong, updatedSong);
-        console.log('파일명 업데이트 결과:', fileNameUpdateResult);
         
         if (fileNameUpdateResult.success && fileNameUpdateResult.newFileName) {
           finalUpdatedSong = {
             ...updatedSong,
             fileName: fileNameUpdateResult.newFileName
           };
-          console.log('파일명 업데이트 완료:', fileNameUpdateResult.message);
-          console.log('최종 업데이트된 찬양:', finalUpdatedSong);
         } else if (!fileNameUpdateResult.success) {
-          console.warn('파일명 업데이트 실패:', fileNameUpdateResult.error);
         }
       } catch (error) {
-        console.error('파일명 업데이트 중 오류:', error);
       }
       
       // 원본 데이터베이스에서 해당 곡 찾아서 업데이트
@@ -679,7 +670,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
             [updatedSong.id]: exists
           }));
         } catch (error) {
-          console.error('파일 존재 여부 확인 실패:', error);
           setFileExistenceMap(prev => ({
             ...prev,
             [updatedSong.id]: false
@@ -701,7 +691,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       showSnackbar('success', '찬양 정보가 성공적으로 업데이트되었습니다.');
 
     } catch (error) {
-      console.error('찬양 정보 업데이트 실패:', error);
       showSnackbar('error', '찬양 정보 업데이트에 실패했습니다.');
     } finally {
       setIsUpdating(false); // 업데이트 완료
@@ -728,7 +717,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         const result = await window.electronAPI.deleteFile(fullPath);
         
         if (!result.success) {
-          console.error('OneDrive 파일 삭제 실패:', result.error);
           showSnackbar('error', `파일 삭제에 실패했습니다: ${result.error}`);
           return;
         }
@@ -749,7 +737,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       
       showSnackbar('success', '악보 파일이 삭제되었습니다.');
     } catch (error) {
-      console.error('파일 삭제 중 오류:', error);
       showSnackbar('error', '파일 삭제 중 오류가 발생했습니다.');
     }
   };
@@ -771,7 +758,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         showSnackbar('error', 'PDF 파일 열기에 실패했습니다.');
       }
     } catch (error) {
-      console.error('PDF 파일 열기 중 오류:', error);
       showSnackbar('error', 'PDF 파일 열기 중 오류가 발생했습니다.');
     }
   };
@@ -804,13 +790,9 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     setUploadStatus({ isUploading: true, success: false, error: null, message: '파일 처리 중...' });
 
     try {
-      console.log('=== WorshipList 파일 업로드 ===');
-      console.log('editingSong:', editingSong);
-      console.log('editForm:', editForm);
       
       // editingSong.id가 없으면 새 ID 생성
       const songId = editingSong?.id || Date.now().toString();
-      console.log('사용할 songId:', songId);
       
       const result = await processFileUpload(
         file, 
@@ -841,7 +823,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         });
       }
     } catch (error) {
-      console.error('파일 업로드 오류:', error);
       setUploadStatus({ 
         isUploading: false, 
         success: false, 
@@ -877,6 +858,16 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       return;
     }
 
+    // selectedDate 유효성 검사
+    if (!selectedDate || !(selectedDate instanceof Date) || isNaN(selectedDate.getTime())) {
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: '선택된 날짜가 유효하지 않습니다. 날짜를 다시 선택해주세요.'
+      });
+      return;
+    }
+
     // 저장되지 않은 변경사항이 있으면 먼저 저장
     if (hasUnsavedChanges) {
       try {
@@ -907,7 +898,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         showSnackbar('success', '찬양 리스트가 저장되었습니다. PDF 내보내기를 시작합니다.');
         
       } catch (error) {
-        console.error('찬양 리스트 저장 실패:', error);
         setDialog({
           isVisible: true,
           type: 'error',
@@ -954,12 +944,16 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
           message: result.message,
           filePath: result.filePath
         });
-      } else if (result.cancelled) {
-        // 사용자가 덮어쓰기를 취소한 경우
-        setDialog({
+      } else if (result.needsConfirmation) {
+        // 파일이 이미 존재하여 덮어쓰기 확인이 필요한 경우
+        setOverwriteDialog({
           isVisible: true,
-          type: 'info',
-          message: result.message
+          message: result.message,
+          pdfData: {
+            arrayBuffer: result.arrayBuffer,
+            fileName: result.fileName,
+            folderPath: result.folderPath
+          }
         });
       } else {
         setDialog({
@@ -969,7 +963,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         });
       }
     } catch (error) {
-      console.error('PDF 내보내기 오류:', error);
       setDialog({
         isVisible: true,
         type: 'error',
@@ -979,6 +972,47 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       setIsExportingPdf(false);
     }
   };
+
+  // PDF 덮어쓰기 확인 핸들러
+  const handleConfirmOverwrite = async () => {
+    if (!overwriteDialog.pdfData) return;
+    
+    setIsExportingPdf(true);
+    
+    try {
+      const result = await confirmOverwriteAndSavePdf(overwriteDialog.pdfData);
+      
+      if (result.success) {
+        setDialog({
+          isVisible: true,
+          type: 'success',
+          message: result.message,
+          filePath: result.filePath
+        });
+      } else {
+        setDialog({
+          isVisible: true,
+          type: 'error',
+          message: `PDF 저장 실패: ${result.error}`
+        });
+      }
+    } catch (error) {
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: `PDF 저장 중 오류가 발생했습니다: ${error.message}`
+      });
+    } finally {
+      setIsExportingPdf(false);
+      setOverwriteDialog({ isVisible: false, message: '', pdfData: null });
+    }
+  };
+
+  const handleCancelOverwrite = () => {
+    setOverwriteDialog({ isVisible: false, message: '', pdfData: null });
+    showSnackbar('info', 'PDF 내보내기가 취소되었습니다.');
+  };
+
 
   const getDateClass = (date) => {
     const dateKey = format(date, 'yyyy-MM-dd');
@@ -1413,6 +1447,58 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
             </button>
           </div>
         )}
+      </GhibliDialog>
+      
+      {/* PDF 덮어쓰기 확인 다이얼로그 */}
+      <GhibliDialog
+        isVisible={overwriteDialog.isVisible}
+        type="warning"
+        message={overwriteDialog.message}
+        onClose={handleCancelOverwrite}
+      >
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          <button 
+            className="ghibli-dialog-button"
+            onClick={handleConfirmOverwrite}
+            disabled={isExportingPdf}
+            style={{ 
+              background: 'linear-gradient(145deg, #e74c3c, #c0392b)',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '20px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: isExportingPdf ? 'not-allowed' : 'pointer',
+              opacity: isExportingPdf ? 0.6 : 1,
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            {isExportingPdf ? '저장 중...' : '덮어쓰기'}
+          </button>
+          <button 
+            className="ghibli-dialog-button"
+            onClick={handleCancelOverwrite}
+            disabled={isExportingPdf}
+            style={{ 
+              background: 'linear-gradient(145deg, #f5f5f5, #e0e0e0)',
+              color: '#333',
+              border: '2px solid #e74c3c',
+              padding: '10px 20px',
+              borderRadius: '20px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: isExportingPdf ? 'not-allowed' : 'pointer',
+              opacity: isExportingPdf ? 0.6 : 1,
+              transition: 'all 0.3s ease'
+            }}
+          >
+            취소
+          </button>
+        </div>
       </GhibliDialog>
       
       <Snackbar 

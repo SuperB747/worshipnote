@@ -28,6 +28,7 @@ const SongPreview = ({ selectedSong }) => {
       
       // Music_Sheets 경로 가져오기
       const musicSheetsPath = await window.electronAPI.getMusicSheetsPath();
+      
       if (!musicSheetsPath) {
         setError('Music_Sheets 경로를 찾을 수 없습니다.');
         return;
@@ -67,6 +68,19 @@ const SongPreview = ({ selectedSong }) => {
         filePath = `${musicSheetsPath}/${currentSong.fileName}`;
       }
       
+      // OneDrive 동기화 상태 확인
+      if (window.electronAPI && window.electronAPI.checkOneDriveSync) {
+        try {
+          const syncStatus = await window.electronAPI.checkOneDriveSync(filePath);
+          if (syncStatus.success && syncStatus.isOneDrive && !syncStatus.isSynced) {
+            setError(`OneDrive 파일이 로컬에 동기화되지 않았습니다.\n\n파일: ${currentSong.fileName}\n경로: ${filePath}\n\n해결 방법:\n1. OneDrive에서 파일을 "항상 이 기기에서 사용 가능"으로 설정\n2. 파일을 로컬 폴더로 복사\n3. OneDrive 동기화 상태 확인`);
+            return;
+          }
+        } catch (error) {
+          // 동기화 상태 확인 실패 시 무시하고 계속 진행
+        }
+      }
+      
       // Music_Sheets 폴더에서 정확한 파일명을 찾지 못했다면 비슷한 파일명으로 시도
       if (window.electronAPI && window.electronAPI.listFiles) {
         try {
@@ -99,42 +113,49 @@ const SongPreview = ({ selectedSong }) => {
           }
         }
         
-        const fileData = await window.electronAPI.readFile(filePath);
+        const readResult = await window.electronAPI.readFile(filePath);
         
-        if (fileData && fileData.length > 0) {
-          // 파일 확장자에 따라 MIME 타입 결정
-          const extension = currentSong.fileName.toLowerCase().split('.').pop();
-          let mimeType = 'image/jpeg'; // 기본값
+        // readResult에서 실제 데이터 추출
+        if (readResult && readResult.success && readResult.data) {
+          const fileData = readResult.data;
           
-          switch (extension) {
-            case 'jpg':
-            case 'jpeg':
-              mimeType = 'image/jpeg';
-              break;
-            case 'png':
-              mimeType = 'image/png';
-              break;
-            case 'pdf':
-              mimeType = 'application/pdf';
-              break;
-            default:
-              // 알 수 없는 파일 확장자는 JPEG로 처리
+          if (fileData.byteLength > 0) {
+            // 파일 확장자에 따라 MIME 타입 결정
+            const extension = currentSong.fileName.toLowerCase().split('.').pop();
+            let mimeType = 'image/jpeg'; // 기본값
+            
+            switch (extension) {
+              case 'jpg':
+              case 'jpeg':
+                mimeType = 'image/jpeg';
+                break;
+              case 'png':
+                mimeType = 'image/png';
+                break;
+              case 'pdf':
+                mimeType = 'application/pdf';
+                break;
+              default:
+                // 알 수 없는 파일 확장자는 JPEG로 처리
+            }
+            
+            const blob = new Blob([fileData], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            
+            // 이전 URL 정리
+            if (imageUrl) {
+              URL.revokeObjectURL(imageUrl);
+            }
+            
+            // 상태 설정
+            setImageUrl(url);
+            setImageLoaded(false);
+            setLastLoadedSongId(currentSong.id);
+          } else {
+            throw new Error('파일이 비어있습니다');
           }
-          
-          const blob = new Blob([fileData], { type: mimeType });
-          const url = URL.createObjectURL(blob);
-          
-          // 이전 URL 정리
-          if (imageUrl) {
-            URL.revokeObjectURL(imageUrl);
-          }
-          
-          // 상태 설정
-          setImageUrl(url);
-          setImageLoaded(false);
-          setLastLoadedSongId(currentSong.id);
         } else {
-          throw new Error('파일이 비어있습니다');
+          throw new Error('파일 읽기 실패');
         }
       } catch (fileError) {
         setError(`파일을 읽을 수 없습니다: ${fileError.message}`);

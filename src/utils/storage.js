@@ -8,7 +8,6 @@ if (typeof window === 'undefined') {
   try {
     XLSX = require('xlsx');
   } catch (error) {
-    console.warn('xlsx 모듈을 로드할 수 없습니다:', error);
   }
 }
 
@@ -31,7 +30,6 @@ export const saveToStorage = (key, data) => {
     localStorage.setItem('worshipnote_data', JSON.stringify(currentData));
     return true;
   } catch (error) {
-    console.error('Failed to save data:', error);
     return false;
   }
 };
@@ -53,7 +51,6 @@ export const loadFromStorage = (key, defaultValue = null) => {
     // localStorage에 데이터가 없으면 기본값 반환
     return defaultValue;
   } catch (error) {
-    console.error('Failed to load data:', error);
     return defaultValue;
   }
 };
@@ -71,7 +68,6 @@ export const clearStorage = (key) => {
     }
     return true;
   } catch (error) {
-    console.error('Failed to clear storage:', error);
     return false;
   }
 };
@@ -96,7 +92,6 @@ export const saveSongs = async (songs) => {
           } catch (dirError) {
             // 디렉토리가 이미 존재하는 경우 무시
             if (!dirError.message.includes('already exists')) {
-              console.warn('디렉토리 생성 실패:', dirError);
             }
           }
           
@@ -116,14 +111,12 @@ export const saveSongs = async (songs) => {
           localStorage.setItem('worshipnote_data', JSON.stringify(currentData));
         }
       } catch (oneDriveError) {
-        console.error('OneDrive 저장 실패:', oneDriveError);
         // OneDrive 저장 실패해도 localStorage는 성공했으므로 계속 진행
       }
     }
     
     return success;
   } catch (error) {
-    console.error('악보 데이터 저장 실패:', error);
     return false;
   }
 };
@@ -136,10 +129,21 @@ export const loadSongs = async () => {
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
         if (oneDrivePath) {
           const filePath = `${oneDrivePath}/WorshipNote_Data/Database/songs.json`;
-          const fileData = await window.electronAPI.readFile(filePath);
+          const fileResult = await window.electronAPI.readFile(filePath);
           
-          if (fileData) {
-            const songsData = JSON.parse(fileData);
+          if (fileResult && fileResult.success && fileResult.data) {
+            // 파일 데이터가 ArrayBuffer인 경우 문자열로 변환
+            let jsonString;
+            if (fileResult.data instanceof ArrayBuffer) {
+              const uint8Array = new Uint8Array(fileResult.data);
+              jsonString = new TextDecoder('utf-8').decode(uint8Array);
+            } else if (typeof fileResult.data === 'string') {
+              jsonString = fileResult.data;
+            } else {
+              throw new Error('지원하지 않는 파일 데이터 형식');
+            }
+            
+            const songsData = JSON.parse(jsonString);
             
             // localStorage에도 저장 (동기화)
             saveToStorage('songs', songsData.songs);
@@ -148,7 +152,6 @@ export const loadSongs = async () => {
           }
         }
       } catch (oneDriveError) {
-        console.warn('OneDrive에서 데이터 로드 실패:', oneDriveError);
       }
     }
     
@@ -166,7 +169,6 @@ export const loadSongs = async () => {
           return songs;
         }
       } catch (fetchError) {
-        console.warn('public/data.json에서 데이터 로드 실패:', fetchError);
       }
     }
     
@@ -231,7 +233,6 @@ export const loadSongs = async () => {
     
     return localSongs;
   } catch (error) {
-    console.error('악보 데이터 로드 실패:', error);
     return [];
   }
 };
@@ -256,7 +257,6 @@ export const saveWorshipLists = async (worshipLists) => {
           } catch (dirError) {
             // 디렉토리가 이미 존재하는 경우 무시
             if (!dirError.message.includes('already exists')) {
-              console.warn('디렉토리 생성 실패:', dirError);
             }
           }
           
@@ -276,14 +276,12 @@ export const saveWorshipLists = async (worshipLists) => {
           localStorage.setItem('worshipnote_data', JSON.stringify(currentData));
         }
       } catch (oneDriveError) {
-        console.error('OneDrive 저장 실패:', oneDriveError);
         // OneDrive 저장 실패해도 localStorage는 성공했으므로 계속 진행
       }
     }
     
     return success;
   } catch (error) {
-    console.error('찬양 리스트 저장 실패:', error);
     return false;
   }
 };
@@ -296,10 +294,21 @@ export const loadWorshipLists = async () => {
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
         if (oneDrivePath) {
           const filePath = `${oneDrivePath}/WorshipNote_Data/Database/worship_lists.json`;
-          const fileData = await window.electronAPI.readFile(filePath);
+          const fileResult = await window.electronAPI.readFile(filePath);
           
-          if (fileData) {
-            const worshipListsData = JSON.parse(fileData);
+          if (fileResult && fileResult.success && fileResult.data) {
+            // 파일 데이터가 ArrayBuffer인 경우 문자열로 변환
+            let jsonString;
+            if (fileResult.data instanceof ArrayBuffer) {
+              const uint8Array = new Uint8Array(fileResult.data);
+              jsonString = new TextDecoder('utf-8').decode(uint8Array);
+            } else if (typeof fileResult.data === 'string') {
+              jsonString = fileResult.data;
+            } else {
+              throw new Error('지원하지 않는 파일 데이터 형식');
+            }
+            
+            const worshipListsData = JSON.parse(jsonString);
             
             // localStorage에도 저장 (동기화)
             saveToStorage('worshipLists', worshipListsData.worshipLists);
@@ -308,7 +317,6 @@ export const loadWorshipLists = async () => {
           }
         }
       } catch (oneDriveError) {
-        console.warn('OneDrive에서 찬양 리스트 로드 실패:', oneDriveError);
       }
     }
     
@@ -326,7 +334,6 @@ export const loadWorshipLists = async () => {
           return worshipLists;
         }
       } catch (fetchError) {
-        console.warn('public/data.json에서 찬양 리스트 로드 실패:', fetchError);
       }
     }
     
@@ -334,7 +341,6 @@ export const loadWorshipLists = async () => {
     const localWorshipLists = loadFromStorage('worshipLists', {});
     return localWorshipLists;
   } catch (error) {
-    console.error('찬양 리스트 로드 실패:', error);
     return {};
   }
 };
@@ -379,14 +385,12 @@ export const createWorshipListsBackup = async () => {
       if (window.electronAPI.createDirectory) {
         const result = await window.electronAPI.createDirectory(backupDirPath);
         if (!result.success) {
-          console.warn('백업 디렉토리 생성 실패:', result.error);
         }
       } else {
         // createDirectory가 없으면 빈 파일로 디렉토리 생성 시도
         await window.electronAPI.writeFile(`${backupDirPath}/.gitkeep`, '');
       }
     } catch (dirError) {
-      console.warn('백업 디렉토리 생성 시도:', dirError);
       // 디렉토리 생성 실패해도 계속 진행
     }
     
@@ -417,7 +421,6 @@ export const createWorshipListsBackup = async () => {
       message: '백업이 OneDrive에 저장되었습니다.'
     };
   } catch (error) {
-    console.error('백업 생성 실패:', error);
     return { success: false, error: `백업 생성 중 오류가 발생했습니다: ${error.message}` };
   }
 };
@@ -451,14 +454,12 @@ export const createDatabaseBackup = async (currentSongs = null, currentWorshipLi
       if (window.electronAPI.createDirectory) {
         const result = await window.electronAPI.createDirectory(backupDirPath);
         if (!result.success) {
-          console.warn('백업 디렉토리 생성 실패:', result.error);
         }
       } else {
         // createDirectory가 없으면 빈 파일로 디렉토리 생성 시도
         await window.electronAPI.writeFile(`${backupDirPath}/.gitkeep`, '');
       }
     } catch (dirError) {
-      console.warn('백업 디렉토리 생성 시도:', dirError);
       // 디렉토리 생성 실패해도 계속 진행
     }
     
@@ -512,7 +513,6 @@ export const createDatabaseBackup = async (currentSongs = null, currentWorshipLi
     try {
       jsonData = JSON.stringify(databaseData, null, 2);
     } catch (stringifyError) {
-      console.error('JSON 생성 오류:', stringifyError);
       return { success: false, error: `데이터를 JSON으로 변환할 수 없습니다: ${stringifyError.message}` };
     }
     
@@ -551,7 +551,6 @@ export const createDatabaseBackup = async (currentSongs = null, currentWorshipLi
       fileName: backupFileName
     };
   } catch (error) {
-    console.error('통합 데이터베이스 백업 생성 실패:', error);
     return { success: false, error: `백업 생성 중 오류가 발생했습니다: ${error.message}` };
   }
 };
@@ -563,26 +562,36 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
       return { success: false, error: 'Electron API가 사용할 수 없습니다.' };
     }
     
-    const fileData = await window.electronAPI.readFile(backupFilePath);
+    const fileResult = await window.electronAPI.readFile(backupFilePath);
     
-    // 파일 데이터 검증
-    if (!fileData) {
+    // 파일 읽기 결과 검증
+    if (!fileResult) {
       return { success: false, error: '백업 파일을 읽을 수 없습니다.' };
     }
     
-    // JSON 파일은 이미 문자열로 반환됨
-    const jsonString = fileData;
+    if (!fileResult.success) {
+      return { success: false, error: fileResult.error || '백업 파일 읽기에 실패했습니다.' };
+    }
+    
+    // 파일 데이터가 ArrayBuffer인 경우 문자열로 변환
+    let jsonString;
+    if (fileResult.data instanceof ArrayBuffer) {
+      const uint8Array = new Uint8Array(fileResult.data);
+      jsonString = new TextDecoder('utf-8').decode(uint8Array);
+    } else if (typeof fileResult.data === 'string') {
+      jsonString = fileResult.data;
+    } else {
+      return { success: false, error: '지원하지 않는 파일 형식입니다.' };
+    }
     
     // JSON 파싱 시도
     let backupData;
     try {
       backupData = JSON.parse(jsonString);
     } catch (parseError) {
-      console.error('JSON 파싱 오류:', parseError);
-      console.error('파일 내용 (처음 200자):', jsonString.substring(0, 200));
       return { 
         success: false, 
-        error: `백업 파일 형식이 올바르지 않습니다.\n오류: ${parseError.message}\n파일 내용: ${jsonString.substring(0, 100)}...` 
+        error: `백업 파일 형식이 올바르지 않습니다.\n오류: ${parseError.message}\n파일 내용: ${jsonString ? jsonString.substring(0, 100) : '파일 내용 없음'}...` 
       };
     }
     
@@ -602,6 +611,7 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
     const songs = backupData.songs || [];
     const worshipLists = backupData.worshipLists || {};
     
+    
     // localStorage에 저장
     saveToStorage('songs', songs);
     saveToStorage('worshipLists', worshipLists);
@@ -613,7 +623,6 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
     // React 상태 업데이트
     if (setSongs) setSongs(songs);
     if (setWorshipLists) setWorshipLists(worshipLists);
-    
     
     const stats = {
       totalSongs: songs.length,
@@ -633,8 +642,7 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
       }
     };
   } catch (error) {
-    console.error('통합 데이터베이스 복원 실패:', error);
-    return { success: false, error: `복원 중 오류가 발생했습니다: ${error.message}` };
+    return { success: false, error: `복원 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류가 발생했습니다.'}` };
   }
 };
 
@@ -656,7 +664,6 @@ export const getBackupFiles = async () => {
       message: '백업 파일을 선택해주세요.'
     };
   } catch (error) {
-    console.error('백업 파일 목록 가져오기 실패:', error);
     return { success: false, error: error.message };
   }
 };
@@ -665,19 +672,34 @@ export const getBackupFiles = async () => {
 export const restoreWorshipListsFromBackup = async (backupFilePath) => {
   try {
     if (window.electronAPI && window.electronAPI.readFile) {
-      const fileData = await window.electronAPI.readFile(backupFilePath);
-      const backupData = JSON.parse(fileData);
+      const fileResult = await window.electronAPI.readFile(backupFilePath);
       
-      if (backupData.worshipLists) {
-        await saveWorshipLists(backupData.worshipLists);
-        return { success: true };
+      if (fileResult && fileResult.success && fileResult.data) {
+        // 파일 데이터가 ArrayBuffer인 경우 문자열로 변환
+        let jsonString;
+        if (fileResult.data instanceof ArrayBuffer) {
+          const uint8Array = new Uint8Array(fileResult.data);
+          jsonString = new TextDecoder('utf-8').decode(uint8Array);
+        } else if (typeof fileResult.data === 'string') {
+          jsonString = fileResult.data;
+        } else {
+          return { success: false, error: '지원하지 않는 파일 데이터 형식' };
+        }
+        
+        const backupData = JSON.parse(jsonString);
+        
+        if (backupData.worshipLists) {
+          await saveWorshipLists(backupData.worshipLists);
+          return { success: true };
+        } else {
+          return { success: false, error: 'Invalid backup file format' };
+        }
       } else {
-        return { success: false, error: 'Invalid backup file format' };
+        return { success: false, error: fileResult?.error || '파일 읽기 실패' };
       }
     }
     return { success: false, error: 'OneDrive API not available' };
   } catch (error) {
-    console.error('복원 실패:', error);
     return { success: false, error: error.message };
   }
 };
@@ -710,7 +732,6 @@ export const compareDatabaseVersions = async () => {
         }
       }
     } catch (error) {
-      console.warn('로컬 데이터베이스 시간 확인 실패:', error);
     }
     
     // OneDrive 데이터베이스의 마지막 업데이트 시간 확인
@@ -723,9 +744,19 @@ export const compareDatabaseVersions = async () => {
           
           // songs.json 확인
           try {
-            const songsData = await window.electronAPI.readFile(songsFilePath);
-            if (songsData) {
-              const songsJson = JSON.parse(songsData);
+            const songsResult = await window.electronAPI.readFile(songsFilePath);
+            if (songsResult && songsResult.success && songsResult.data) {
+              let jsonString;
+              if (songsResult.data instanceof ArrayBuffer) {
+                const uint8Array = new Uint8Array(songsResult.data);
+                jsonString = new TextDecoder('utf-8').decode(uint8Array);
+              } else if (typeof songsResult.data === 'string') {
+                jsonString = songsResult.data;
+              } else {
+                throw new Error('지원하지 않는 파일 데이터 형식');
+              }
+              
+              const songsJson = JSON.parse(jsonString);
               if (songsJson.lastUpdated) {
                 oneDriveSongsTime = new Date(songsJson.lastUpdated);
               }
@@ -736,9 +767,19 @@ export const compareDatabaseVersions = async () => {
           
           // worship_lists.json 확인
           try {
-            const worshipListsData = await window.electronAPI.readFile(worshipListsFilePath);
-            if (worshipListsData) {
-              const worshipListsJson = JSON.parse(worshipListsData);
+            const worshipListsResult = await window.electronAPI.readFile(worshipListsFilePath);
+            if (worshipListsResult && worshipListsResult.success && worshipListsResult.data) {
+              let jsonString;
+              if (worshipListsResult.data instanceof ArrayBuffer) {
+                const uint8Array = new Uint8Array(worshipListsResult.data);
+                jsonString = new TextDecoder('utf-8').decode(uint8Array);
+              } else if (typeof worshipListsResult.data === 'string') {
+                jsonString = worshipListsResult.data;
+              } else {
+                throw new Error('지원하지 않는 파일 데이터 형식');
+              }
+              
+              const worshipListsJson = JSON.parse(jsonString);
               if (worshipListsJson.lastUpdated) {
                 oneDriveWorshipListsTime = new Date(worshipListsJson.lastUpdated);
               }
@@ -748,7 +789,6 @@ export const compareDatabaseVersions = async () => {
           }
         }
       } catch (oneDriveError) {
-        console.warn('OneDrive 데이터베이스 시간 확인 실패:', oneDriveError);
       }
     }
     
@@ -799,7 +839,6 @@ export const compareDatabaseVersions = async () => {
       }
     };
   } catch (error) {
-    console.error('데이터베이스 버전 비교 실패:', error);
     return {
       success: false,
       error: error.message
@@ -828,30 +867,48 @@ export const syncFromOneDrive = async () => {
     
     // songs.json 로드
     try {
-      const songsData = await window.electronAPI.readFile(songsFilePath);
-      if (songsData) {
-        const songsJson = JSON.parse(songsData);
+      const songsResult = await window.electronAPI.readFile(songsFilePath);
+      if (songsResult && songsResult.success && songsResult.data) {
+        let jsonString;
+        if (songsResult.data instanceof ArrayBuffer) {
+          const uint8Array = new Uint8Array(songsResult.data);
+          jsonString = new TextDecoder('utf-8').decode(uint8Array);
+        } else if (typeof songsResult.data === 'string') {
+          jsonString = songsResult.data;
+        } else {
+          throw new Error('지원하지 않는 파일 데이터 형식');
+        }
+        
+        const songsJson = JSON.parse(jsonString);
         songs = songsJson.songs || [];
         if (songsJson.lastUpdated) {
           syncTime = new Date(songsJson.lastUpdated);
         }
       }
     } catch (error) {
-      console.warn('songs.json 로드 실패:', error);
     }
     
     // worship_lists.json 로드
     try {
-      const worshipListsData = await window.electronAPI.readFile(worshipListsFilePath);
-      if (worshipListsData) {
-        const worshipListsJson = JSON.parse(worshipListsData);
+      const worshipListsResult = await window.electronAPI.readFile(worshipListsFilePath);
+      if (worshipListsResult && worshipListsResult.success && worshipListsResult.data) {
+        let jsonString;
+        if (worshipListsResult.data instanceof ArrayBuffer) {
+          const uint8Array = new Uint8Array(worshipListsResult.data);
+          jsonString = new TextDecoder('utf-8').decode(uint8Array);
+        } else if (typeof worshipListsResult.data === 'string') {
+          jsonString = worshipListsResult.data;
+        } else {
+          throw new Error('지원하지 않는 파일 데이터 형식');
+        }
+        
+        const worshipListsJson = JSON.parse(jsonString);
         worshipLists = worshipListsJson.worshipLists || {};
         if (worshipListsJson.lastUpdated && new Date(worshipListsJson.lastUpdated) > syncTime) {
           syncTime = new Date(worshipListsJson.lastUpdated);
         }
       }
     } catch (error) {
-      console.warn('worship_lists.json 로드 실패:', error);
     }
     
     // 로컬에 저장
@@ -872,7 +929,6 @@ export const syncFromOneDrive = async () => {
       message: `OneDrive에서 데이터를 동기화했습니다.\n\n📊 동기화된 데이터:\n• 찬양: ${songs.length}개\n• 찬양 리스트: ${Object.keys(worshipLists).length}개\n• 동기화 시간: ${syncTime.toLocaleString('ko-KR')}`
     };
   } catch (error) {
-    console.error('OneDrive 동기화 실패:', error);
     return {
       success: false,
       error: `동기화 중 오류가 발생했습니다: ${error.message}`
@@ -912,9 +968,19 @@ export const getDatabaseLastUpdated = async () => {
           
           // songs.json 확인
           try {
-            const songsData = await window.electronAPI.readFile(songsFilePath);
-            if (songsData) {
-              const songsJson = JSON.parse(songsData);
+            const songsResult = await window.electronAPI.readFile(songsFilePath);
+            if (songsResult && songsResult.success && songsResult.data) {
+              let jsonString;
+              if (songsResult.data instanceof ArrayBuffer) {
+                const uint8Array = new Uint8Array(songsResult.data);
+                jsonString = new TextDecoder('utf-8').decode(uint8Array);
+              } else if (typeof songsResult.data === 'string') {
+                jsonString = songsResult.data;
+              } else {
+                throw new Error('지원하지 않는 파일 데이터 형식');
+              }
+              
+              const songsJson = JSON.parse(jsonString);
               if (songsJson.lastUpdated) {
                 latestUpdate = new Date(songsJson.lastUpdated);
               }
@@ -922,12 +988,22 @@ export const getDatabaseLastUpdated = async () => {
           } catch (error) {
             // 파일이 없거나 읽기 실패 시 무시
           }
-          
+
           // worship_lists.json 확인
           try {
-            const worshipListsData = await window.electronAPI.readFile(worshipListsFilePath);
-            if (worshipListsData) {
-              const worshipListsJson = JSON.parse(worshipListsData);
+            const worshipListsResult = await window.electronAPI.readFile(worshipListsFilePath);
+            if (worshipListsResult && worshipListsResult.success && worshipListsResult.data) {
+              let jsonString;
+              if (worshipListsResult.data instanceof ArrayBuffer) {
+                const uint8Array = new Uint8Array(worshipListsResult.data);
+                jsonString = new TextDecoder('utf-8').decode(uint8Array);
+              } else if (typeof worshipListsResult.data === 'string') {
+                jsonString = worshipListsResult.data;
+              } else {
+                throw new Error('지원하지 않는 파일 데이터 형식');
+              }
+              
+              const worshipListsJson = JSON.parse(jsonString);
               if (worshipListsJson.lastUpdated) {
                 const worshipListsUpdate = new Date(worshipListsJson.lastUpdated);
                 if (!latestUpdate || worshipListsUpdate > latestUpdate) {
@@ -942,7 +1018,6 @@ export const getDatabaseLastUpdated = async () => {
           lastUpdated = latestUpdate;
         }
       } catch (oneDriveError) {
-        console.warn('OneDrive에서 데이터를 가져올 수 없습니다:', oneDriveError);
       }
     }
     
@@ -957,7 +1032,6 @@ export const getDatabaseLastUpdated = async () => {
           }
         }
       } catch (error) {
-        console.warn('localStorage에서 데이터를 가져올 수 없습니다:', error);
       }
     }
     
@@ -966,7 +1040,6 @@ export const getDatabaseLastUpdated = async () => {
       lastUpdated
     };
   } catch (error) {
-    console.error('데이터베이스 마지막 업데이트 시간 가져오기 실패:', error);
     return {
       success: false,
       error: error.message
