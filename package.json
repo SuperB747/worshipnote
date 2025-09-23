@@ -34,13 +34,39 @@
     "files": [
       "build/**/*",
       "public/electron.js",
+      "public/preload.js",
       "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "public/fonts",
+        "to": "fonts"
+      }
     ],
     "mac": {
       "category": "public.app-category.music"
     },
     "win": {
-      "target": "nsis"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "sign": false,
+      "verifyUpdateCodeSignature": false,
+      "requestedExecutionLevel": "asInvoker",
+      "artifactName": "${productName}-${version}-Setup.${ext}",
+      "publisherName": "WorshipNote"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WorshipNote",
+      "installerLanguages": ["korean", "english"],
+      "language": "1042"
     },
     "linux": {
       "target": "AppImage"

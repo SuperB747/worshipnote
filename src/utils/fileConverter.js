@@ -4,7 +4,6 @@ const ONEDRIVE_PATH = 'WorshipNote_Data/Music_Sheets';
 // PDF.js 라이브러리 동적 로드 (Worker 없이)
 const loadPDFJS = async () => {
   if (window.pdfjsLib) {
-    console.log('PDF.js 라이브러리 이미 로드됨');
     return window.pdfjsLib;
   }
   
@@ -15,7 +14,6 @@ const loadPDFJS = async () => {
   
   return new Promise((resolve, reject) => {
     script.onload = () => {
-      console.log('PDF.js 라이브러리 로드 완료');
       // Worker 완전 비활성화
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = null;
       resolve(window.pdfjsLib);
@@ -283,9 +281,6 @@ const generateSongFileName = (songTitle, songKey, songId) => {
 // 파일 업로드 및 변환 전체 프로세스
 export const processFileUpload = async (file, songId = null, songTitle = null, songKey = null) => {
   try {
-    console.log('=== processFileUpload 시작 ===');
-    console.log('파일:', file.name);
-    console.log('찬양 정보:', { songId, songTitle, songKey });
     
     // 1. 파일을 JPG로 변환 (찬양 정보 전달)
     const conversionResult = await convertToJPG(file, songTitle, songKey, songId);

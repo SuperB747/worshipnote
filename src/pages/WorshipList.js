@@ -209,7 +209,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   // 찬양 리스트 데이터 유효성 검사
   const validateWorshipListData = (worshipListsData) => {
     if (!worshipListsData || typeof worshipListsData !== 'object') {
-      console.error('찬양 리스트 데이터가 유효하지 않습니다:', worshipListsData);
       return false;
     }
 
@@ -219,18 +218,15 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
       
       const worshipList = worshipListsData[dateKey];
       if (!Array.isArray(worshipList)) {
-        console.error(`날짜 ${dateKey}의 찬양 리스트가 배열이 아닙니다:`, worshipList);
         return false;
       }
 
       // 각 찬양 항목 검사
       worshipList.forEach((song, index) => {
         if (!song || typeof song !== 'object') {
-          console.error(`날짜 ${dateKey}의 ${index}번째 찬양이 유효하지 않습니다:`, song);
           return false;
         }
         if (!song.id || !song.title) {
-          console.error(`날짜 ${dateKey}의 ${index}번째 찬양에 필수 필드가 없습니다:`, song);
           return false;
         }
       });
@@ -554,7 +550,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   };
 
   const handleDragStart = (event) => {
-    console.log('드래그 시작:', event.active.id);
   };
 
   const handleDragOver = (event) => {
@@ -564,13 +559,11 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
   const handleDragEnd = (event) => {
     const { active, over } = event;
     
-    console.log('드래그 종료:', { active: active.id, over: over?.id });
     
     if (active.id !== over?.id && over) {
       const oldIndex = currentWorshipList.findIndex(song => song.id === active.id);
       const newIndex = currentWorshipList.findIndex(song => song.id === over.id);
       
-      console.log('순서 변경:', { oldIndex, newIndex });
       
       if (oldIndex !== -1 && newIndex !== -1) {
         const newList = arrayMove(currentWorshipList, oldIndex, newIndex);
@@ -584,7 +577,6 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         // 변경사항 플래그 설정
         setHasUnsavedChanges(true);
         
-        console.log('순서 변경 완료');
       }
     }
   };
