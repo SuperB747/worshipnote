@@ -765,34 +765,52 @@
 
 .list-item.dragging {
   background: white;
-  box-shadow: 0 10px 25px var(--shadow-medium);
-  transform: rotate(2deg);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  transform: rotate(3deg) scale(1.02);
+  z-index: 1000;
+  border: 2px solid var(--primary-green);
+  opacity: 0.9;
+}
+
+/* 드롭 오버 상태 */
+.draggable-list {
+  transition: background-color 0.2s ease;
+}
+
+.draggable-list.drag-over {
+  background: rgba(74, 124, 89, 0.05);
 }
 
 .drag-handle {
   cursor: grab;
   color: #666;
-  padding: 6px;
-  border-radius: 4px;
+  padding: 8px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
-  min-height: 28px;
-  transition: background-color 0.2s ease;
+  min-width: 32px;
+  min-height: 32px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  user-select: none;
 }
 
 .drag-handle:hover {
-  background: rgba(74, 124, 89, 0.1);
+  background: rgba(74, 124, 89, 0.15);
+  border-color: rgba(74, 124, 89, 0.3);
+  color: var(--primary-green);
 }
 
 .drag-handle:active {
   cursor: grabbing;
+  background: rgba(74, 124, 89, 0.2);
+  transform: scale(0.95);
 }
 
 .grip-icon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .song-content {

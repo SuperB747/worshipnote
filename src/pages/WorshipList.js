@@ -51,7 +51,12 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit, isFileExistence
       style={style}
       className={`list-item ${isDragging ? 'dragging' : ''}`}
     >
-      <div className="drag-handle" {...attributes} {...listeners}>
+      <div 
+        className="drag-handle" 
+        {...attributes} 
+        {...listeners}
+        title="드래그하여 순서 변경"
+      >
         <GripVertical className="grip-icon" />
       </div>
       
@@ -300,7 +305,11 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
 
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 드래그 시작을 위한 최소 거리
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -543,23 +552,39 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     setHasUnsavedChanges(true);
   };
 
+  const handleDragStart = (event) => {
+    console.log('드래그 시작:', event.active.id);
+  };
+
+  const handleDragOver = (event) => {
+    // 드롭 오버 상태 표시를 위한 로직
+  };
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
     
-    if (active.id !== over.id) {
+    console.log('드래그 종료:', { active: active.id, over: over?.id });
+    
+    if (active.id !== over?.id && over) {
       const oldIndex = currentWorshipList.findIndex(song => song.id === active.id);
       const newIndex = currentWorshipList.findIndex(song => song.id === over.id);
       
-      const newList = arrayMove(currentWorshipList, oldIndex, newIndex);
+      console.log('순서 변경:', { oldIndex, newIndex });
       
-      // 상태 업데이트 (저장하지 않음)
-      setWorshipLists(prev => ({
-        ...prev,
-        [currentDateKey]: newList
-      }));
-      
-      // 변경사항 플래그 설정
-      setHasUnsavedChanges(true);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newList = arrayMove(currentWorshipList, oldIndex, newIndex);
+        
+        // 상태 업데이트 (저장하지 않음)
+        setWorshipLists(prev => ({
+          ...prev,
+          [currentDateKey]: newList
+        }));
+        
+        // 변경사항 플래그 설정
+        setHasUnsavedChanges(true);
+        
+        console.log('순서 변경 완료');
+      }
     }
   };
 
@@ -1139,6 +1164,8 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
               >
                 <SortableContext
