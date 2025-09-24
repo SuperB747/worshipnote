@@ -1180,13 +1180,12 @@ export const syncFromOneDrive = async () => {
 // 파일 존재 여부 확인 함수
 export const checkFileExists = async (filePath) => {
   try {
-    if (!window.electronAPI || !window.electronAPI.readFile) {
+    if (!window.electronAPI || !window.electronAPI.checkFileExists) {
       return false;
     }
     
-    const fileData = await window.electronAPI.readFile(filePath);
-    const exists = fileData !== null && fileData !== undefined;
-    return exists;
+    const result = await window.electronAPI.checkFileExists(filePath);
+    return result && result.success && result.exists;
   } catch (error) {
     return false;
   }

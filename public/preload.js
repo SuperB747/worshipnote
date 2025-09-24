@@ -20,6 +20,11 @@ const readFile = async (filePath) => {
   return await ipcRenderer.invoke('read-file', filePath);
 };
 
+// 파일 존재 여부 확인 함수 (IPC로 메인 프로세스에 위임)
+const checkFileExists = async (filePath) => {
+  return await ipcRenderer.invoke('check-file-exists', filePath);
+};
+
 // 파일 삭제 함수 (IPC로 메인 프로세스에 위임)
 const deleteFile = async (filePath) => {
   return await ipcRenderer.invoke('delete-file', filePath);
@@ -68,5 +73,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeFile: (filePath, data) => writeFile(filePath, data),
   savePdf: (pdfData) => savePdf(pdfData),
   openFile: (filePath) => openFile(filePath),
+  checkFileExists: (filePath) => checkFileExists(filePath),
   convertPDFToJPG: (file, fileName) => convertPDFToJPG(file, fileName)
 });

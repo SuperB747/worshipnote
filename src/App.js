@@ -31,24 +31,6 @@ function App() {
     setCurrentPage(page);
   };
 
-  // 실제 파일 존재 여부를 확인하는 함수
-  const checkFileExists = async (fileName) => {
-    if (!fileName || !window.electronAPI || !window.electronAPI.readFile) {
-      return false;
-    }
-    
-    try {
-      // Music_Sheets 경로를 가져와서 파일 경로 구성
-      const musicSheetsPath = await window.electronAPI.getMusicSheetsPath();
-      const fullPath = `${musicSheetsPath}/${fileName}`;
-      
-      // 파일 읽기 시도 (파일이 없으면 null 반환)
-      const fileData = await window.electronAPI.readFile(fullPath);
-      return fileData !== null;
-    } catch (error) {
-      return false;
-    }
-  };
 
   // 앱 초기화 시 데이터 로드
   useEffect(() => {
@@ -163,8 +145,15 @@ function App() {
       
       for (const song of songs) {
         if (song.fileName && song.fileName.trim() !== '') {
-          const exists = await checkFileExists(song.fileName);
-          existenceMap[song.id] = exists;
+          try {
+            // Music_Sheets 경로를 가져와서 전체 경로 구성
+            const musicSheetsPath = await window.electronAPI.getMusicSheetsPath();
+            const fullPath = `${musicSheetsPath}/${song.fileName}`;
+            const exists = await checkFileExists(fullPath);
+            existenceMap[song.id] = exists;
+          } catch (error) {
+            existenceMap[song.id] = false;
+          }
         } else {
           existenceMap[song.id] = false;
         }

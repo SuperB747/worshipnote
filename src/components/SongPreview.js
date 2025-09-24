@@ -12,8 +12,11 @@ const SongPreview = ({ selectedSong }) => {
   const imageRef = useRef(null);
 
   const loadImagePreview = useCallback(async () => {
-    if (!selectedSong || !selectedSong.fileName) {
+    if (!selectedSong || !selectedSong.fileName || selectedSong.fileName.trim() === '') {
       setError('악보 파일명이 없습니다.');
+      setImageUrl(null);
+      setImageLoadError(false);
+      setLoading(false);
       return;
     }
     
@@ -168,9 +171,9 @@ const SongPreview = ({ selectedSong }) => {
   }, [selectedSong, imageUrl]);
 
   useEffect(() => {
-    if (selectedSong && selectedSong.fileName) {
-      // 같은 곡이면 다시 로드하지 않음
-      if (lastLoadedSongId === selectedSong.id) {
+    if (selectedSong && selectedSong.fileName && selectedSong.fileName.trim() !== '') {
+      // 같은 곡이면 다시 로드하지 않음 (단, 이미지 로드 에러가 있었던 경우는 제외)
+      if (lastLoadedSongId === selectedSong.id && !imageLoadError && imageUrl) {
         return;
       }
       loadImagePreview();
@@ -182,7 +185,7 @@ const SongPreview = ({ selectedSong }) => {
       setLoading(false);
       setLastLoadedSongId(null);
     }
-  }, [selectedSong, loadImagePreview, lastLoadedSongId]);
+  }, [selectedSong, loadImagePreview, lastLoadedSongId, imageLoadError, imageUrl]);
 
   // 컴포넌트 언마운트 시 URL 정리
   useEffect(() => {
@@ -316,7 +319,7 @@ const SongPreview = ({ selectedSong }) => {
       <div className="score-placeholder">
         <Music className="score-icon" />
         <p>악보 파일이 없습니다</p>
-        {selectedSong.fileName && (
+        {selectedSong.fileName && selectedSong.fileName.trim() !== '' && (
           <div className="file-info">
             <span>파일: {selectedSong.fileName}</span>
           </div>

@@ -30,7 +30,7 @@ import GhibliDialog from '../components/GhibliDialog';
 import './WorshipList.css';
 
 // SortableItem 컴포넌트
-const SortableItem = ({ song, index, onRemove, onSelect, onEdit, isFileExistenceLoaded }) => {
+const SortableItem = ({ song, index, onRemove, onSelect, onEdit, isFileExistenceLoaded, fileExistenceMap }) => {
   const {
     attributes,
     listeners,
@@ -77,23 +77,33 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit, isFileExistence
       <div className="song-actions">
         {/* 악보 상태 아이콘과 코드 아이콘 */}
         <div className="music-sheet-status">
-          {isFileExistenceLoaded ? (
-            song.fileName ? (
-              isCorrectFileName(song.fileName) ? (
-                <div className="status-correct-filename" title="악보 파일 정상">
-                  <FileText className="status-icon correct-icon" />
-                </div>
+          {song.fileName && song.fileName.trim() !== '' ? (
+            isFileExistenceLoaded ? (
+              fileExistenceMap[song.id] === true ? (
+                isCorrectFileName(song.fileName) ? (
+                  <div className="status-correct-filename" title="악보 파일 정상">
+                    <FileText className="status-icon correct-icon" />
+                  </div>
+                ) : (
+                  <div className="status-incorrect-filename" title="파일명 형식이 올바르지 않음">
+                    <AlertTriangle className="status-icon warning-icon" />
+                  </div>
+                )
               ) : (
-                <div className="status-incorrect-filename" title="파일명 형식이 올바르지 않음">
-                  <AlertTriangle className="status-icon warning-icon" />
+                <div className="status-no-file" title="악보 파일 없음">
+                  <FileText className="status-icon no-file-icon" />
                 </div>
               )
             ) : (
-              <div className="status-no-file" title="악보 파일 없음">
-                <FileText className="status-icon no-file-icon" />
+              <div className="status-loading" title="파일 확인 중...">
+                <div className="loading-spinner-small"></div>
               </div>
             )
-          ) : null}
+          ) : (
+            <div className="status-no-file" title="악보 파일 없음">
+              <FileText className="status-icon no-file-icon" />
+            </div>
+          )}
           {song.chord && song.chord.trim() && (
             <span className="song-key-icon">{song.chord}</span>
           )}
@@ -1208,6 +1218,7 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                         onSelect={setSelectedSong}
                         onEdit={handleEditSong}
                         isFileExistenceLoaded={isFileExistenceLoaded}
+                        fileExistenceMap={fileExistenceMap}
                       />
                     ))}
                   </div>

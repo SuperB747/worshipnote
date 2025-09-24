@@ -240,6 +240,15 @@ app.whenReady().then(() => {
     return findMusicSheetsPath();
   });
 
+  ipcMain.handle('check-file-exists', async (event, filePath) => {
+    try {
+      await fsPromises.access(filePath, fs.constants.F_OK);
+      return { success: true, exists: true };
+    } catch (error) {
+      return { success: true, exists: false };
+    }
+  });
+
   ipcMain.handle('create-directory', async (event, dirPath) => {
     try {
       await ensureDirectoryExists(dirPath);

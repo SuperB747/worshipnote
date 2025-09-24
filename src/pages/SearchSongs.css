@@ -1004,3 +1004,79 @@
     padding: 20px;
   }
 }
+
+/* 로딩 스피너 스타일 */
+.status-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner-small {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid var(--primary-green);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 사용 횟수 스타일 - Electron에서 기본 툴팁 완전 제거 */
+.usage-count {
+  font-weight: normal;
+  color: #666;
+  font-size: 0.9em;
+  cursor: default;
+  display: inline-block;
+  text-decoration: none;
+  outline: none;
+  border: none;
+  background: none;
+  transition: none;
+  /* Electron에서 기본 툴팁 완전 제거 */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  pointer-events: auto;
+}
+
+/* Electron에서 기본 툴팁 제거 */
+.usage-count:hover {
+  background: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* 커스텀 툴팁 - JavaScript로 제어 */
+.custom-tooltip {
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: pre-line;
+  min-width: 120px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  margin-bottom: 5px;
+  /* 화살표 */
+  position: relative;
+}
+
+.custom-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
+}

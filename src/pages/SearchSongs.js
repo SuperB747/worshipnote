@@ -37,20 +37,11 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
   const [originalSelectedSong, setOriginalSelectedSong] = useState(null);
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
   const [confirmDialog, setConfirmDialog] = useState({ isVisible: false, message: '', onConfirm: null });
+  const [tooltip, setTooltip] = useState({ visible: false, text: '', x: 0, y: 0 });
 
   const keys = ['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Em', 'Eb', 'F', 'G'];
   const tempos = ['Fast', 'Medium', 'Slow'];
 
-  // 악보 파일이 있는지 확인하는 함수 (실제 파일 존재 여부 포함)
-  const hasMusicSheet = (song) => {
-    // fileName이 없으면 악보 없음
-    if (!song.fileName || song.fileName.trim() === '') {
-      return false;
-    }
-    
-    // 파일 존재 여부 상태에서 확인
-    return fileExistenceMap[song.id] === true;
-  };
 
   // 파일명이 올바른 형식인지 확인하는 함수
   const hasCorrectFileName = (song) => {
@@ -58,6 +49,21 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
       return false;
     }
     return isCorrectFileName(song.fileName);
+  };
+
+  // 툴팁 핸들러
+  const handleTooltipMouseEnter = (e, tooltipText) => {
+    const rect = e.target.getBoundingClientRect();
+    setTooltip({
+      visible: true,
+      text: tooltipText,
+      x: rect.left + rect.width / 2,
+      y: rect.top - 10
+    });
+  };
+
+  const handleTooltipMouseLeave = () => {
+    setTooltip({ visible: false, text: '', x: 0, y: 0 });
   };
 
   // 컴포넌트 마운트 시 검색 입력 필드 포커스
@@ -82,9 +88,9 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
       // 액티브 필터 적용
       let matchesActiveFilter = true;
       if (activeFilter === 'missing') {
-        matchesActiveFilter = !hasMusicSheet(song);
+        matchesActiveFilter = !(song.fileName && song.fileName.trim() !== '' && fileExistenceMap[song.id] === true);
       } else if (activeFilter === 'filename-error') {
-        matchesActiveFilter = hasMusicSheet(song) && !hasCorrectFileName(song);
+        matchesActiveFilter = (song.fileName && song.fileName.trim() !== '' && fileExistenceMap[song.id] === true) && !hasCorrectFileName(song);
       }
       
       
@@ -117,11 +123,11 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
   // 악보 누락 개수 계산
   // 파일명 에러 개수 계산
   const filenameErrorCount = useMemo(() => {
-    return songs.filter(song => hasMusicSheet(song) && !hasCorrectFileName(song)).length;
+    return songs.filter(song => (song.fileName && song.fileName.trim() !== '' && fileExistenceMap[song.id] === true) && !hasCorrectFileName(song)).length;
   }, [songs, fileExistenceMap]);
 
   const missingMusicSheetCount = useMemo(() => {
-    return songs.filter(song => !hasMusicSheet(song)).length;
+    return songs.filter(song => !(song.fileName && song.fileName.trim() !== '' && fileExistenceMap[song.id] === true)).length;
   }, [songs, fileExistenceMap]);
 
   // 토글 핸들러 함수
@@ -632,7 +638,50 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                   }}
                 >
                   <div className="song-info">
-                    <h4>{song.title}</h4>
+                    <h4>
+                      {song.title}
+                      {(() => {
+                        // 찬양 리스트에서 사용된 횟수 계산
+                        const usageCount = Object.values(worshipLists).reduce((count, list) => {
+                          if (Array.isArray(list)) {
+                            return count + list.filter(item => item.id === song.id).length;
+                          }
+                          return count;
+                        }, 0);
+                        
+                        if (usageCount > 0) {
+                          // 사용된 날짜들 수집
+                          const usedDates = [];
+                          Object.keys(worshipLists).forEach(dateKey => {
+                            if (dateKey !== 'lastUpdated' && Array.isArray(worshipLists[dateKey])) {
+                              const isUsed = worshipLists[dateKey].some(item => item.id === song.id);
+                              if (isUsed) {
+                                usedDates.push(dateKey);
+                              }
+                            }
+                          });
+                          
+                          // 날짜 정렬 (최신순)
+                          usedDates.sort((a, b) => b.localeCompare(a));
+                          
+                          const tooltipText = usedDates.map(date => {
+                            const [year, month, day] = date.split('-');
+                            return `${year}년 ${month}월 ${day}일`;
+                          }).join('\n');
+                          
+                          return (
+                            <span 
+                              className="usage-count"
+                              onMouseEnter={(e) => handleTooltipMouseEnter(e, tooltipText)}
+                              onMouseLeave={handleTooltipMouseLeave}
+                            >
+                              [{usageCount}]
+                            </span>
+                          );
+                        }
+                        return '';
+                      })()}
+                    </h4>
                   </div>
                 </div>
                 
@@ -641,23 +690,33 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                   {/* 악보 상태 아이콘과 메타 정보 */}
                   <div className="song-meta">
                     <div className="music-sheet-status">
-                      {isFileExistenceLoaded ? (
-                        hasMusicSheet(song) ? (
-                          hasCorrectFileName(song) ? (
-                            <div className="status-correct-filename" title="악보 파일 정상">
-                              <FileText className="status-icon correct-icon" />
-                            </div>
+                      {song.fileName && song.fileName.trim() !== '' ? (
+                        isFileExistenceLoaded ? (
+                          fileExistenceMap[song.id] === true ? (
+                            hasCorrectFileName(song) ? (
+                              <div className="status-correct-filename" title="악보 파일 정상">
+                                <FileText className="status-icon correct-icon" />
+                              </div>
+                            ) : (
+                              <div className="status-incorrect-filename" title="파일명 형식이 올바르지 않음">
+                                <AlertTriangle className="status-icon warning-icon" />
+                              </div>
+                            )
                           ) : (
-                            <div className="status-incorrect-filename" title="파일명 형식이 올바르지 않음">
-                              <AlertTriangle className="status-icon warning-icon" />
+                            <div className="status-no-file" title="악보 파일 없음">
+                              <FileX className="status-icon no-file-icon" />
                             </div>
                           )
                         ) : (
-                          <div className="status-no-file" title="악보 파일 없음">
-                            <FileX className="status-icon no-file-icon" />
+                          <div className="status-loading" title="파일 확인 중...">
+                            <div className="loading-spinner-small"></div>
                           </div>
                         )
-                      ) : null}
+                      ) : (
+                        <div className="status-no-file" title="악보 파일 없음">
+                          <FileX className="status-icon no-file-icon" />
+                        </div>
+                      )}
                     </div>
                     <span className="song-key">{song.chord}</span>
                     <span className="song-tempo">{song.tempo}</span>
@@ -927,6 +986,22 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
         type={snackbar.type}
         message={snackbar.message}
       />
+
+      {/* 커스텀 툴팁 */}
+      {tooltip.visible && (
+        <div 
+          className="custom-tooltip"
+          style={{
+            position: 'fixed',
+            left: tooltip.x,
+            top: tooltip.y,
+            transform: 'translateX(-50%) translateY(-100%)',
+            zIndex: 10000
+          }}
+        >
+          {tooltip.text}
+        </div>
+      )}
     </div>
   );
 };
