@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Music, Search, Calendar, Plus, Download, RotateCcw, Clock } from 'lucide-react';
-import { createDatabaseBackup, restoreDatabaseFromBackup, getDatabaseLastUpdated } from '../utils/storage';
+import { createDatabaseBackup, restoreDatabaseFromBackup, getDatabaseLastUpdated, forceSyncToOneDrive } from '../utils/storage';
 import GhibliDialog from './GhibliDialog';
 import './Sidebar.css';
 
@@ -44,12 +44,14 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
     // localStorage에 저장
     localStorage.setItem('worshipnote_data', JSON.stringify({
       songs,
-      worshipLists
+      worshipLists,
+      lastSaved: new Date().toISOString()
     }));
 
     // OneDrive에도 저장 (Electron API 사용 가능한 경우)
     if (window.electronAPI && window.electronAPI.writeFile) {
       try {
+        console.log('OneDrive에 복원된 데이터 저장 시작...');
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
         if (oneDrivePath) {
           // WorshipNote_Data/Database 디렉토리 생성
@@ -74,11 +76,14 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
           };
 
           // Database 폴더에 저장
-          await window.electronAPI.writeFile(`${databaseDirPath}/songs.json`, JSON.stringify(songsData, null, 2));
-          await window.electronAPI.writeFile(`${databaseDirPath}/worship_lists.json`, JSON.stringify(worshipListsData, null, 2));
+          const songsResult = await window.electronAPI.writeFile(`${databaseDirPath}/songs.json`, JSON.stringify(songsData, null, 2));
+          const worshipListsResult = await window.electronAPI.writeFile(`${databaseDirPath}/worship_lists.json`, JSON.stringify(worshipListsData, null, 2));
           
+          console.log('OneDrive 저장 결과:', { songsResult, worshipListsResult });
+          console.log('OneDrive 저장 완료');
         }
       } catch (oneDriveError) {
+        console.error('OneDrive 저장 실패:', oneDriveError);
       }
     }
 
@@ -136,6 +141,33 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
         isVisible: true,
         type: 'error',
         message: `데이터베이스 백업 생성 중 오류가 발생했습니다:\n\n${error.message}`
+      });
+    }
+  };
+
+  const handleForceSync = async () => {
+    try {
+      console.log('현재 앱 데이터:', { songs: songs.length, worshipLists: Object.keys(worshipLists).length });
+      
+      const result = await forceSyncToOneDrive(songs, worshipLists);
+      if (result.success) {
+        setDialog({
+          isVisible: true,
+          type: 'success',
+          message: result.message || 'OneDrive 동기화가 완료되었습니다!'
+        });
+      } else {
+        setDialog({
+          isVisible: true,
+          type: 'error',
+          message: `동기화 실패: ${result.error}`
+        });
+      }
+    } catch (error) {
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: `동기화 중 오류가 발생했습니다: ${error.message}`
       });
     }
   };
@@ -376,19 +408,27 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
         
         <div className="data-management-buttons">
           <button 
-            className="data-btn backup-btn"
+            className="data-btn"
+            onClick={handleForceSync}
+            title="OneDrive 강제 동기화"
+          >
+            <span className="btn-emoji">☁️</span>
+            <span className="btn-caption">동기화</span>
+          </button>
+          <button 
+            className="data-btn"
             onClick={handleDatabaseBackup}
             title="데이터베이스 백업"
           >
-            <span className="btn-emoji">💾</span>
+            <span className="btn-emoji">📁</span>
             <span className="btn-caption">백업</span>
           </button>
           <button 
-            className="data-btn restore-btn"
+            className="data-btn"
             onClick={handleDatabaseRestore}
             title="데이터베이스 복원"
           >
-            <span className="btn-emoji">🔄</span>
+            <span className="btn-emoji">↻</span>
             <span className="btn-caption">복원</span>
           </button>
         </div>

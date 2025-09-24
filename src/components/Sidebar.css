@@ -241,16 +241,16 @@
 
 .data-management-buttons {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   justify-content: center;
 }
 
 .data-btn {
-  width: 55px;
-  height: 45px;
-  border: none;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
+  width: 50px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   transition: all 0.3s ease;
@@ -259,30 +259,29 @@
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  gap: 3px;
+  gap: 2px;
+  min-width: 50px;
+  max-width: 50px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  outline: none;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .data-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .data-btn:active {
   transform: translateY(0);
 }
 
-.backup-btn:hover {
-  background: rgba(76, 175, 80, 0.3);
-  border-color: rgba(76, 175, 80, 0.5);
-}
-
-.restore-btn:hover {
-  background: rgba(255, 152, 0, 0.3);
-  border-color: rgba(255, 152, 0, 0.5);
-}
 
 .btn-icon {
   width: 18px;
@@ -290,16 +289,20 @@
 }
 
 .btn-emoji {
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
+  filter: grayscale(100%) brightness(1.5) contrast(1.2);
+  opacity: 0.8;
 }
 
 .btn-caption {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   line-height: 1;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .sidebar-footer {

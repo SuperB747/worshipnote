@@ -57,7 +57,13 @@
       "verifyUpdateCodeSignature": false,
       "requestedExecutionLevel": "asInvoker",
       "artifactName": "WorshipNote-Setup.exe",
-      "publisherName": "WorshipNote"
+      "publisherName": "WorshipNote",
+      "extraResources": [
+        {
+          "from": "public/data.json",
+          "to": "data.json"
+        }
+      ]
     },
     "nsis": {
       "oneClick": false,
