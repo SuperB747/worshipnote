@@ -17,18 +17,12 @@
     "electron-only": "npx electron . --disable-gpu --no-sandbox --disable-web-security --disable-features=VizDisplayCompositor",
     "electron-safe": "npx electron . --disable-gpu --no-sandbox --disable-web-security --disable-features=VizDisplayCompositor --disable-dev-shm-usage --disable-extensions --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding",
     "electron-pack": "electron-builder",
-    "preelectron-pack": "npm run build",
-    "backup": "node scripts/worshipnote-manager.js backup",
-    "pdf": "node scripts/worshipnote-manager.js pdf",
-    "pdf-all": "node scripts/worshipnote-manager.js pdf-all",
-    "info": "node scripts/worshipnote-manager.js info",
-    "full": "node scripts/worshipnote-manager.js full",
-    "check-sync": "node scripts/check-onedrive-sync.js"
+    "preelectron-pack": "npm run build"
   },
   "build": {
     "appId": "com.worshipnote.app",
     "productName": "WorshipNote",
-    "icon": "public/icon.ico",
+    "icon": "public/icon.png",
     "directories": {
       "output": "dist"
     },
@@ -36,12 +30,19 @@
       "build/**/*",
       "public/electron.js",
       "public/preload.js",
-      "node_modules/**/*"
+      "public/icon.png"
+    ],
+    "asarUnpack": [
+      "public/fonts/**/*"
     ],
     "extraResources": [
       {
         "from": "public/fonts",
         "to": "fonts"
+      },
+      {
+        "from": "public/data.json",
+        "to": "data.json"
       }
     ],
     "mac": {
@@ -58,13 +59,7 @@
       "verifyUpdateCodeSignature": false,
       "requestedExecutionLevel": "asInvoker",
       "artifactName": "WorshipNote-Setup.exe",
-      "publisherName": "WorshipNote",
-      "extraResources": [
-        {
-          "from": "public/data.json",
-          "to": "data.json"
-        }
-      ]
+      "publisherName": "WorshipNote"
     },
     "nsis": {
       "oneClick": false,
