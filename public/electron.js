@@ -9,6 +9,15 @@ process.env.NODE_OPTIONS = '--max-old-space-size=4096';
 process.env.LANG = 'ko_KR.UTF-8';
 process.env.LC_ALL = 'ko_KR.UTF-8';
 
+// 캐시 관련 에러 방지 설정
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
+process.env.ELECTRON_DISABLE_GPU = 'false';
+process.env.ELECTRON_ENABLE_LOGGING = 'false';
+
+// React DevTools 완전 비활성화
+process.env.REACT_APP_DISABLE_DEVTOOLS = 'true';
+process.env.NODE_ENV = 'production';
+
 // OneDrive 파일 동기화 상태 확인 함수
 async function checkOneDriveSyncStatus(filePath) {
   try {
@@ -55,7 +64,15 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
-      webSecurity: true
+      webSecurity: true,
+      // 캐시 관련 설정 추가
+      cache: false,
+      disableBackgroundTimer: true,
+      disableBackgroundThrottling: true,
+      disableRendererBackgrounding: true,
+      // DevTools 관련 설정
+      devTools: false,
+      experimentalFeatures: false
     },
     icon: path.join(__dirname, 'icon.png'),
     titleBarStyle: 'default',
@@ -200,6 +217,18 @@ const ensureDirectoryExists = async (dirPath) => {
 
 
 app.whenReady().then(() => {
+  // 캐시 디렉토리 설정 (에러 방지)
+  const userDataPath = app.getPath('userData');
+  const cachePath = path.join(userDataPath, 'cache');
+  
+  // 캐시 디렉토리 생성
+  if (!fs.existsSync(cachePath)) {
+    fs.mkdirSync(cachePath, { recursive: true });
+  }
+  
+  // 캐시 관련 환경 변수 설정
+  process.env.ELECTRON_CACHE_DIR = cachePath;
+  
   createWindow();
   
   // IPC 핸들러 등록

@@ -65,6 +65,11 @@
   margin: 3px 12px;
   border-radius: 12px;
   font-weight: 500;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
 }
 
 .nav-item::before {

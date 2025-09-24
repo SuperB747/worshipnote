@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
 import { Music, Search, Calendar, Plus, Download, RotateCcw, Clock } from 'lucide-react';
 import { createDatabaseBackup, restoreDatabaseFromBackup, getDatabaseLastUpdated, forceSyncToOneDrive } from '../utils/storage';
 import GhibliDialog from './GhibliDialog';
 import './Sidebar.css';
 
-const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistenceMap }) => {
-  const location = useLocation();
+const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistenceMap, onPageChange, currentPage }) => {
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,9 +93,9 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
   };
 
   const menuItems = [
-    { path: '/', icon: Search, label: '악보 검색', color: '#6b8e6b' },
-    { path: '/add', icon: Plus, label: '악보 추가', color: '#4a7c59' },
-    { path: '/worship-list', icon: Calendar, label: '찬양 리스트 관리', color: '#8b7355' },
+    { path: '/', page: 'search', icon: Search, label: '악보 검색', color: '#6b8e6b' },
+    { path: '/add', page: 'add', icon: Plus, label: '악보 추가', color: '#4a7c59' },
+    { path: '/worship-list', page: 'worship-list', icon: Calendar, label: '찬양 리스트 관리', color: '#8b7355' },
   ];
 
   // 데이터베이스 마지막 업데이트 시간 가져오기
@@ -351,18 +349,20 @@ const Sidebar = ({ songs, worshipLists, setSongs, setWorshipLists, fileExistence
       <nav className="sidebar-nav">
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive = currentPage === item.page;
           
           return (
-            <Link
+            <button
               key={item.path}
-              to={item.path}
               className={`nav-item ${isActive ? 'active' : ''}`}
               style={{ '--item-color': item.color }}
+              onClick={() => {
+                onPageChange(item.page);
+              }}
             >
               <Icon className="nav-icon" />
               <span className="nav-label">{item.label}</span>
-            </Link>
+            </button>
           );
         })}
       </nav>

@@ -23,6 +23,13 @@ function App() {
   const [syncMessage, setSyncMessage] = useState('');
   const [selectedWorshipListDate, setSelectedWorshipListDate] = useState(null);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [forceRender, setForceRender] = useState(0);
+  const [currentPage, setCurrentPage] = useState('search'); // 'search', 'add', 'worship-list'
+
+  // 페이지 전환 함수
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
   // 실제 파일 존재 여부를 확인하는 함수
   const checkFileExists = async (fileName) => {
@@ -47,11 +54,11 @@ function App() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log('데이터 로딩 시작...');
+        // 컴포넌트가 완전히 마운트될 때까지 대기
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // DOM이 완전히 로드될 때까지 대기
         if (document.readyState !== 'complete') {
-          console.log('DOM 로딩 대기 중...');
           await new Promise(resolve => {
             const checkReady = () => {
               if (document.readyState === 'complete') {
@@ -69,13 +76,11 @@ function App() {
         const maxRetries = 100; // 10초 대기 (100ms * 100)
         
         while (!window.electronAPI && retryCount < maxRetries) {
-          console.log(`Electron API 대기 중... (${retryCount + 1}/${maxRetries})`);
           await new Promise(resolve => setTimeout(resolve, 100));
           retryCount++;
         }
         
         if (!window.electronAPI) {
-          console.error('Electron API 로드 실패 - 개발 모드로 실행 중일 수 있습니다.');
           // 개발 모드에서는 Electron API 없이도 작동하도록 fallback
           setSongs([]);
           setWorshipLists({});
@@ -83,20 +88,11 @@ function App() {
           return;
         }
         
-        console.log('Electron API 로드 완료:', Object.keys(window.electronAPI));
-        
         // OneDrive에서 최신 데이터 로드 (동기화 로직 제거)
         const { songs, worshipLists } = await initializeData();
         
-        console.log('로드된 songs:', songs.length, '개');
-        console.log('로드된 worshipLists:', Object.keys(worshipLists).length, '개');
-        console.log('songs 데이터:', songs);
-        console.log('worshipLists 데이터:', worshipLists);
-        
         setSongs(songs);
         setWorshipLists(worshipLists);
-        
-        console.log('데이터 설정 완료, isLoaded를 true로 설정');
         
         // 앱 시작 시 최신 찬양 리스트 날짜 설정
         if (isFirstLoad) {
@@ -126,14 +122,21 @@ function App() {
           setIsFirstLoad(false);
         }
         
-        console.log('setIsLoaded(true) 호출');
         setIsLoaded(true);
+        
+        // 강제 렌더링 트리거
+        setTimeout(() => {
+          setForceRender(prev => prev + 1);
+        }, 100);
       } catch (error) {
-        console.log('데이터 로딩 에러:', error);
         setSongs([]);
         setWorshipLists({});
-        console.log('에러 후 setIsLoaded(true) 호출');
         setIsLoaded(true);
+        
+        // 강제 렌더링 트리거
+        setTimeout(() => {
+          setForceRender(prev => prev + 1);
+        }, 100);
       }
     };
     
@@ -142,7 +145,6 @@ function App() {
     
     // 안전장치: 3초 후에도 로딩이 완료되지 않으면 강제로 완료 처리
     const safetyTimer = setTimeout(() => {
-      console.log('안전장치: 3초 후 강제로 로딩 완료 처리');
       setIsLoaded(true);
     }, 3000);
     
@@ -205,47 +207,69 @@ function App() {
     );
   }
 
+
+  // Router 없이 직접 SearchSongs 렌더링 (테스트용)
   return (
-    <Router basename="/" future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <div className="app">
-        <Sidebar 
-          songs={songs}
-          worshipLists={worshipLists}
-          setSongs={setSongs}
-          setWorshipLists={setWorshipLists}
-          fileExistenceMap={fileExistenceMap}
-        />
-        <div className="main-content">
-          <div className="content-area">
-            <Routes>
-              <Route 
-                path="/" 
-                element={<SearchSongs songs={songs} setSongs={setSongs} selectedSong={selectedSong} setSelectedSong={setSelectedSong} fileExistenceMap={fileExistenceMap} setFileExistenceMap={setFileExistenceMap} worshipLists={worshipLists} setWorshipLists={setWorshipLists} isFileExistenceLoaded={isFileExistenceLoaded} />} 
-              />
-              <Route 
-                path="/add" 
-                element={<AddSong songs={songs} setSongs={setSongs} setSelectedSong={setSelectedSong} />} 
-              />
-              <Route 
-                path="/worship-list" 
-                element={<WorshipList songs={songs} worshipLists={worshipLists} setWorshipLists={setWorshipLists} setSelectedSong={setSelectedSong} setSongs={setSongs} fileExistenceMap={fileExistenceMap} setFileExistenceMap={setFileExistenceMap} selectedWorshipListDate={selectedWorshipListDate} setSelectedWorshipListDate={setSelectedWorshipListDate} isFileExistenceLoaded={isFileExistenceLoaded} />} 
-              />
-            </Routes>
-          </div>
-          <SongPreview selectedSong={selectedSong} />
+    <div className="app">
+      <Sidebar 
+        songs={songs}
+        worshipLists={worshipLists}
+        setSongs={setSongs}
+        setWorshipLists={setWorshipLists}
+        fileExistenceMap={fileExistenceMap}
+        onPageChange={handlePageChange}
+        currentPage={currentPage}
+      />
+      <div className="main-content">
+        <div className="content-area">
+          {currentPage === 'search' && (
+            <SearchSongs 
+              songs={songs} 
+              setSongs={setSongs} 
+              selectedSong={selectedSong} 
+              setSelectedSong={setSelectedSong} 
+              fileExistenceMap={fileExistenceMap} 
+              setFileExistenceMap={setFileExistenceMap} 
+              worshipLists={worshipLists} 
+              setWorshipLists={setWorshipLists} 
+              isFileExistenceLoaded={isFileExistenceLoaded} 
+            />
+          )}
+          {currentPage === 'add' && (
+            <AddSong 
+              songs={songs} 
+              setSongs={setSongs} 
+              setSelectedSong={setSelectedSong} 
+            />
+          )}
+          {currentPage === 'worship-list' && (
+            <WorshipList 
+              songs={songs} 
+              worshipLists={worshipLists} 
+              setWorshipLists={setWorshipLists} 
+              setSelectedSong={setSelectedSong} 
+              setSongs={setSongs} 
+              fileExistenceMap={fileExistenceMap} 
+              setFileExistenceMap={setFileExistenceMap} 
+              selectedWorshipListDate={selectedWorshipListDate} 
+              setSelectedWorshipListDate={setSelectedWorshipListDate} 
+              isFileExistenceLoaded={isFileExistenceLoaded} 
+            />
+          )}
         </div>
-        <Snackbar 
-          isVisible={snackbar.isVisible}
-          type={snackbar.type}
-          message={snackbar.message}
-          onClose={hideSnackbar}
-        />
-        <SyncAnimation 
-          isVisible={isSyncing}
-          message={syncMessage}
-        />
+        <SongPreview selectedSong={selectedSong} />
       </div>
-    </Router>
+      <Snackbar 
+        isVisible={snackbar.isVisible}
+        type={snackbar.type}
+        message={snackbar.message}
+        onClose={hideSnackbar}
+      />
+      <SyncAnimation 
+        isVisible={isSyncing}
+        message={syncMessage}
+      />
+    </div>
   );
 }
 

@@ -123,11 +123,8 @@ export const saveSongs = async (songs) => {
 
 export const loadSongs = async () => {
   try {
-    console.log('loadSongs 시작 - Electron API:', !!window.electronAPI);
-    
     // Electron API가 없으면 localStorage에서만 로드
     if (!window.electronAPI) {
-      console.log('Electron API 없음 - localStorage에서만 로드');
       const localData = loadFromStorage('songs', null);
       return localData || [];
     }
@@ -135,8 +132,6 @@ export const loadSongs = async () => {
     // 먼저 localStorage에서 로드 시도 (최신 복원 데이터가 있을 수 있음)
     const localData = loadFromStorage('songs', null);
     if (localData && localData.length > 0) {
-      console.log('localStorage에서 로드된 songs:', localData.length, '개');
-      
       // localStorage에 데이터가 있으면 OneDrive와 동기화 시도
       if (window.electronAPI && window.electronAPI.readFile) {
         try {
@@ -157,28 +152,23 @@ export const loadSongs = async () => {
               }
               
               const songsData = JSON.parse(jsonString);
-              console.log('OneDrive에서 로드된 songs:', songsData.songs?.length || 0, '개');
               
               // OneDrive 데이터와 localStorage 데이터 비교
               const localTimestamp = localStorage.getItem('worshipnote_data') ? 
                 JSON.parse(localStorage.getItem('worshipnote_data')).lastSaved : null;
               const oneDriveTimestamp = songsData.lastUpdated;
               
-              console.log('타임스탬프 비교:', { localTimestamp, oneDriveTimestamp });
-              
               // localStorage가 더 최신이면 localStorage 데이터 사용
               if (localTimestamp && oneDriveTimestamp && localTimestamp > oneDriveTimestamp) {
-                console.log('localStorage 데이터가 더 최신이므로 사용');
                 return localData;
               } else {
-                console.log('OneDrive 데이터가 더 최신이므로 사용');
                 saveToStorage('songs', songsData.songs);
                 return songsData.songs || [];
               }
             }
           }
         } catch (oneDriveError) {
-          console.log('OneDrive 동기화 실패, localStorage 데이터 사용:', oneDriveError.message);
+          // OneDrive 동기화 실패 시 localStorage 데이터 사용
         }
       }
       
@@ -188,12 +178,9 @@ export const loadSongs = async () => {
     // localStorage에 데이터가 없으면 OneDrive에서 로드 시도
     if (window.electronAPI && window.electronAPI.readFile) {
       try {
-        console.log('OneDrive에서 로드 시도...');
         const oneDrivePath = await window.electronAPI.getOneDrivePath();
-        console.log('OneDrive 경로:', oneDrivePath);
         if (oneDrivePath) {
           const filePath = `${oneDrivePath}/WorshipNote_Data/Database/songs.json`;
-          console.log('OneDrive 파일 경로:', filePath);
           const fileResult = await window.electronAPI.readFile(filePath);
           
           if (fileResult && fileResult.success && fileResult.data) {
@@ -209,7 +196,7 @@ export const loadSongs = async () => {
             }
             
             const songsData = JSON.parse(jsonString);
-            console.log('OneDrive에서 로드된 songs:', songsData.songs?.length || 0, '개');
+            // console.log('OneDrive에서 로드된 songs:', songsData.songs?.length || 0, '개');
             
             // localStorage에도 저장 (동기화)
             saveToStorage('songs', songsData.songs);
@@ -218,15 +205,15 @@ export const loadSongs = async () => {
           }
         }
       } catch (oneDriveError) {
-        console.log('OneDrive 로드 실패:', oneDriveError.message);
+        // console.log('OneDrive 로드 실패:', oneDriveError.message);
         // OneDrive 로드 실패 시 public/data.json에서 로드
         try {
-          console.log('public/data.json에서 로드 시도...');
+          // console.log('public/data.json에서 로드 시도...');
           const response = await fetch('/data.json');
           if (response.ok) {
             const data = await response.json();
             const songs = data.songs || [];
-            console.log('public/data.json에서 로드된 songs:', songs.length, '개');
+            // console.log('public/data.json에서 로드된 songs:', songs.length, '개');
             
             // localStorage에도 저장 (동기화)
             saveToStorage('songs', songs);
@@ -234,7 +221,7 @@ export const loadSongs = async () => {
             return songs;
           }
         } catch (fetchError) {
-          console.log('public/data.json 로드 실패:', fetchError.message);
+          // console.log('public/data.json 로드 실패:', fetchError.message);
         }
       }
     } else {
@@ -370,11 +357,11 @@ export const saveWorshipLists = async (worshipLists) => {
 
 export const loadWorshipLists = async () => {
   try {
-    console.log('loadWorshipLists 시작 - Electron API:', !!window.electronAPI);
+    // console.log('loadWorshipLists 시작 - Electron API:', !!window.electronAPI);
     
     // Electron API가 없으면 localStorage에서만 로드
     if (!window.electronAPI) {
-      console.log('Electron API 없음 - localStorage에서만 로드');
+      // console.log('Electron API 없음 - localStorage에서만 로드');
       const localData = loadFromStorage('worshipLists', null);
       return localData || {};
     }
@@ -382,7 +369,7 @@ export const loadWorshipLists = async () => {
     // 먼저 localStorage에서 로드 시도 (최신 복원 데이터가 있을 수 있음)
     const localData = loadFromStorage('worshipLists', null);
     if (localData && Object.keys(localData).length > 0) {
-      console.log('localStorage에서 로드된 worshipLists:', Object.keys(localData).length, '개');
+      // console.log('localStorage에서 로드된 worshipLists:', Object.keys(localData).length, '개');
       
       // localStorage에 데이터가 있으면 OneDrive와 동기화 시도
       if (window.electronAPI && window.electronAPI.readFile) {
@@ -404,28 +391,28 @@ export const loadWorshipLists = async () => {
               }
               
               const worshipListsData = JSON.parse(jsonString);
-              console.log('OneDrive에서 로드된 worshipLists:', Object.keys(worshipListsData.worshipLists || {}).length, '개');
+              // console.log('OneDrive에서 로드된 worshipLists:', Object.keys(worshipListsData.worshipLists || {}).length, '개');
               
               // OneDrive 데이터와 localStorage 데이터 비교
               const localTimestamp = localStorage.getItem('worshipnote_data') ? 
                 JSON.parse(localStorage.getItem('worshipnote_data')).lastSaved : null;
               const oneDriveTimestamp = worshipListsData.lastUpdated;
               
-              console.log('타임스탬프 비교:', { localTimestamp, oneDriveTimestamp });
+              // console.log('타임스탬프 비교:', { localTimestamp, oneDriveTimestamp });
               
               // localStorage가 더 최신이면 localStorage 데이터 사용
               if (localTimestamp && oneDriveTimestamp && localTimestamp > oneDriveTimestamp) {
-                console.log('localStorage 데이터가 더 최신이므로 사용');
+                // console.log('localStorage 데이터가 더 최신이므로 사용');
                 return localData;
               } else {
-                console.log('OneDrive 데이터가 더 최신이므로 사용');
+                // console.log('OneDrive 데이터가 더 최신이므로 사용');
                 saveToStorage('worshipLists', worshipListsData.worshipLists);
                 return worshipListsData.worshipLists || {};
               }
             }
           }
         } catch (oneDriveError) {
-          console.log('OneDrive 동기화 실패, localStorage 데이터 사용:', oneDriveError.message);
+          // console.log('OneDrive 동기화 실패, localStorage 데이터 사용:', oneDriveError.message);
         }
       }
       
@@ -504,11 +491,8 @@ export const loadWorshipLists = async () => {
 // 데이터 초기화
 export const initializeData = async () => {
   try {
-    console.log('initializeData 시작 - Electron API:', !!window.electronAPI);
-    
     // Electron API가 없으면 기본 데이터 반환
     if (!window.electronAPI) {
-      console.log('Electron API 없음 - 기본 데이터 반환');
       return {
         songs: [],
         worshipLists: {}
@@ -518,14 +502,11 @@ export const initializeData = async () => {
     const songs = await loadSongs();
     const worshipLists = await loadWorshipLists();
     
-    console.log('initializeData 완료 - songs:', songs.length, 'worshipLists:', Object.keys(worshipLists).length);
-    
     return {
       songs,
       worshipLists
     };
   } catch (error) {
-    console.error('initializeData 오류:', error);
     return {
       songs: [],
       worshipLists: {}
@@ -788,7 +769,7 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
     const songs = backupData.songs || [];
     const worshipLists = backupData.worshipLists || {};
     
-    console.log('복원할 데이터:', { songs: songs.length, worshipLists: Object.keys(worshipLists).length });
+    // console.log('복원할 데이터:', { songs: songs.length, worshipLists: Object.keys(worshipLists).length });
     
     // localStorage에 저장
     saveToStorage('songs', songs);
@@ -799,13 +780,13 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
     let worshipListsResult = false;
     
     try {
-      console.log('OneDrive에 songs 저장 시작...');
+      // console.log('OneDrive에 songs 저장 시작...');
       songsResult = await saveSongs(songs);
-      console.log('songs 저장 결과:', songsResult);
+      // console.log('songs 저장 결과:', songsResult);
       
       // 저장 후 즉시 확인
       if (songsResult) {
-        console.log('songs 저장 성공 - OneDrive 동기화 확인');
+        // console.log('songs 저장 성공 - OneDrive 동기화 확인');
       } else {
         console.error('songs 저장 실패 - OneDrive 동기화 실패');
       }
@@ -814,13 +795,13 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
     }
     
     try {
-      console.log('OneDrive에 worshipLists 저장 시작...');
+      // console.log('OneDrive에 worshipLists 저장 시작...');
       worshipListsResult = await saveWorshipLists(worshipLists);
-      console.log('worshipLists 저장 결과:', worshipListsResult);
+      // console.log('worshipLists 저장 결과:', worshipListsResult);
       
       // 저장 후 즉시 확인
       if (worshipListsResult) {
-        console.log('worshipLists 저장 성공 - OneDrive 동기화 확인');
+        // console.log('worshipLists 저장 성공 - OneDrive 동기화 확인');
       } else {
         console.error('worshipLists 저장 실패 - OneDrive 동기화 실패');
       }
@@ -832,7 +813,7 @@ export const restoreDatabaseFromBackup = async (backupFilePath, setSongs, setWor
     if (setSongs) setSongs(songs);
     if (setWorshipLists) setWorshipLists(worshipLists);
     
-    console.log('복원 완료 - localStorage와 OneDrive에 저장됨');
+    // console.log('복원 완료 - localStorage와 OneDrive에 저장됨');
     
     const stats = {
       totalSongs: songs.length,
@@ -921,24 +902,24 @@ export const forceSyncToOneDrive = async (currentSongs = null, currentWorshipLis
       return { success: false, error: 'OneDrive API가 사용할 수 없습니다.' };
     }
     
-    console.log('강제 동기화 시작...');
+    // console.log('강제 동기화 시작...');
     
     // 현재 앱에 로드된 데이터 사용 (매개변수로 전달된 경우)
     let songs, worshipLists;
     
     if (currentSongs && currentWorshipLists) {
-      console.log('앱에서 전달된 데이터 사용');
+      // console.log('앱에서 전달된 데이터 사용');
       songs = currentSongs;
       worshipLists = currentWorshipLists;
     } else {
-      console.log('localStorage에서 데이터 로드');
+      // console.log('localStorage에서 데이터 로드');
       // localStorage의 데이터 가져오기
       const localData = loadFromStorage('songs', { songs: [], worshipLists: {} });
       songs = localData.songs || [];
       worshipLists = localData.worshipLists || {};
     }
     
-    console.log('동기화할 데이터:', { songs: songs.length, worshipLists: Object.keys(worshipLists).length });
+    // console.log('동기화할 데이터:', { songs: songs.length, worshipLists: Object.keys(worshipLists).length });
     
     // 데이터가 비어있으면 동기화하지 않음
     if (songs.length === 0 && Object.keys(worshipLists).length === 0) {
@@ -952,7 +933,7 @@ export const forceSyncToOneDrive = async (currentSongs = null, currentWorshipLis
     const songsResult = await saveSongs(songs);
     const worshipListsResult = await saveWorshipLists(worshipLists);
     
-    console.log('강제 동기화 결과:', { songsResult, worshipListsResult });
+    // console.log('강제 동기화 결과:', { songsResult, worshipListsResult });
     
     return { 
       success: songsResult && worshipListsResult, 
