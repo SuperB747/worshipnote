@@ -38,7 +38,7 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit, isFileExistence
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: song.id });
+  } = useSortable({ id: `${song.id}-${index}` });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -120,7 +120,7 @@ const SortableItem = ({ song, index, onRemove, onSelect, onEdit, isFileExistence
         </button>
         <button 
           className="remove-btn"
-          onClick={() => onRemove(song.id)}
+          onClick={() => onRemove(`${song.id}-${index}`)}
         >
           <Trash2 size={14} />
         </button>
@@ -546,8 +546,12 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     }
   };
 
-  const handleRemoveSong = async (songId) => {
-    const newList = currentWorshipList.filter(song => song.id !== songId);
+  const handleRemoveSong = async (uniqueId) => {
+    // 고유한 ID에서 인덱스 추출
+    const indexToRemove = parseInt(uniqueId.split('-').pop());
+    
+    // 인덱스로 해당 아이템 제거
+    const newList = currentWorshipList.filter((_, index) => index !== indexToRemove);
     
     // 상태 업데이트 (저장하지 않음)
     setWorshipLists(prev => ({
@@ -557,6 +561,9 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     
     // 변경사항 플래그 설정
     setHasUnsavedChanges(true);
+    
+    // 스낵바 표시
+    showSnackbar('찬양이 제거되었습니다.', 'success');
   };
 
   const handleDragStart = (event) => {
@@ -571,11 +578,12 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     
     
     if (active.id !== over?.id && over) {
-      const oldIndex = currentWorshipList.findIndex(song => song.id === active.id);
-      const newIndex = currentWorshipList.findIndex(song => song.id === over.id);
+      // 고유한 ID에서 인덱스 추출
+      const oldIndex = parseInt(active.id.split('-').pop());
+      const newIndex = parseInt(over.id.split('-').pop());
       
       
-      if (oldIndex !== -1 && newIndex !== -1) {
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         const newList = arrayMove(currentWorshipList, oldIndex, newIndex);
         
         // 상태 업데이트 (저장하지 않음)
@@ -587,6 +595,8 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
         // 변경사항 플래그 설정
         setHasUnsavedChanges(true);
         
+        // 스낵바 표시
+        showSnackbar('찬양 순서가 변경되었습니다.', 'success');
       }
     }
   };
@@ -1205,13 +1215,13 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
                 onDragEnd={handleDragEnd}
               >
                 <SortableContext
-                  items={currentWorshipList.map(song => song.id)}
+                  items={currentWorshipList.map((song, index) => `${song.id}-${index}`)}
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="draggable-list">
                     {currentWorshipList.map((song, index) => (
                       <SortableItem
-                        key={song.id}
+                        key={`${song.id}-${index}`}
                         song={song}
                         index={index}
                         onRemove={handleRemoveSong}

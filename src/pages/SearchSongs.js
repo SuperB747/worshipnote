@@ -641,32 +641,28 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                     <h4>
                       {song.title}
                       {(() => {
-                        // 찬양 리스트에서 사용된 횟수 계산
-                        const usageCount = Object.values(worshipLists).reduce((count, list) => {
-                          if (Array.isArray(list)) {
-                            return count + list.filter(item => item.id === song.id).length;
+                        // 찬양 리스트에서 사용된 횟수와 날짜를 동시에 계산
+                        let usageCount = 0;
+                        const usedDates = [];
+                        
+                        Object.keys(worshipLists).forEach(dateKey => {
+                          if (dateKey !== 'lastUpdated' && Array.isArray(worshipLists[dateKey])) {
+                            const songOccurrences = worshipLists[dateKey].filter(item => item.id === song.id);
+                            if (songOccurrences.length > 0) {
+                              usageCount += songOccurrences.length;
+                              usedDates.push(dateKey);
+                            }
                           }
-                          return count;
-                        }, 0);
+                        });
                         
                         if (usageCount > 0) {
-                          // 사용된 날짜들 수집
-                          const usedDates = [];
-                          Object.keys(worshipLists).forEach(dateKey => {
-                            if (dateKey !== 'lastUpdated' && Array.isArray(worshipLists[dateKey])) {
-                              const isUsed = worshipLists[dateKey].some(item => item.id === song.id);
-                              if (isUsed) {
-                                usedDates.push(dateKey);
-                              }
-                            }
-                          });
-                          
                           // 날짜 정렬 (최신순)
                           usedDates.sort((a, b) => b.localeCompare(a));
                           
                           const tooltipText = usedDates.map(date => {
                             const [year, month, day] = date.split('-');
-                            return `${year}년 ${month}월 ${day}일`;
+                            const countInDate = worshipLists[date].filter(item => item.id === song.id).length;
+                            return `${year}년 ${month}월 ${day}일 (${countInDate}회)`;
                           }).join('\n');
                           
                           return (
