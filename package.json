@@ -64,7 +64,11 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "WorshipNote"
+      "shortcutName": "WorshipNote",
+      "allowElevation": true,
+      "runAfterFinish": false,
+      "deleteAppDataOnUninstall": false,
+      "include": "installer.nsh"
     },
     "linux": {
       "target": "AppImage"

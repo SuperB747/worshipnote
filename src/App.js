@@ -48,11 +48,50 @@ function App() {
     const loadData = async () => {
       try {
         console.log('데이터 로딩 시작...');
+        
+        // DOM이 완전히 로드될 때까지 대기
+        if (document.readyState !== 'complete') {
+          console.log('DOM 로딩 대기 중...');
+          await new Promise(resolve => {
+            const checkReady = () => {
+              if (document.readyState === 'complete') {
+                resolve();
+              } else {
+                setTimeout(checkReady, 100);
+              }
+            };
+            checkReady();
+          });
+        }
+        
+        // Electron API가 로드될 때까지 대기 (더 긴 시간)
+        let retryCount = 0;
+        const maxRetries = 100; // 10초 대기 (100ms * 100)
+        
+        while (!window.electronAPI && retryCount < maxRetries) {
+          console.log(`Electron API 대기 중... (${retryCount + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, 100));
+          retryCount++;
+        }
+        
+        if (!window.electronAPI) {
+          console.error('Electron API 로드 실패 - 개발 모드로 실행 중일 수 있습니다.');
+          // 개발 모드에서는 Electron API 없이도 작동하도록 fallback
+          setSongs([]);
+          setWorshipLists({});
+          setIsLoaded(true);
+          return;
+        }
+        
+        console.log('Electron API 로드 완료:', Object.keys(window.electronAPI));
+        
         // OneDrive에서 최신 데이터 로드 (동기화 로직 제거)
         const { songs, worshipLists } = await initializeData();
         
         console.log('로드된 songs:', songs.length, '개');
         console.log('로드된 worshipLists:', Object.keys(worshipLists).length, '개');
+        console.log('songs 데이터:', songs);
+        console.log('worshipLists 데이터:', worshipLists);
         
         setSongs(songs);
         setWorshipLists(worshipLists);
@@ -98,19 +137,16 @@ function App() {
       }
     };
     
-    // Electron API가 준비될 때까지 잠시 기다림
-    const timer = setTimeout(() => {
-      loadData();
-    }, 100);
+    // 즉시 로딩 시도
+    loadData();
     
-    // 안전장치: 5초 후에도 로딩이 완료되지 않으면 강제로 완료 처리
+    // 안전장치: 3초 후에도 로딩이 완료되지 않으면 강제로 완료 처리
     const safetyTimer = setTimeout(() => {
-      console.log('안전장치: 5초 후 강제로 로딩 완료 처리');
+      console.log('안전장치: 3초 후 강제로 로딩 완료 처리');
       setIsLoaded(true);
-    }, 5000);
+    }, 3000);
     
     return () => {
-      clearTimeout(timer);
       clearTimeout(safetyTimer);
     };
   }, []);

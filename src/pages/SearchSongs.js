@@ -11,6 +11,7 @@ import './SearchSongs.css';
 const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExistenceMap, setFileExistenceMap, worshipLists, setWorshipLists, isFileExistenceLoaded }) => {
   const { snackbar, showSnackbar } = useSnackbar();
   const searchInputRef = useRef(null);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     chord: '',

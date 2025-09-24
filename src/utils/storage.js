@@ -125,6 +125,13 @@ export const loadSongs = async () => {
   try {
     console.log('loadSongs 시작 - Electron API:', !!window.electronAPI);
     
+    // Electron API가 없으면 localStorage에서만 로드
+    if (!window.electronAPI) {
+      console.log('Electron API 없음 - localStorage에서만 로드');
+      const localData = loadFromStorage('songs', null);
+      return localData || [];
+    }
+    
     // 먼저 localStorage에서 로드 시도 (최신 복원 데이터가 있을 수 있음)
     const localData = loadFromStorage('songs', null);
     if (localData && localData.length > 0) {
@@ -365,6 +372,13 @@ export const loadWorshipLists = async () => {
   try {
     console.log('loadWorshipLists 시작 - Electron API:', !!window.electronAPI);
     
+    // Electron API가 없으면 localStorage에서만 로드
+    if (!window.electronAPI) {
+      console.log('Electron API 없음 - localStorage에서만 로드');
+      const localData = loadFromStorage('worshipLists', null);
+      return localData || {};
+    }
+    
     // 먼저 localStorage에서 로드 시도 (최신 복원 데이터가 있을 수 있음)
     const localData = loadFromStorage('worshipLists', null);
     if (localData && Object.keys(localData).length > 0) {
@@ -489,13 +503,34 @@ export const loadWorshipLists = async () => {
 
 // 데이터 초기화
 export const initializeData = async () => {
-  const songs = await loadSongs();
-  const worshipLists = await loadWorshipLists();
-  
-  return {
-    songs,
-    worshipLists
-  };
+  try {
+    console.log('initializeData 시작 - Electron API:', !!window.electronAPI);
+    
+    // Electron API가 없으면 기본 데이터 반환
+    if (!window.electronAPI) {
+      console.log('Electron API 없음 - 기본 데이터 반환');
+      return {
+        songs: [],
+        worshipLists: {}
+      };
+    }
+    
+    const songs = await loadSongs();
+    const worshipLists = await loadWorshipLists();
+    
+    console.log('initializeData 완료 - songs:', songs.length, 'worshipLists:', Object.keys(worshipLists).length);
+    
+    return {
+      songs,
+      worshipLists
+    };
+  } catch (error) {
+    console.error('initializeData 오류:', error);
+    return {
+      songs: [],
+      worshipLists: {}
+    };
+  }
 };
 
 // 찬양 리스트 백업 생성
