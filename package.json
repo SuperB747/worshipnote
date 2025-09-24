@@ -64,9 +64,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "WorshipNote",
-      "installerLanguages": ["korean", "english"],
-      "language": "1042"
+      "shortcutName": "WorshipNote"
     },
     "linux": {
       "target": "AppImage"
