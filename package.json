@@ -55,8 +55,6 @@
           "arch": ["x64"]
         }
       ],
-      "sign": false,
-      "verifyUpdateCodeSignature": false,
       "requestedExecutionLevel": "asInvoker",
       "artifactName": "WorshipNote-Setup.exe",
       "publisherName": "WorshipNote"
