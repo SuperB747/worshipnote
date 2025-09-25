@@ -33,6 +33,7 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
     error: null,
     message: ''
   });
+  const [isDragOver, setIsDragOver] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [originalSelectedSong, setOriginalSelectedSong] = useState(null);
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
@@ -324,6 +325,63 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
       });
     }
   };
+
+  // 드래그 앤 드롭 핸들러들
+  const handleEditDragEnter = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleEditDragLeave = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleEditDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleEditDrop = useCallback(async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      
+      // 파일 형식 검증
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        setUploadStatus({
+          isUploading: false,
+          success: false,
+          error: 'JPG, PNG, PDF 파일만 업로드할 수 있습니다.',
+          message: ''
+        });
+        return;
+      }
+
+      // 찬양 이름과 코드가 모두 입력되지 않았으면 경고
+      if (!editFormData.title.trim() || !editFormData.chord.trim()) {
+        setUploadStatus({
+          isUploading: false,
+          success: false,
+          error: '먼저 찬양 이름과 코드를 입력해주세요.',
+          message: ''
+        });
+        return;
+      }
+
+      // 기존 handleEditFileUpload와 동일한 로직 사용
+      handleEditFileUpload({ target: { files: [file] } });
+    }
+  }, [handleEditFileUpload, editFormData.title, editFormData.chord]);
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
@@ -862,7 +920,13 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                       </button>
                     )}
                   </label>
-                  <div className="file-upload-area compact">
+                  <div 
+                    className={`file-upload-area compact ${isDragOver ? 'drag-over' : ''}`}
+                    onDragEnter={handleEditDragEnter}
+                    onDragLeave={handleEditDragLeave}
+                    onDragOver={handleEditDragOver}
+                    onDrop={handleEditDrop}
+                  >
                     <input
                       type="file"
                       id="edit-file-upload"
@@ -886,10 +950,15 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
                           <CheckCircle className="success-icon" />
                           <span>{editFormData.fileName}</span>
                         </>
+                      ) : isDragOver ? (
+                        <>
+                          <Upload className="upload-icon" />
+                          <span>파일을 놓으세요</span>
+                        </>
                       ) : (
                         <>
                           <Upload className="upload-icon" />
-                          <span>JPG, PNG, PDF 파일을 선택하세요</span>
+                          <span>JPG, PNG, PDF 파일을 선택하거나 드래그하세요</span>
                         </>
                       )}
                     </label>
