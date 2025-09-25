@@ -267,6 +267,13 @@
   margin: 0;
 }
 
+.file-upload-area.drag-over {
+  background: linear-gradient(135deg, rgba(74, 124, 89, 0.1), rgba(107, 142, 107, 0.1));
+  border-color: var(--primary-green);
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
 .file-input {
   position: absolute;
   opacity: 0;

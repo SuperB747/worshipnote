@@ -23,6 +23,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     message: ''
   });
   const [dialog, setDialog] = useState({ isVisible: false, type: 'success', message: '' });
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const keys = ['A', 'Ab', 'B', 'Bb', 'C', 'D', 'E', 'Em', 'Eb', 'F', 'G'];
   const tempos = ['Fast', 'Medium', 'Slow'];
@@ -41,6 +42,147 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
       [name]: value
     }));
   }, []);
+
+  // 파일 업로드 핸들러 (드래그 앤 드롭에서 사용하기 위해 먼저 정의)
+  const handleFileUpload = useCallback(async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // 파일 형식 검증
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadStatus({
+        isUploading: false,
+        success: false,
+        error: 'JPG, PNG, GIF 파일만 업로드할 수 있습니다.',
+        message: ''
+      });
+      return;
+    }
+
+    // 찬양 이름과 코드가 모두 입력되지 않았으면 경고
+    if (!formData.title.trim() || !formData.chord.trim()) {
+      setUploadStatus({
+        isUploading: false,
+        success: false,
+        error: '먼저 찬양 이름과 코드를 입력해주세요.',
+        message: ''
+      });
+      return;
+    }
+
+    setUploadStatus({
+      isUploading: true,
+      success: false,
+      error: null,
+      message: ''
+    });
+
+    try {
+      // ID가 없으면 생성
+      const songId = formData.id || Date.now().toString();
+      
+      // ID가 새로 생성된 경우 formData 업데이트
+      if (!formData.id) {
+        setFormData(prev => ({
+          ...prev,
+          id: songId
+        }));
+      }
+      
+      const result = await processFileUpload(file, songId, formData.title, formData.chord);
+      
+      if (result.success) {
+        setFormData(prev => ({
+          ...prev,
+          fileName: result.fileName,
+          filePath: result.filePath
+        }));
+
+        setUploadStatus({
+          isUploading: false,
+          success: true,
+          error: null,
+          message: result.skipped ? 
+            `기존 파일과 연동되었습니다: ${result.fileName}` : 
+            result.message
+        });
+      } else {
+        setUploadStatus({
+          isUploading: false,
+          success: false,
+          error: result.error,
+          message: ''
+        });
+      }
+    } catch (error) {
+      setUploadStatus({
+        isUploading: false,
+        success: false,
+        error: '파일 처리 중 오류가 발생했습니다.',
+        message: ''
+      });
+    }
+  }, [formData.title, formData.chord, formData.id, setSongs, setSelectedSong]);
+
+  // 드래그 앤 드롭 이벤트 핸들러들
+  const handleDragEnter = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // 드래그가 완전히 영역을 벗어났을 때만 false로 설정
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      
+      // 파일 형식 검증
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        setUploadStatus({
+          isUploading: false,
+          success: false,
+          error: 'JPG, PNG, GIF 파일만 업로드할 수 있습니다.',
+          message: ''
+        });
+        return;
+      }
+
+      // 찬양 이름과 코드가 모두 입력되지 않았으면 경고
+      if (!formData.title.trim() || !formData.chord.trim()) {
+        setUploadStatus({
+          isUploading: false,
+          success: false,
+          error: '먼저 찬양 이름과 코드를 입력해주세요.',
+          message: ''
+        });
+        return;
+      }
+
+      // 기존 handleFileUpload와 동일한 로직 사용
+      handleFileUpload({ target: { files: [file] } });
+    }
+  }, [handleFileUpload, formData.title, formData.chord]);
+
 
   // 입력 필드 클릭 핸들러 - 간단한 버전
   const handleInputClick = useCallback((e) => {
@@ -78,84 +220,6 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
     }
   }, []);
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // 파일 형식 검증
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-    if (!allowedTypes.includes(file.type)) {
-      setUploadStatus({
-        isUploading: false,
-        success: false,
-        error: 'JPG, PNG, PDF 파일만 업로드할 수 있습니다.',
-        message: ''
-      });
-      return;
-    }
-
-    // 찬양 이름이 입력되지 않았으면 경고
-    if (!formData.title.trim()) {
-      setUploadStatus({
-        isUploading: false,
-        success: false,
-        error: '먼저 찬양 이름을 입력해주세요.',
-        message: ''
-      });
-      return;
-    }
-
-    setUploadStatus({
-      isUploading: true,
-      success: false,
-      error: null,
-      message: '파일을 처리하는 중...'
-    });
-
-    try {
-      // 새 찬양의 ID 생성 (임시 ID) - 아직 생성되지 않았으면 생성
-      const tempId = formData.id || Date.now().toString();
-      
-      const result = await processFileUpload(
-        file, 
-        tempId, // 임시 ID 사용
-        formData.title, 
-        formData.chord
-      );
-      
-      if (result.success) {
-        setFormData(prev => ({
-          ...prev,
-          id: tempId, // ID 저장
-          fileName: result.fileName,
-          filePath: result.filePath
-        }));
-        
-        setUploadStatus({
-          isUploading: false,
-          success: true,
-          error: null,
-          message: result.skipped ? 
-            `기존 파일과 연동되었습니다: ${result.fileName}` : 
-            result.message
-        });
-      } else {
-        setUploadStatus({
-          isUploading: false,
-          success: false,
-          error: result.error,
-          message: ''
-        });
-      }
-    } catch (error) {
-      setUploadStatus({
-        isUploading: false,
-        success: false,
-        error: '파일 처리 중 오류가 발생했습니다.',
-        message: ''
-      });
-    }
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -294,12 +358,18 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                 <Upload className="label-icon" />
                 악보 파일
               </label>
-              <div className="file-upload-area compact">
+              <div 
+                className={`file-upload-area compact ${isDragOver ? 'drag-over' : ''}`}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
                 <input
                   type="file"
                   id="file-upload"
                   onChange={handleFileUpload}
-                  accept=".jpg,.jpeg,.png,.pdf"
+                  accept=".jpg,.jpeg,.png,.gif"
                   className="file-input"
                   disabled={uploadStatus.isUploading}
                 />
@@ -314,10 +384,15 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
                       <CheckCircle className="success-icon" />
                       <span>{formData.fileName}</span>
                     </>
+                  ) : isDragOver ? (
+                    <>
+                      <Upload className="upload-icon" />
+                      <span>파일을 놓으세요</span>
+                    </>
                   ) : (
                     <>
                       <Upload className="upload-icon" />
-                      <span>JPG, PNG, PDF 파일을 선택하세요</span>
+                      <span>JPG, PNG, GIF 파일을 선택하거나 드래그하세요</span>
                     </>
                   )}
                 </label>

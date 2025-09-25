@@ -71,7 +71,7 @@ function createWindow() {
       disableBackgroundThrottling: true,
       disableRendererBackgrounding: true,
       // DevTools 관련 설정
-      devTools: false,
+      devTools: true,
       experimentalFeatures: false
     },
     icon: path.join(__dirname, 'icon.png'),
@@ -98,7 +98,7 @@ function createWindow() {
 
 // OneDrive 경로 찾기 함수
 const findOneDrivePath = () => {
-  const homeDir = os.homedir();
+    const homeDir = os.homedir();
   const platform = os.platform();
   
   let possiblePaths = [];
@@ -126,9 +126,9 @@ const findOneDrivePath = () => {
       path.join(homeDir, 'Documents') // 폴백 경로
     ];
   }
-  
-  for (const oneDrivePath of possiblePaths) {
-    try {
+
+    for (const oneDrivePath of possiblePaths) {
+      try {
       if (require('fs').existsSync(oneDrivePath)) {
         return oneDrivePath;
       }
@@ -186,11 +186,11 @@ const findMusicSheetsPath = () => {
       if (require('fs').existsSync(musicSheetsPath)) {
         return musicSheetsPath;
       }
-    } catch (error) {
+  } catch (error) {
       continue;
-    }
   }
-  
+}
+
   // Music_Sheets 폴더가 없으면 첫 번째 가능한 경로에 생성 시도
   const firstMusicSheetsPath = possiblePaths[0];
   try {
@@ -230,7 +230,7 @@ app.whenReady().then(() => {
   process.env.ELECTRON_CACHE_DIR = cachePath;
   
   createWindow();
-  
+
   // IPC 핸들러 등록
   ipcMain.handle('get-onedrive-path', async () => {
     return findOneDrivePath();
@@ -238,6 +238,22 @@ app.whenReady().then(() => {
 
   ipcMain.handle('get-music-sheets-path', async () => {
     return findMusicSheetsPath();
+  });
+
+  ipcMain.handle('get-music-sheets-files', async () => {
+    try {
+      const musicSheetsPath = findMusicSheetsPath();
+      const files = await fsPromises.readdir(musicSheetsPath);
+      return files.filter(file => 
+        file.toLowerCase().endsWith('.jpg') || 
+        file.toLowerCase().endsWith('.jpeg') || 
+        file.toLowerCase().endsWith('.png') ||
+        file.toLowerCase().endsWith('.gif')
+      );
+    } catch (error) {
+      console.error('Music_Sheets 파일 목록 읽기 실패:', error);
+      return [];
+    }
   });
 
   ipcMain.handle('check-file-exists', async (event, filePath) => {
@@ -441,41 +457,6 @@ app.whenReady().then(() => {
     }
   });
 
-  // PDF를 JPG로 변환하는 핸들러
-  ipcMain.handle('convert-pdf-to-jpg', async (event, uint8Array, fileName) => {
-    try {
-      // PDF 변환 로직
-      const pdf2pic = require('pdf2pic');
-      const { fromBuffer } = pdf2pic;
-      
-      const convert = fromBuffer(uint8Array, {
-        density: 100,           // DPI
-        saveFilename: path.parse(fileName).name,
-        savePath: os.tmpdir(),
-        format: "jpg",
-        width: 600,
-        height: 800
-      });
-      
-      const results = await convert(1); // 첫 페이지만 변환
-      
-      if (results && results.length > 0) {
-        const result = results[0];
-        const imageData = await fsPromises.readFile(result.path);
-        
-        return {
-          success: true,
-          imageData: imageData.buffer.slice(imageData.byteOffset, imageData.byteOffset + imageData.byteLength),
-          fileName: result.name
-        };
-      } else {
-        return { success: false, error: 'PDF 변환에 실패했습니다.' };
-      }
-    } catch (error) {
-      console.error('PDF 변환 실패:', error);
-      return { success: false, error: error.message };
-    }
-  });
 
   // OneDrive 파일 동기화 상태 확인 핸들러
   ipcMain.handle('check-onedrive-sync', async (event, filePath) => {

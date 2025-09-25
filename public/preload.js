@@ -10,6 +10,11 @@ const findMusicSheetsPath = async () => {
   return await ipcRenderer.invoke('get-music-sheets-path');
 };
 
+// Music_Sheets 파일 목록 가져오기 함수 (IPC로 메인 프로세스에 위임)
+const getMusicSheetsFiles = async () => {
+  return await ipcRenderer.invoke('get-music-sheets-files');
+};
+
 // 파일 저장 함수 (IPC로 메인 프로세스에 위임)
 const saveFile = async (fileData) => {
   return await ipcRenderer.invoke('save-file', fileData);
@@ -55,10 +60,7 @@ const openFile = async (filePath) => {
   return await ipcRenderer.invoke('open-file', filePath);
 };
 
-// PDF를 JPG로 변환하는 함수 (IPC로 메인 프로세스에 위임)
-const convertPDFToJPG = async (uint8Array, fileName) => {
-  return await ipcRenderer.invoke('convert-pdf-to-jpg', uint8Array, fileName);
-};
+
 
 
 // API를 렌더러 프로세스에 노출
@@ -66,6 +68,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveFile: (fileData) => saveFile(fileData),
   getOneDrivePath: () => findOneDrivePath(),
   getMusicSheetsPath: () => findMusicSheetsPath(),
+  getMusicSheetsFiles: () => getMusicSheetsFiles(),
   readFile: (filePath) => readFile(filePath),
   deleteFile: (filePath) => deleteFile(filePath),
   renameFile: (oldFilePath, newFilePath) => renameFile(oldFilePath, newFilePath),
@@ -73,6 +76,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeFile: (filePath, data) => writeFile(filePath, data),
   savePdf: (pdfData) => savePdf(pdfData),
   openFile: (filePath) => openFile(filePath),
-  checkFileExists: (filePath) => checkFileExists(filePath),
-  convertPDFToJPG: (file, fileName) => convertPDFToJPG(file, fileName)
+  checkFileExists: (filePath) => checkFileExists(filePath)
 });

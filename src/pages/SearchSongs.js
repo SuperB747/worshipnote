@@ -97,10 +97,11 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
       return matchesSearch && matchesChord && matchesTempo && matchesActiveFilter;
     });
     
-    // 정렬: 한글과 영어를 모두 고려한 알파벳/가나다 순서
+    // 정렬: 한글과 영어를 모두 고려한 알파벳/가나다 순서 (공백 정규화 포함)
     const sorted = filtered.sort((a, b) => {
-      const titleA = a.title.toLowerCase();
-      const titleB = b.title.toLowerCase();
+      // 공백 정규화: 여러 공백을 하나로, 앞뒤 공백 제거
+      const titleA = a.title.replace(/\s+/g, ' ').trim();
+      const titleB = b.title.replace(/\s+/g, ' ').trim();
       
       // 한글과 영어를 구분하여 정렬
       const isKoreanA = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(titleA);
@@ -111,8 +112,11 @@ const SearchSongs = ({ songs, setSongs, selectedSong, setSelectedSong, fileExist
       } else if (!isKoreanA && isKoreanB) {
         return 1; // 영어가 한글보다 뒤에
       } else {
-        // 같은 언어군 내에서는 일반적인 정렬
-        return titleA.localeCompare(titleB, 'ko', { numeric: true });
+        // 같은 언어군 내에서는 숫자 정렬을 고려한 정렬
+        return titleA.localeCompare(titleB, 'ko', { 
+          numeric: true,
+          sensitivity: 'base'
+        });
       }
     });
     

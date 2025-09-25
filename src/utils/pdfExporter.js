@@ -1,6 +1,5 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import * as pdfjsLib from 'pdfjs-dist';
 import { checkFileExists } from './storage';
 
 // OneDrive 경로 찾기 함수
@@ -221,43 +220,10 @@ const blobToBase64 = (blob) => {
   });
 };
 
-// PDF를 이미지로 변환하는 함수
+// PDF를 이미지로 변환하는 함수 (PDF 지원 중단으로 제거됨)
 const convertPDFToImage = async (pdfData) => {
-  try {
-    // PDF.js를 사용하여 PDF 로드
-    const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-    
-    // 첫 번째 페이지만 변환 (악보는 보통 첫 페이지만 필요)
-    const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 2.0 }); // 적당한 해상도로 변환
-    
-    // Canvas 생성
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
-    
-    // PDF 페이지를 Canvas에 렌더링
-    const renderContext = {
-      canvasContext: context,
-      viewport: viewport
-    };
-    
-    await page.render(renderContext).promise;
-    
-    // Canvas를 Blob으로 변환 (적당한 품질)
-    return new Promise((resolve) => {
-      canvas.toBlob((blob) => {
-        if (blob) {
-          resolve(blob);
-        } else {
-          resolve(null);
-        }
-      }, 'image/jpeg', 0.8); // 적당한 품질로 설정
-    });
-  } catch (error) {
-    return null;
-  }
+  // PDF 기능이 제거되어 항상 null 반환
+  return null;
 };
 
 // PDF 생성 함수
