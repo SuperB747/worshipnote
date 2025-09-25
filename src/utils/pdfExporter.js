@@ -313,25 +313,7 @@ export const generateWorshipListPDF = async (songs, date) => {
         }
         
         // 파일 존재 여부 확인
-        let fileExists = await checkFileExists(filePath);
-        if (!fileExists) {
-          // Music_Sheets 디렉토리에서 비슷한 파일명 찾기
-          const fileNameWithoutExt = song.fileName.toLowerCase().split('.')[0];
-          
-          const similarFiles = musicSheetsFiles.filter(file => {
-            const fileWithoutExt = file.toLowerCase().split('.')[0];
-            return fileWithoutExt.includes(fileNameWithoutExt) || 
-                   fileNameWithoutExt.includes(fileWithoutExt) ||
-                   file.toLowerCase().includes(fileNameWithoutExt);
-          });
-          
-          if (similarFiles.length > 0) {
-            // 첫 번째 비슷한 파일로 시도
-            const newFilePath = `${musicSheetsPath}/${similarFiles[0]}`;
-            filePath = newFilePath;
-            fileExists = await checkFileExists(filePath);
-          }
-        }
+        const fileExists = await checkFileExists(filePath);
         
         if (!fileExists) {
           failCount++;

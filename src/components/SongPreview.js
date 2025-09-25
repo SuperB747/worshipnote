@@ -84,27 +84,7 @@ const SongPreview = ({ selectedSong }) => {
         }
       }
       
-      // Music_Sheets 폴더에서 정확한 파일명을 찾지 못했다면 비슷한 파일명으로 시도
-      if (window.electronAPI && window.electronAPI.listFiles) {
-        try {
-          const files = await window.electronAPI.listFiles(musicSheetsPath);
-          const exactMatch = files.find(file => file === currentSong.fileName);
-          
-          if (!exactMatch) {
-            const similarFiles = files.filter(file => 
-              file.toLowerCase().includes(currentSong.fileName.toLowerCase()) ||
-              currentSong.fileName.toLowerCase().includes(file.toLowerCase())
-            );
-            
-            if (similarFiles.length > 0) {
-              const newFileName = similarFiles[0];
-              filePath = `${musicSheetsPath}/${newFileName}`;
-            }
-          }
-        } catch (error) {
-          // 파일명 매칭 실패 시 무시
-        }
-      }
+      // 정확한 파일명만 사용
       
       
       try {

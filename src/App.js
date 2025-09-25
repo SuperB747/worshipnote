@@ -154,30 +154,9 @@ function App() {
             
             // 파일이 존재하지 않으면 대안 경로들도 시도
             if (!exists) {
-              // 1. filePath가 있으면 그것도 시도
+              // filePath가 있으면 그것도 시도
               if (song.filePath && song.filePath.trim() !== '') {
                 exists = await checkFileExists(song.filePath);
-              }
-              
-              // 2. 파일명만으로 검색 시도
-              if (!exists) {
-                try {
-                  const files = await window.electronAPI.getMusicSheetsFiles();
-                  const fileNameWithoutExt = song.fileName.toLowerCase().split('.')[0];
-                  const matchingFile = files.find(file => {
-                    const fileWithoutExt = file.toLowerCase().split('.')[0];
-                    return fileWithoutExt.includes(fileNameWithoutExt) || 
-                           fileNameWithoutExt.includes(fileWithoutExt) ||
-                           file.toLowerCase().includes(fileNameWithoutExt);
-                  });
-                  
-                  if (matchingFile) {
-                    const altPath = `${musicSheetsPath}/${matchingFile}`;
-                    exists = await checkFileExists(altPath);
-                  }
-                } catch (altError) {
-                  // 대안 검색 실패는 무시
-                }
               }
             }
             
