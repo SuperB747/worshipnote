@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Search, Filter, Music, Hash, Clock, FileText, Edit3, Trash2, Plus, FileX, AlertTriangle, Upload, CheckCircle } from 'lucide-react';
 import { processFileUpload } from '../utils/fileConverter';
 import { saveSongs, saveWorshipLists, checkFileExists } from '../utils/storage';
