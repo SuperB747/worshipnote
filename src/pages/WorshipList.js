@@ -19,7 +19,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3, Download, FileText, Upload, AlertTriangle, Trash2, CheckCircle, Check, Save } from 'lucide-react';
+import { Calendar, Plus, Music, Search, X, GripVertical, ChevronLeft, ChevronRight, Edit3, Download, FileText, Upload, AlertTriangle, Trash2, CheckCircle, Check, Save, Copy } from 'lucide-react';
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { saveWorshipLists, saveSongs, checkFileExists } from '../utils/storage';
@@ -186,6 +186,11 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     isVisible: false, 
     message: '', 
     pdfData: null 
+  });
+  const [textExportDialog, setTextExportDialog] = useState({ 
+    isVisible: false, 
+    textContent: '',
+    showCopyMessage: false
   });
 
   // 수동 저장 함수
@@ -1047,6 +1052,91 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
     }
   };
 
+  // 텍스트 내보내기 함수
+  const handleExportText = () => {
+    const currentDateKey = format(selectedDate, 'yyyy-MM-dd');
+    const currentSongs = worshipLists[currentDateKey] || [];
+    
+    if (currentSongs.length === 0) {
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: '선택된 날짜에 찬양이 없습니다.'
+      });
+      return;
+    }
+
+    // 찬양 제목에서 1/3, 2/3 같은 패턴을 제거하고 그룹화
+    const processedSongs = [];
+    const songGroups = {};
+    
+    currentSongs.forEach(song => {
+      // 제목에서 1/3, 2/3, 3/3 같은 패턴 제거
+      const baseTitle = song.title.replace(/\s+\d+\/\d+$/, '').trim();
+      
+      if (!songGroups[baseTitle]) {
+        songGroups[baseTitle] = {
+          title: baseTitle,
+          chord: song.chord || '',
+          originalSongs: []
+        };
+      }
+      songGroups[baseTitle].originalSongs.push(song);
+    });
+
+    // 그룹화된 찬양들을 순서대로 배열에 추가
+    Object.values(songGroups).forEach(group => {
+      processedSongs.push({
+        title: group.title,
+        chord: group.chord
+      });
+    });
+
+    // 텍스트 내용 생성
+    const title = getWorshipListTitle(selectedDate);
+    const textContent = `${title}\n\n${processedSongs.map((song, index) => {
+      const chordText = song.chord ? ` (${song.chord})` : '';
+      return `${index + 1}. ${song.title}${chordText}`;
+    }).join('\n')}`;
+    
+    setTextExportDialog({
+      isVisible: true,
+      textContent: textContent
+    });
+  };
+
+  // 텍스트 복사 함수
+  const handleCopyText = async () => {
+    try {
+      await navigator.clipboard.writeText(textExportDialog.textContent);
+      setTextExportDialog(prev => ({
+        ...prev,
+        showCopyMessage: true
+      }));
+      
+      // 2초 후 메시지 숨기기
+      setTimeout(() => {
+        setTextExportDialog(prev => ({
+          ...prev,
+          showCopyMessage: false
+        }));
+      }, 2000);
+    } catch (error) {
+      setTextExportDialog(prev => ({
+        ...prev,
+        showCopyMessage: true
+      }));
+      
+      // 2초 후 메시지 숨기기
+      setTimeout(() => {
+        setTextExportDialog(prev => ({
+          ...prev,
+          showCopyMessage: false
+        }));
+      }, 2000);
+    }
+  };
+
   // PDF 덮어쓰기 확인 핸들러
   const handleConfirmOverwrite = async () => {
     if (!overwriteDialog.pdfData) return;
@@ -1177,6 +1267,14 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
               >
                 <Download className="btn-icon" />
                 {isExportingPdf ? '생성 중...' : 'PDF'}
+              </button>
+              <button
+                className="export-text-btn"
+                onClick={handleExportText}
+                title="선택된 날짜의 찬양 리스트를 텍스트로 내보내기"
+              >
+                <Download className="btn-icon" />
+                TEXT
               </button>
               <button 
                 className="add-song-btn"
@@ -1584,6 +1682,119 @@ const WorshipList = ({ songs, worshipLists, setWorshipLists, setSelectedSong, se
           >
             취소
           </button>
+        </div>
+      </GhibliDialog>
+
+      {/* 텍스트 내보내기 모달 */}
+      <GhibliDialog
+        isVisible={textExportDialog.isVisible}
+        onClose={() => setTextExportDialog({ isVisible: false, textContent: '', showCopyMessage: false })}
+        title="찬양 리스트 텍스트 내보내기"
+        message="아래 텍스트를 선택하여 복사하거나 복사 버튼을 사용하세요."
+      >
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          gap: '16px',
+          width: '100%',
+          position: 'relative'
+        }}>
+          {/* 버튼 영역 */}
+          <div style={{ 
+            display: 'flex', 
+            gap: '12px', 
+            justifyContent: 'center',
+            marginBottom: '8px'
+          }}>
+            <button 
+              className="ghibli-dialog-button"
+              onClick={handleCopyText}
+              style={{ 
+                background: 'linear-gradient(145deg, #4a7c59, #2d5a3d)',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '20px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <Copy className="btn-icon" />
+              복사하기
+            </button>
+            <button 
+              className="ghibli-dialog-button"
+              onClick={() => setTextExportDialog({ isVisible: false, textContent: '', showCopyMessage: false })}
+              style={{ 
+                background: 'linear-gradient(145deg, #f5f5f5, #e0e0e0)',
+                color: '#333',
+                border: '2px solid #4a7c59',
+                padding: '10px 20px',
+                borderRadius: '20px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              닫기
+            </button>
+          </div>
+          
+          {/* 텍스트 영역 */}
+          <div style={{ 
+            background: '#f8f9fa', 
+            border: '1px solid #e9ecef', 
+            borderRadius: '8px', 
+            padding: '16px', 
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            lineHeight: '1.6',
+            whiteSpace: 'pre-wrap',
+            maxHeight: '400px',
+            overflowY: 'auto',
+            userSelect: 'text',
+            width: '100%'
+          }}>
+            {textExportDialog.textContent}
+          </div>
+          
+          {/* 스낵바 영역 - 하단 여백 */}
+          <div style={{ 
+            height: '60px',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            {/* 복사 성공 메시지 - 하단 스낵바 스타일 */}
+            {textExportDialog.showCopyMessage && (
+              <div style={{
+                position: 'absolute',
+                bottom: '0',
+                left: '0',
+                right: '0',
+                background: 'linear-gradient(145deg, #d4edda, #c3e6cb)',
+                color: '#155724',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                border: '1px solid #c3e6cb',
+                textAlign: 'center',
+                fontSize: '14px',
+                fontWeight: '600',
+                animation: 'slideUpFade 2s ease-in-out',
+                zIndex: 10,
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+              }}>
+                ✅ 텍스트가 클립보드에 복사되었습니다!
+              </div>
+            )}
+          </div>
         </div>
       </GhibliDialog>
       
