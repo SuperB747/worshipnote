@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Upload, Music, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { processFileUpload } from '../utils/fileConverter';
+import { saveSongs } from '../utils/storage';
 import GhibliDialog from '../components/GhibliDialog';
 import './AddSong.css';
 
@@ -221,7 +222,7 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
   }, []);
 
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) {
       setDialog({
@@ -239,8 +240,29 @@ const AddSong = ({ songs, setSongs, setSelectedSong }) => {
       createdAt: new Date().toISOString()
     };
 
-    setSongs(prev => [...prev, newSong]);
+    // 상태 업데이트
+    const updatedSongs = [...songs, newSong];
+    setSongs(updatedSongs);
     setSelectedSong(newSong);
+    
+    // localStorage와 OneDrive에 저장
+    try {
+      const success = await saveSongs(updatedSongs);
+      if (!success) {
+        setDialog({
+          isVisible: true,
+          type: 'error',
+          message: '악보 추가는 완료되었지만 저장에 실패했습니다. 다시 시도해주세요.'
+        });
+      }
+    } catch (error) {
+      console.error('악보 저장 실패:', error);
+      setDialog({
+        isVisible: true,
+        type: 'error',
+        message: '악보 추가는 완료되었지만 저장 중 오류가 발생했습니다.'
+      });
+    }
     
     // 폼 초기화
     setFormData({
